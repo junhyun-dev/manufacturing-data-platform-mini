@@ -1,0 +1,9 @@
+# Phase 1 deps (kept minimal — see ROADMAP for what's deliberately deferred)
+fastapi
+uvicorn
+pymongo
+
+# dev / test
+mongomock
+pytest
+httpx        # FastAPI TestClient

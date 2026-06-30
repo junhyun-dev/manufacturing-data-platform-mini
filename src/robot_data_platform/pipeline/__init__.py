@@ -1,0 +1,2 @@
+"""Mini lakehouse pipeline package."""
+
