@@ -111,3 +111,53 @@ Notes:
 - Remaining (BACKLOG, unchanged): graceful null/bad-row quarantine (strict numeric cast still fails fast at transform); runtime Mongo (no Docker) / runtime Airflow (not installed); Spark/Iceberg; AI Dataset QA.
 - Structural note for Codex: `freshness_business_date`'s off-partition branch is unreachable by construction (silver is filtered to the active date), so it acts as a transform regression guard + ISO-validity check — the parseable branch is the only real-input failure path (tested).
 
+## 2026-06-30 — Phase 2 EAV mini slice (core)
+
+Scope:
+
+- New CORE slice: multiple wide formats → JSON mapping config → EAV (long) → gold pivot/aggregate → quality → catalog/lineage. Reuses the Slice 1 spine (idempotency, schema-drift, catalog, dbt-style quality); no fork, no new project.
+- Restated core vs optional: CORE = medallion · EAV · quality · catalog/lineage · Spark/Iceberg; OPTIONAL = AI Dataset QA · RAG/vectorDB (deferred until an interview needs it; NOT implemented).
+
+Constraints honored:
+
+- Clean-room: declined to read company `collector/excel`; built from the public-safe abstracted plan (Slice 6 notes) + standard EAV pattern. No company code/data/names/schemas/file names used. Fully synthetic 3-format data + JSON mapping configs.
+- EAV claim framed as "operated/improved professionally, implemented personally"; file_id idempotency = own re-design. Airflow DAG untouched (still a wrapper). AI QA/RAG not implemented.
+
+New files:
+
+- `src/robot_data_platform/pipeline/eav.py`, `run_eav.py`, `sample_eav.py`
+- `config/eav_mappings/{plant_a,plant_b,line_c}.json`
+- `tests/test_eav_pipeline.py`
+- `.gitignore` (+`data/lakehouse_eav/`, `data/raw/eav/`)
+
+Commands:
+
+```bash
+pytest
+PYTHONPATH=src python -m robot_data_platform.pipeline.run_eav --catalog-backend json --output-dir /tmp/robot-mini-eav-demo
+PYTHONPATH=src python -m robot_data_platform.pipeline.run_eav --catalog-backend json --output-dir /tmp/robot-mini-eav-demo  # second run
+```
+
+Results:
+
+```text
+pytest: 33 passed (was 23; +10 EAV: transforms, unit conversion, run/json, conservation, config-driven new format, idempotency, mapping_coverage/value_type/unmapped-warn failures)
+EAV CLI run 1: status=processed, quality_passed=true (9 checks pass)
+EAV CLI run 2: status=skipped   (idempotent reuse confirmed)
+gold: 3 formats unified; MC-B1 temp 55.0C (from 131F), pressure 100.0kPa (from 1.0 bar); EQP-A1 units 220 (sum of 2 readings), temp 56.0 (avg)
+conservation: EAV units 540 == gold units 540
+```
+
+Verified:
+
+- [x] Tests passed (33).
+- [x] EAV JSON CLI path checked; second run is `status="skipped"`.
+- [x] Docs updated (README/ROADMAP/DESIGN/BENCHMARKS + this log + personal phase2-plan).
+- [x] Runtime Mongo/Airflow blockers remain documented (unchanged).
+
+Notes:
+
+- Closed: data-modeling (EAV) + multi-format intake gap is now implemented evidence, not just a plan.
+- EAV uses graceful value handling (unparseable → `value=None` + `value_type_valid` fail), unlike the manufacturing slice's strict fail-fast — documented as an intentional difference.
+- For Codex: confirm (1) clean-room boundary (no company artifacts leaked), (2) EAV claim wording in README/DESIGN is "operated/improved vs implemented", (3) `eav.py` reuse of lakehouse helpers is correct for a different `dataset_id`, (4) scope held — AI QA/RAG remain unimplemented optional-backlog.
+

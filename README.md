@@ -54,6 +54,39 @@ The Airflow DAG is an operational wrapper, not the business logic. The pipeline 
 
 See **[BENCHMARKS.md](BENCHMARKS.md)** for the reference patterns, JD keyword mapping, and what was deliberately excluded.
 
+## Phase 2 — EAV mini slice (data modeling / multi-format intake)
+
+A **core** slice that ingests several differently-shaped wide files and unifies them through a config-driven **EAV (entity–attribute–value)** model, then pivots back to a gold metric mart. It **reuses the Slice 1 spine** (idempotency, schema-drift, catalog/lineage, dbt-style quality) — only the dataset profile and the check pack differ.
+
+```text
+many wide CSVs (different columns/units) -> mapping config (JSON) -> EAV long -> pivot/aggregate -> gold -> quality -> Mongo catalog/lineage
+```
+
+- **3 synthetic formats** (generated into `data/raw/eav/` from `sample_eav.py`): Korean headers, English headers, mixed units (°F / bar) — fully synthetic, no company data.
+- **Config-driven**: each `config/eav_mappings/*.json` maps a source's columns → standard fields (`units_produced, defect_count, temperature_c, pressure_kpa`) with optional deterministic unit conversions (`f_to_c`, `bar_to_kpa`). **A new file format is onboarded by adding one config — no pipeline code change** (covered by a test).
+- **EAV (silver)**: `entity_id, business_date, attribute, value, value_type, source_id, source_file_id`. `source_file_id` is the file-content hash = the file-level idempotency key.
+- **Gold**: pivot/aggregate per `(business_date, entity_id)` — sum for counts, average for sensor readings.
+- **Quality** (dbt-style): `mapping_coverage`, `unmapped_source_columns` (warn), `not_null_value`, `accepted_values_attribute`, `value_type_valid`, `numeric_range_within_bounds`, `eav_to_gold_conservation`, `freshness_business_date`, plus shared `schema_drift`. Unparseable values are captured gracefully (value=`None` + a `value_type_valid` failure), not crashed on.
+
+### How the EAV experience is described honestly
+
+In prior **professional** work I **operated and improved** an EAV-based structure that handled many heterogeneous file formats. In **this personal project** I **implemented** a wide → EAV → gold flow from scratch on **fully synthetic** data to reinforce my data-modeling understanding. The **file_id idempotency** and sync-style reprocessing are my own re-design/implementation. No company code, data, names, or schemas are used here.
+
+> Interview line: "실무에서는 EAV 기반 구조를 운영·개선하며 다양한 파일 양식을 처리했고, 개인 프로젝트에서는 가상 데이터로 wide → EAV → gold 지표 흐름을 직접 구현해 데이터 모델링 이해를 보강했습니다."
+
+## Scope: core vs optional
+
+- **Core** (thesis = lakehouse data platform + modeling + quality + catalog/lineage):
+  - Medallion pipeline — Slice 1 (done + hardened)
+  - EAV mini — multi-format → mapping → EAV → gold (done)
+  - Quality checks, catalog/lineage — cross-cutting (done)
+  - Spark/Iceberg translation (backlog, still core)
+- **Optional** (only pursued if a specific interview, e.g. Labrador-style, makes it relevant):
+  - AI Dataset QA slice
+  - RAG / vectorDB / LLM-preprocessing
+
+Optional slices would reuse the same spine; they are deliberately deferred so the core thesis stays sharp.
+
 ## Design Decisions
 
 1. **`dataset` vs `dataset_version` are separate.**  
@@ -118,6 +151,14 @@ For offline demos without MongoDB, use the JSON catalog backend:
 ```bash
 PYTHONPATH=src python -m robot_data_platform.pipeline.run --catalog-backend json
 ```
+
+## Run EAV mini CLI
+
+```bash
+PYTHONPATH=src python -m robot_data_platform.pipeline.run_eav --catalog-backend json --output-dir data/lakehouse_eav
+```
+
+Synthetic inputs (`data/raw/eav/`) and mapping configs (`config/eav_mappings/`) are used automatically; missing synthetic inputs are generated from `sample_eav.py`. Re-running the same inputs for the same date is idempotent (`status="skipped"`). To add a new file format, drop one more `config/eav_mappings/<source>.json` (+ its CSV) — no code change.
 
 ## Airflow Wrapper
 

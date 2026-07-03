@@ -10,6 +10,19 @@
 ## 0. 목적 (왜 만드나)
 로보티즈 지원자격의 **NoSQL/MongoDB + 메타데이터 카탈로그** 갭을 *만들어서* 닫고, 자소서 주장("MongoDB 카탈로그·version manifest·추출 API mini 구현")을 **면접에서 보여줄 최소 작동 버전**으로 뒷받침.
 
+### Current strategy: deep design + small executable slice
+
+이 프로젝트는 단순히 도구 이름을 모으는 repo 가 아니다. 반복적으로 확인되는 데이터 엔지니어링 JD gap 은 "Kafka/Spark 를 써봤는가"만이 아니라, **batch/streaming, data mart, quality, lineage, monitoring, backfill, failure recovery 를 하나의 데이터 플랫폼으로 설계하는 큰 그림**이다.
+
+따라서 이후 slice 는 다음 순서로 진행한다:
+
+```text
+JD/public benchmark -> real-service scenario -> state changes -> required metadata
+-> tables/files/functions/API design -> small executable slice -> tests/docs
+```
+
+설계는 실서비스 수준으로 깊게 쓰되, 구현은 검증 가능한 작은 범위로 자른다. 구현하지 않은 production 기능은 backlog 로 명시한다.
+
 ## 1. v0 scope
 **v0 IN**: 파일 ingest → MongoDB 카탈로그 등록 → version manifest → `GET /datasets`·`GET /datasets/{id}`. Docker Compose(Mongo).
 **v0.5 IN**: 추출 API(`/extract`) — 로보티즈 DaaS 키워드용, 코어 후.
@@ -125,7 +138,27 @@ Airflow reference patterns extracted from private code, without copying code or 
 - Source/customer variation is expressed as configuration lists with enable flags and per-source options.
 - Business logic stays in external functions/operators; DAG files mainly define dependencies.
 
-### Phase 2 Extension: AI Dataset QA
+### Phase 2 — EAV mini slice (2026-06-30) — CORE
+
+데이터 모델링 + 다양한 양식 intake 를 같은 spine 으로 (fork 금지). 모듈 `pipeline/eav.py`, dataset_id `manufacturing_wide_eav`.
+
+```text
+여러 wide CSV(컬럼·단위 제각각) -> mapping config(JSON) -> EAV long -> pivot/aggregate -> gold -> quality -> catalog/lineage
+```
+
+**결정 ⑧: config-driven 매핑** — source 별 `config/eav_mappings/*.json` 가 컬럼 → 표준필드(`units_produced·defect_count·temperature_c·pressure_kpa`) + 선택적 단위 변환(`f_to_c`·`bar_to_kpa`)을 선언. **새 양식 = config 하나 추가**(코드 변경 X) — 테스트로 증명. load 는 config-driven(각 mapping 이 자기 `source_file` 을 가리킴).
+
+**결정 ⑨: EAV(long)를 silver 로** — `entity_id·business_date·attribute·value·value_type·source_id·source_file_id`. `source_file_id` = 파일 내용 해시 = **file-level 멱등 키**(내가 직접 재설계/구현으로 방어 가능한 부분). EAV 는 모든 날짜 보존, 날짜 필터는 gold 에서.
+
+**결정 ⑩: gold 는 pivot/aggregate** — `(business_date, entity_id)` 그레인, count 는 sum / sensor 값은 avg. `eav_to_gold_conservation` 으로 additive measure 보존 검증.
+
+**결정 ⑪: graceful 처리** — EAV 의 `normalize_value` 는 파싱 불가/빈 값을 crash 가 아니라 `value=None` + `value_type_valid` quality fail 로 잡는다 (manufacturing silver 의 strict fail-fast 와 대비 — EAV 는 양식이 제각각이라 graceful 이 맞음).
+
+> ★ 정직 가드 (EAV claim): 실무에서는 EAV 기반 구조를 **운영·개선**(다양한 양식 처리), 이 공개 프로젝트에서는 **가상 데이터로 직접 구현**해 모델링 이해 보강. "실무에서 EAV 를 설계했다" 라고는 쓰지 않는다. 회사 코드/데이터/이름/스키마 미사용 (clean-room).
+
+### Phase 2 Extension: AI Dataset QA (OPTIONAL — 면접 시에만)
+
+> 이 slice 는 **optional** 이다. 래브라도랩스류 면접이 실제로 진행될 때만 후속 slice 로 붙인다. core(medallion·EAV·quality·catalog/lineage·Spark/Iceberg) 가 먼저다.
 
 The Labrador Labs-style gap should be covered by a later slice in the same project, not by a new repo and not by expanding Slice 1. The reusable core is `ingest -> version manifest -> quality report -> catalog/lineage`; only the dataset shape and QA checks change.
 

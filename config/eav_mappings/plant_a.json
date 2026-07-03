@@ -1,0 +1,12 @@
+{
+  "source_id": "plant_a",
+  "source_file": "plant_a_daily.csv",
+  "entity_field": "설비",
+  "business_date_field": "생산일자",
+  "attributes": {
+    "생산수량": {"standard": "units_produced", "type": "int"},
+    "불량수량": {"standard": "defect_count", "type": "int"},
+    "온도_C": {"standard": "temperature_c", "type": "float"},
+    "압력_kPa": {"standard": "pressure_kpa", "type": "float"}
+  }
+}

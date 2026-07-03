@@ -1,0 +1,12 @@
+{
+  "source_id": "plant_b",
+  "source_file": "plant_b_export.csv",
+  "entity_field": "machine_id",
+  "business_date_field": "date",
+  "attributes": {
+    "output_units": {"standard": "units_produced", "type": "int"},
+    "reject_count": {"standard": "defect_count", "type": "int"},
+    "temp_f": {"standard": "temperature_c", "type": "float", "convert": "f_to_c"},
+    "pressure_bar": {"standard": "pressure_kpa", "type": "float", "convert": "bar_to_kpa"}
+  }
+}

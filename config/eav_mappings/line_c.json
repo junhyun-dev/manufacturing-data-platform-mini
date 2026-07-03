@@ -1,0 +1,12 @@
+{
+  "source_id": "line_c",
+  "source_file": "line_c_report.csv",
+  "entity_field": "asset",
+  "business_date_field": "business_date",
+  "attributes": {
+    "qty_produced": {"standard": "units_produced", "type": "int"},
+    "qty_defective": {"standard": "defect_count", "type": "int"},
+    "temperature_celsius": {"standard": "temperature_c", "type": "float"},
+    "pressure_kpa": {"standard": "pressure_kpa", "type": "float"}
+  }
+}

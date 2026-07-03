@@ -54,9 +54,11 @@ rewrite.
 | JD keyword | Evidence in this repo | Status |
 |---|---|---|
 | Lakehouse / medallion | `bronze → silver → gold` in `pipeline/lakehouse.py` | implemented |
-| Data Mart | `gold/daily_line_metrics.csv` (per line/product daily metrics) | implemented |
+| Data Mart | `gold/daily_line_metrics.csv` + EAV `entity_daily_metrics.csv` | implemented |
+| Data modeling (EAV) / multi-format intake | `pipeline/eav.py`: 3 wide formats → mapping config → EAV long → gold pivot | implemented |
+| Schema mapping / harmonization | `config/eav_mappings/*.json` + unit conversions (`f_to_c`, `bar_to_kpa`); new format = add one config | implemented |
 | ETL / ELT | CSV ingest → typed/normalized silver → aggregated gold | implemented |
-| Data quality | 7-check dbt-style suite + cross-layer reconciliation | implemented |
+| Data quality | dbt-style suites on both slices + cross-layer reconciliation/conservation | implemented |
 | Schema drift / evolution | `schema_drift` check vs previous successful run (policy = warn) | implemented |
 | Idempotency / backfill | skip re-run on `dataset_id + business_date + source_hash` | implemented (Airflow backfill = partial) |
 | Lineage | `lakehouse_runs` / `lineage_events` with `layers[].parents` | partial (path-level, not column-level) |
@@ -64,21 +66,35 @@ rewrite.
 | Orchestration | Airflow DAG as scheduling/retry/timeout wrapper around the CLI | partial (DAG written; runtime trigger unverified) |
 | Spark / Iceberg | partition + schema-evolution + idempotency primitives are in place | backlog (engine swap is Slice 2) |
 
-### Labrador Labs-style (AI training-data QA / governance / LLM preprocessing)
+### Labrador Labs-style (AI training-data QA / governance / LLM preprocessing) — OPTIONAL
+
+> These are **optional-backlog**: pursued only if a Labrador-style interview actually
+> happens. Core (medallion · EAV · quality · catalog/lineage · Spark/Iceberg) comes first.
 
 | JD keyword | Planned evidence | Status |
 |---|---|---|
-| AI dataset QA | reuse the same `ingest → quality → catalog/lineage` spine with a text/label dataset profile | backlog (Slice 4) |
-| Labeling / label quality | label distribution + train/validation split manifest | backlog |
-| Sensitive data | PII **mock** detection (rule-based on synthetic data, clearly labelled mock) | backlog |
-| Dataset versioning | dataset version manifest (same hash/manifest discipline as here) | backlog |
-| Spark / Flink / Kafka / Iceberg | streaming + engine items | backlog (Slice 2–3) |
-| RAG / vectorDB / LLM preprocessing | framed as "manage dataset quality/version/PII/distribution **before** it enters training/RAG", not as building a vector store | backlog (scope-limited by design) |
+| AI dataset QA | reuse the same `ingest → quality → catalog/lineage` spine with a text/label dataset profile | backlog (optional) |
+| Labeling / label quality | label distribution + train/validation split manifest | backlog (optional) |
+| Sensitive data | PII **mock** detection (rule-based on synthetic data, clearly labelled mock) | backlog (optional) |
+| Dataset versioning | dataset version manifest (same hash/manifest discipline as here) | backlog (optional) |
+| Spark / Flink / Kafka / Iceberg | streaming + engine items | backlog (Spark/Iceberg = core; streaming = Phase 3) |
+| RAG / vectorDB / LLM preprocessing | framed as "manage dataset quality/version/PII/distribution **before** it enters training/RAG", not as building a vector store | backlog (optional, scope-limited by design) |
 
-The thesis: **one project, two job languages.** The reusable spine is
-`ingest → version manifest → quality report → catalog/lineage`. The AI slice changes only
-the dataset profile and the check pack — not the platform — so it sharpens the thesis
-instead of forking a second system.
+The thesis: **one project, multiple job languages.** The reusable spine is
+`ingest → version manifest → quality report → catalog/lineage`. The EAV slice (core) and the
+AI-QA slice (optional) change only the dataset profile and the check pack — not the platform —
+so they sharpen the thesis instead of forking a second system. EAV also speaks directly to a
+**data-modeling** gap, which is why it is core rather than optional.
+
+### EAV reference (data modeling)
+
+EAV (entity–attribute–value) is a standard database-modeling pattern for storing
+heterogeneous, sparse attributes under one schema. Here it is implemented clean-room on
+synthetic data to harmonize multiple wide formats: each source declares a JSON mapping
+(columns → standard fields + unit conversions), wide rows melt to EAV long, then pivot
+back to a gold mart. The pattern (config-driven mapping, melt/pivot, conservation check)
+is the borrow; the **EAV claim is "operated/improved professionally, implemented
+personally"** — see DESIGN §Phase 2 EAV.
 
 ---
 
@@ -115,19 +131,27 @@ Real platforms have these; this slice does not. Listing them is the scope discip
 | **Full OpenLineage backend** (Marquez) | we borrow the run/job/dataset *vocabulary*; running a lineage server is backlog. |
 | **Distributed compute** (Spark cluster, Iceberg engine) | partitioning/schema-evolution/idempotency are in place so the swap is mechanical; the engine itself is Slice 2. |
 | Quality libs as **dependencies** (Great Expectations, Soda) | we implement the expectation *model* so the checks stay inspectable in ~40 lines; adopting the lib is backlog if the suite grows. |
-| **AI Dataset QA slice** | planned (Slice 4) and documented, but intentionally **not** implemented — it must not expand Slice 1 scope. |
+| Generic **mapping DSL / rules engine** (EAV) | mapping is plain JSON (columns → standard + named conversions); a DSL/UI is over-engineering for a mini. |
+| **AI Dataset QA / RAG / vectorDB** | OPTIONAL — documented, intentionally **not** implemented; pursued only if a Labrador-style interview happens. |
 
 ---
 
-## NOW vs BACKLOG (current freeze)
+## CORE vs OPTIONAL · NOW vs BACKLOG (current freeze)
 
-**NOW (this hardening pass, implemented):** transform/IO separation · dbt-style quality
-suite + reconciliation that distinguishes filtering/dedup from loss · schema-drift check
-(warn policy) · idempotent re-run (skip on date+source_hash) · this BENCHMARKS.md.
+**CORE** = medallion · EAV mini · quality · catalog/lineage · Spark/Iceberg.
+**OPTIONAL** = AI Dataset QA · RAG/vectorDB (only if an interview makes it relevant).
 
-**BACKLOG (frozen, do not pull forward):** Spark engine swap · Iceberg/Delta gold table ·
-Airflow task split + runtime trigger verification · runtime Mongo verification (Docker) ·
-full OpenLineage/Marquez · AI Dataset QA slice · streaming.
+**NOW (implemented):** Slice 1 medallion + hardening (transform/IO split · dbt-style quality
++ reconciliation · schema-drift warn · idempotent re-run) · **EAV mini (multi-format →
+mapping config → EAV → gold pivot + EAV quality suite + file_id idempotency)** · this
+BENCHMARKS.md.
+
+**BACKLOG — core (frozen):** Spark engine swap · Iceberg/Delta gold · Airflow task split +
+runtime trigger verification · runtime Mongo verification (Docker) · graceful null quarantine
+(manufacturing slice) · full OpenLineage/Marquez.
+
+**BACKLOG — optional (do NOT implement until an interview requires it):** AI Dataset QA
+slice · RAG/vectorDB/LLM-preprocessing · streaming (Kafka/Flink).
 
 ---
 
