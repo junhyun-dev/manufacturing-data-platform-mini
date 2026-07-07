@@ -1,5 +1,7 @@
 # robot-data-platform-mini
 
+> 한국어판: [`README.ko.md`](README.ko.md)
+
 **A thin, end-to-end slice of an ML/robot data platform: ingest sensor-ish files, catalog their metadata in MongoDB, and version each dataset for reproducibility.**
 
 ## Project Context
