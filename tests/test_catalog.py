@@ -2,8 +2,8 @@ from pathlib import Path
 
 import mongomock
 
-from robot_data_platform.catalog import get_dataset, ingest_dataset, list_datasets
-from robot_data_platform.db import ensure_indexes
+from manufacturing_data_platform.catalog import get_dataset, ingest_dataset, list_datasets
+from manufacturing_data_platform.db import ensure_indexes
 
 
 def test_ingest_registers_dataset_and_version_documents(tmp_path: Path) -> None:
@@ -14,7 +14,7 @@ def test_ingest_registers_dataset_and_version_documents(tmp_path: Path) -> None:
         "2026-06-26T09:00:01Z,s-1,\n",
         encoding="utf-8",
     )
-    db = mongomock.MongoClient()["test_robot_data_platform"]
+    db = mongomock.MongoClient()["test_manufacturing_data_platform"]
     ensure_indexes(db)
 
     body = ingest_dataset(
@@ -40,7 +40,7 @@ def test_ingest_registers_dataset_and_version_documents(tmp_path: Path) -> None:
 def test_list_datasets_returns_registered_catalog_entries(tmp_path: Path) -> None:
     csv_path = tmp_path / "sensor.csv"
     csv_path.write_text("timestamp,sensor_id,value\nnow,s-1,1\n", encoding="utf-8")
-    db = mongomock.MongoClient()["test_robot_data_platform"]
+    db = mongomock.MongoClient()["test_manufacturing_data_platform"]
     ensure_indexes(db)
 
     ingest_dataset(db, dataset_id="temp_sensor", file_path=csv_path)
@@ -50,7 +50,7 @@ def test_list_datasets_returns_registered_catalog_entries(tmp_path: Path) -> Non
 
 
 def test_missing_dataset_returns_none() -> None:
-    db = mongomock.MongoClient()["test_robot_data_platform"]
+    db = mongomock.MongoClient()["test_manufacturing_data_platform"]
     ensure_indexes(db)
 
     assert get_dataset(db, "missing") is None
@@ -59,7 +59,7 @@ def test_missing_dataset_returns_none() -> None:
 def test_reingesting_same_file_is_idempotent(tmp_path: Path) -> None:
     csv_path = tmp_path / "sensor.csv"
     csv_path.write_text("timestamp,sensor_id,value\nnow,s-1,1\n", encoding="utf-8")
-    db = mongomock.MongoClient()["test_robot_data_platform"]
+    db = mongomock.MongoClient()["test_manufacturing_data_platform"]
     ensure_indexes(db)
 
     first = ingest_dataset(db, dataset_id="temp_sensor", file_path=csv_path)
@@ -78,7 +78,7 @@ def test_ingesting_changed_file_creates_next_version(tmp_path: Path) -> None:
         "timestamp,sensor_id,value,battery_pct\nnow,s-1,1,98\n",
         encoding="utf-8",
     )
-    db = mongomock.MongoClient()["test_robot_data_platform"]
+    db = mongomock.MongoClient()["test_manufacturing_data_platform"]
     ensure_indexes(db)
 
     ingest_dataset(db, dataset_id="temp_sensor", file_path=first_path)
@@ -92,7 +92,7 @@ def test_ingesting_changed_file_creates_next_version(tmp_path: Path) -> None:
 def test_header_only_csv_preserves_columns(tmp_path: Path) -> None:
     csv_path = tmp_path / "empty.csv"
     csv_path.write_text("timestamp,sensor_id,value\n", encoding="utf-8")  # 헤더만, 0행
-    db = mongomock.MongoClient()["test_robot_data_platform"]
+    db = mongomock.MongoClient()["test_manufacturing_data_platform"]
     ensure_indexes(db)
 
     body = ingest_dataset(db, dataset_id="temp_sensor", file_path=csv_path)

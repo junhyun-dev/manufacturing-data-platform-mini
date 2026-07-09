@@ -1,7 +1,9 @@
-# 01. Source Contract — 무엇을 받는가?
+# 03. Source Contract — 무엇을 받는가?
+
+역할: 이 문서는 question map 이후에 보는 evidence 문서다. `01`의 scenario와 `02`의 질문들이 실제 source row, schema, identity, grain 위에서 성립하는지 확인한다.
 
 상태: 같이 검토할 초안  
-프로젝트: `robot-data-platform-mini`
+프로젝트: `manufacturing-data-platform-mini`
 
 이 문서는 시스템의 첫 입력을 정리한다.  
 `event를 받는다`라고만 말하면 모호하므로, 이 프로젝트에서는 정확히 어떤 형태의 event/source를 받는지 먼저 고정한다.
@@ -13,7 +15,7 @@
 현재 v0는 다음을 받는다.
 
 ```text
-정형화된 manufacturing/robot event row들이 들어있는 batch CSV file
+정형화된 manufacturing/manufacturing event row들이 들어있는 batch CSV file
 ```
 
 즉 입력 단위는 event 1개가 아니라 **CSV 파일 1개**다.  
@@ -21,7 +23,7 @@
 
 ```text
 input unit  = source CSV file
-row unit    = manufacturing robot event
+row unit    = manufacturing-style event
 run unit    = business_date 기준 pipeline run
 ```
 
@@ -30,20 +32,20 @@ run unit    = business_date 기준 pipeline run
 파일 예:
 
 ```text
-data/raw/manufacturing_robot_events.csv
+data/raw/manufacturing_events.csv
 ```
 
 header:
 
 ```text
-event_time,plant_id,line_id,work_order_id,robot_id,product_code,
+event_time,plant_id,line_id,work_order_id,machine_id,product_code,
 operation,units_produced,defect_count,cycle_time_ms,business_date
 ```
 
 row 예시:
 
 ```text
-2026-06-29T08:00:00Z,plant-a,line-1,wo-1001,rb-101,gearbox-a,
+2026-06-29T08:00:00Z,plant-a,line-1,wo-1001,mc-101,gearbox-a,
 assembly,120,2,840,2026-06-29
 ```
 
@@ -55,7 +57,7 @@ assembly,120,2,840,2026-06-29
 | `plant_id` | 공장/사이트 ID | `plant-a` | gold grouping 차원 |
 | `line_id` | 생산 라인 ID | `line-1` | gold grouping 차원 |
 | `work_order_id` | 작업 지시 ID | `wo-1001` | natural key 일부 |
-| `robot_id` | 로봇 ID | `rb-101` | natural key 일부 |
+| `machine_id` | 설비/장비 ID | `mc-101` | natural key 일부 |
 | `product_code` | 제품 코드 | `gearbox-a` | gold grouping 차원 |
 | `operation` | 작업 종류 | `assembly` | accepted_values 품질 검사 대상 |
 | `units_produced` | 생산 수량 | `120` | additive metric |
@@ -74,7 +76,7 @@ event_time
 plant_id
 line_id
 work_order_id
-robot_id
+machine_id
 product_code
 operation
 units_produced
@@ -110,7 +112,7 @@ source row 하나는 다음 의미를 가진다.
 ```text
 특정 시각(event_time)에
 특정 작업지시(work_order_id)를
-특정 로봇(robot_id)이
+특정 설비(machine_id)가
 특정 제품(product_code)에 대해 수행한
 제조/로봇 작업 이벤트
 ```
@@ -118,10 +120,10 @@ source row 하나는 다음 의미를 가진다.
 현재 silver dedup 기준, 즉 natural key는:
 
 ```text
-work_order_id + robot_id + event_time
+work_order_id + machine_id + event_time
 ```
 
-이 말은 같은 `work_order_id`, `robot_id`, `event_time` 조합이 두 번 나오면 같은 event가 중복으로 들어온 것으로 본다는 뜻이다.
+이 말은 같은 `work_order_id`, `machine_id`, `event_time` 조합이 두 번 나오면 같은 event가 중복으로 들어온 것으로 본다는 뜻이다.
 
 ## 6. Batch CSV와 streaming event의 차이
 
@@ -290,9 +292,9 @@ v0에서는 source를 정형화해서 다음을 먼저 연습한다.
 
 다음 질문을 같이 검토한다.
 
-1. 이 source row의 grain을 `work_order_id + robot_id + event_time`으로 보는 게 자연스러운가?
+1. 이 source row의 grain을 `work_order_id + machine_id + event_time`으로 보는 게 자연스러운가?
 2. `business_date`는 source에 들어오는 값으로 둘까, file path/run argument에서 오는 값으로 둘까?
-3. 이 source는 “robot data platform”이라고 부르기에 충분한가, 아니면 “manufacturing event platform”이라고 더 정확히 불러야 하나?
+3. 이 source는 “manufacturing data platform”의 v0 source contract로 충분한가, 아니면 더 구체적인 machine/session source가 필요한가?
 4. 지금 v0에서 streaming을 일부러 제외했다는 점을 README/학습 노트에서 더 강하게 말해야 하나?
 5. source contract를 먼저 고정하면, 다음 decision은 natural key/dedup을 보는 게 맞나?
 6. Excel/multi-sheet source를 별도 학습 시나리오로 추가할 필요가 있나?

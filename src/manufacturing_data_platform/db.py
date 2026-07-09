@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from pymongo.database import Database
 
-from robot_data_platform.config import Settings, get_settings
+from manufacturing_data_platform.config import Settings, get_settings
 
 
 def get_database(settings: Settings | None = None) -> Database:

@@ -1,7 +1,9 @@
-# 03. Slice2 — Spark/Iceberg로의 이동 (state 재표현)
+# 04. Slice2 — Spark/Iceberg로의 이동 (state 재표현)
 
 상태: 같이 검토할 초안
-프로젝트: `robot-data-platform-mini`
+프로젝트: `manufacturing-data-platform-mini`
+
+> **STATUS: design-only.** 이 repo에는 아직 Spark/Iceberg 구현 코드가 없고, `pyspark`도 설치되어 있지 않다. 이 문서는 Slice2 설계/학습 노트이며 구현 evidence가 아니다.
 
 이 문서는 Slice2를 "Spark/Iceberg를 붙인다"로 보지 않는다.
 대신 이렇게 본다.
@@ -22,7 +24,7 @@ contract는 유지하고, 엔진과 저장소만 바꾼다.
 
 ## 2. 지금 Slice1의 state trace (data-first, t1 -> tN)
 
-입력: 정형 CSV 파일 1개 (예: `manufacturing_robot_events.csv`, 5 rows = 3 distinct + 1 dup + 1 prior-date).
+입력: 정형 CSV 파일 1개 (예: `manufacturing_events.csv`, 5 rows = 3 distinct + 1 dup + 1 prior-date).
 
 ```text
 t1  read_rows(file)          -> columns[], rows[]            (실제 CSV header 캡처)
@@ -60,7 +62,7 @@ source CSV file
 |---|---|---|---|
 | transform 로직 | 순수 python 함수(rows->rows) | 순수 함수(DataFrame->DataFrame) | **유지** (테스트 가능성 그대로) |
 | quality check 정의 | dbt식 check dict | 같은 정의, Spark agg로 계산 | **유지** |
-| natural key / dedup | `work_order_id+robot_id+event_time` | 동일 key로 dropDuplicates | **유지** |
+| natural key / dedup | `work_order_id+machine_id+event_time` | 동일 key로 dropDuplicates | **유지** |
 | business_date | run 인자 / row 값 | Iceberg partition column | 개념 유지, 표현 바뀜 |
 | 실행 엔진 | python csv 모듈 | Spark local[*] DataFrame | **바뀜** |
 | 저장소 | run별 폴더의 csv | Iceberg table (bronze/silver/gold) | **바뀜** |

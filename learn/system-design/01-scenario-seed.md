@@ -1,7 +1,7 @@
-# 00. 시스템 시나리오
+# 01. Scenario seed — 시스템 시나리오
 
 상태: 같이 검토할 초안  
-프로젝트: `robot-data-platform-mini`
+프로젝트: `manufacturing-data-platform-mini`
 
 이 문서는 `schema drift`, `idempotency`, `quality`, `catalog`, `lineage` 같은 개별 기능으로 들어가기 전에, 질문을 만들기 위한 **scenario seed**를 정리한다.
 
@@ -9,7 +9,7 @@
 
 ## 1. 한 줄 시스템
 
-`robot-data-platform-mini`는 synthetic 제조/로봇 이벤트 CSV를 받아서, 재현 가능하고 검증 가능한 데이터셋과 mart로 바꾸는 작은 데이터 플랫폼이다.
+`manufacturing-data-platform-mini`는 synthetic 제조 스타일 이벤트 CSV를 받아서, 재현 가능하고 검증 가능한 데이터셋과 mart로 바꾸는 작은 데이터 플랫폼이다.
 
 ```text
 source CSV
@@ -32,6 +32,81 @@ source CSV
 
 이 시스템은 단순히 CSV를 읽어 gold table을 만드는 것이 아니라, 이 사람들이 나중에 질문할 정보를 남기는 것이 목표다.
 
+## 2.1 서비스가 필요한 이유
+
+이 프로젝트의 서비스 이유는 "로봇 데이터를 처리한다"보다 더 구체적이어야 한다.
+
+```text
+로봇/제조/ML 데이터 팀은 raw file만 보고는
+어떤 데이터셋을 믿고 분석/학습/리포팅에 써도 되는지 판단하기 어렵다.
+```
+
+raw file만 있으면 사용자는 매번 같은 질문을 다시 해야 한다.
+
+```text
+이 파일은 전에 처리한 것과 같은가?
+이 데이터셋은 어떤 schema인가?
+이 날짜 결과는 어느 source에서 왔는가?
+품질검사는 통과했는가?
+schema가 바뀌었는데도 조용히 지나간 건 아닌가?
+같은 날짜를 다시 돌렸을 때 중복이 생기지 않았는가?
+```
+
+그래서 이 mini service는 raw file을 바로 "쓸 수 있는 데이터"라고 주장하지 않는다.
+
+대신 아래 상태를 만들어 사용자가 판단할 수 있게 한다.
+
+```text
+source identity
+schema identity
+bronze/silver/gold 상태
+quality result
+catalog/version metadata
+lineage/run evidence
+idempotent rerun evidence
+```
+
+즉 서비스의 핵심 가치는:
+
+> raw manufacturing-style/tabular files를 분석/ML 사용자가 믿고 쓸 수 있는 cataloged, versioned, quality-checked dataset/mart로 바꾸고, 운영자가 나중에 설명할 수 있는 증거를 남기는 것.
+
+## 2.2 Primary Service Scenario
+
+이 프로젝트의 대표 시나리오는 아래 하나로 잡는다.
+
+```text
+로봇/제조 이벤트 파일이 하루 단위로 들어온다.
+데이터 엔지니어는 이 파일을 처리해 daily metric mart를 만들고 싶다.
+분석가/ML 사용자는 결과 숫자를 쓰기 전에 데이터셋의 schema, freshness, quality, source version을 알고 싶다.
+운영자는 같은 날짜를 다시 처리해도 중복되지 않고, 문제가 생기면 어느 source/run에서 왔는지 추적하고 싶다.
+```
+
+시간 순서로 쓰면:
+
+```text
+1. Source owner가 synthetic manufacturing-style CSV를 제공한다.
+2. Pipeline이 source_hash와 schema_hash를 계산한다.
+3. Pipeline이 bronze raw copy와 manifest를 남긴다.
+4. Pipeline이 silver에서 business_date 필터링, type 정리, natural key dedup을 수행한다.
+5. Pipeline이 gold daily metrics를 만든다.
+6. Quality suite가 row reconciliation, conservation, not_null, unique, accepted_values, range, freshness, schema_drift를 확인한다.
+7. Catalog/lineage record가 run_id, source_hash, schema_hash, quality result, layer parent links를 저장한다.
+8. 사용자는 catalog/run record를 보고 데이터셋을 사용할지 판단한다.
+9. 같은 source가 다시 들어오면 idempotency gate가 기존 successful run을 재사용한다.
+```
+
+이 시나리오가 있기 때문에 개별 기능이 생긴다.
+
+| 기능 | 서비스 질문 |
+|---|---|
+| `source_hash` | 이 입력은 전에 처리한 것과 같은가? |
+| `schema_hash` / `schema_drift` | source 구조가 바뀌었는가? |
+| bronze/silver/gold | raw 보존, 정제, mart를 어디서 나누는가? |
+| quality checks | 결과를 믿어도 되는 근거는 무엇인가? |
+| catalog/version | 데이터를 열지 않고 무엇을 알 수 있어야 하는가? |
+| lineage/run record | 이 숫자는 어떤 source/run에서 왔는가? |
+| idempotency | 같은 입력 재실행이 중복을 만들지 않는가? |
+
 ## 3. 들어오는 source
 
 v0의 source는 synthetic manufacturing CSV다.
@@ -39,14 +114,14 @@ v0의 source는 synthetic manufacturing CSV다.
 예상 row:
 
 ```text
-event_time,plant_id,line_id,work_order_id,robot_id,product_code,
+event_time,plant_id,line_id,work_order_id,machine_id,product_code,
 operation,units_produced,defect_count,cycle_time_ms,business_date
 ```
 
 예시:
 
 ```text
-2026-06-29T08:00:00Z,plant-a,line-1,wo-1,rb-1,gearbox-a,
+2026-06-29T08:00:00Z,plant-a,line-1,wo-1,mc-1,gearbox-a,
 assembly,10,1,100,2026-06-29
 ```
 
@@ -169,7 +244,8 @@ v0에서 피한 것:
 
 먼저 source contract를 본다.
 
-- [`01-source-contract.md`](01-source-contract.md)
+- [`03-source-contract.md`](03-source-contract.md)
+- [`../reference-decisions/gold-grain.md`](../reference-decisions/gold-grain.md)
 
 첫 번째 decision note:
 

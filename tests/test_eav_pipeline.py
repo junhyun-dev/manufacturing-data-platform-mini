@@ -2,8 +2,8 @@ from pathlib import Path
 
 import mongomock
 
-from robot_data_platform.db import ensure_indexes
-from robot_data_platform.pipeline.eav import (
+from manufacturing_data_platform.db import ensure_indexes
+from manufacturing_data_platform.pipeline.eav import (
     DATASET_ID,
     run_eav_pipeline,
     transform_eav_to_gold,
@@ -12,7 +12,7 @@ from robot_data_platform.pipeline.eav import (
 
 
 def _mongo():
-    db = mongomock.MongoClient()["test_robot_data_platform"]
+    db = mongomock.MongoClient()["test_manufacturing_data_platform"]
     ensure_indexes(db)
     return db
 

@@ -1,8 +1,8 @@
-# robot-data-platform-mini
+# manufacturing-data-platform-mini
 
 > 한국어판: [`README.ko.md`](README.ko.md)
 
-**A thin, end-to-end slice of an ML/robot data platform: ingest sensor-ish files, catalog their metadata in MongoDB, and version each dataset for reproducibility.**
+**A thin, end-to-end slice of a manufacturing-style/tabular data platform: ingest synthetic event files, catalog their metadata, and version each dataset for reproducibility.**
 
 ## Project Context
 
@@ -12,7 +12,7 @@ This repo is intended as a market-recognizable data engineering proof: metadata 
 
 The architecture source of truth for this project lives in this public repo: `README.md`, `DESIGN.md`, `ROADMAP.md`, `BENCHMARKS.md`, and tests.
 
-This repo exists to close a concrete gap for robot/ML data-platform roles: **NoSQL/MongoDB + metadata catalog + dataset version manifest**. The data is synthetic sensor-ish CSV, not real ROS2 bag / MCAP / Jetson data. The point is the platform loop, kept deliberately small.
+This repo exists to close a concrete data-platform gap: **NoSQL/MongoDB-style metadata catalog + dataset version manifest + quality/lineage evidence**. The data is synthetic manufacturing-style CSV, not real ROS2 bag / MCAP / Jetson data. Until a machine/session source slice exists, describe this externally as a **manufacturing-style/tabular mini data platform**, not a production manufacturing data platform. The point is the platform loop, kept deliberately small.
 
 ## Phase 1 Scope
 
@@ -36,7 +36,7 @@ synthetic manufacturing CSV -> bronze -> silver -> gold -> quality -> Mongo cata
 ```
 
 - `bronze`: raw CSV copy plus a source manifest with `source_hash`, `schema_hash`, `business_date`, and row count.
-- `silver`: typed, normalized, deduplicated manufacturing robot events. Built by a **pure `transform_silver`**; `write_silver` does IO only.
+- `silver`: typed, normalized, deduplicated manufacturing-style events. Built by a **pure `transform_silver`**; `write_silver` does IO only.
 - `gold`: daily line/product metrics with units, defects, defect rate, average cycle time, and `closing_status`. Built by a **pure `transform_gold`**; `write_gold` does IO only.
 - `quality`: a **dbt-style check suite** (see below), not just row counts. The run fails if any check fails.
 - `catalog/lineage`: MongoDB `lakehouse_runs` and `lineage_events` documents describing the run, parent-child layer paths, and `schema_drift`.
@@ -47,6 +47,7 @@ synthetic manufacturing CSV -> bronze -> silver -> gold -> quality -> Mongo cata
   - `row_count_source_to_silver` — reconciliation that **distinguishes expected filtering/dedup from real row loss** (`expected` = distinct natural keys on the active date, computed independently of how silver was built).
   - `unit_conservation_silver_to_gold` — aggregation preserves total units/defects.
   - `not_null_required_columns` (dbt `not_null`), `unique_natural_key` (dbt `unique`), `accepted_values_operation` (dbt `accepted_values`), `numeric_range_within_bounds`, `freshness_business_date`.
+- `freshness_business_date` is a partition/date-validity guard for the active `business_date`, not a dbt/DataHub-style data-age SLA. Age-based freshness is backlog.
 - **Schema drift**: `schema_hash` is computed from the **actual CSV header** (`read_rows` returns it), so an added/removed column — not just a type change in a required column — is detected. It is compared to the **previous successful run** for the dataset and reported as a `schema_drift` check. Policy = **`warn`** (surfaced, does not fail the run, so legitimate schema evolution is not blocked). Stored on the run/lineage doc.
 - **Idempotency**: a re-run with the same `dataset_id + business_date + source_hash` that already has a successful run is **skipped** (returns the prior run, `status="skipped"`, increments `reuse_count`). This makes retries and backfills safe no-ops.
 
@@ -68,7 +69,7 @@ many wide CSVs (different columns/units) -> mapping config (JSON) -> EAV long ->
 - **Config-driven**: each `config/eav_mappings/*.json` maps a source's columns → standard fields (`units_produced, defect_count, temperature_c, pressure_kpa`) with optional deterministic unit conversions (`f_to_c`, `bar_to_kpa`). **A new file format is onboarded by adding one config — no pipeline code change** (covered by a test).
 - **EAV (silver)**: `entity_id, business_date, attribute, value, value_type, source_id, source_file_id`. `source_file_id` is the file-content hash = the file-level idempotency key.
 - **Gold**: pivot/aggregate per `(business_date, entity_id)` — sum for counts, average for sensor readings.
-- **Quality** (dbt-style): `mapping_coverage`, `unmapped_source_columns` (warn), `not_null_value`, `accepted_values_attribute`, `value_type_valid`, `numeric_range_within_bounds`, `eav_to_gold_conservation`, `freshness_business_date`, plus shared `schema_drift`. Unparseable values are captured gracefully (value=`None` + a `value_type_valid` failure), not crashed on.
+- **Quality** (dbt-style): `mapping_coverage`, `unmapped_source_columns` (warn), `not_null_value`, `accepted_values_attribute`, `value_type_valid`, `numeric_range_within_bounds`, `eav_to_gold_conservation`, `freshness_business_date`, plus shared `schema_drift`. Here too, `freshness_business_date` means active-date validity/partition correctness, not age-based source freshness. Unparseable values are captured gracefully (value=`None` + a `value_type_valid` failure), not crashed on.
 
 ### How the EAV experience is described honestly
 
@@ -82,6 +83,7 @@ In prior **professional** work I **operated and improved** an EAV-based structur
   - Medallion pipeline — Slice 1 (done + hardened)
   - EAV mini — multi-format → mapping → EAV → gold (done)
   - Quality checks, catalog/lineage — cross-cutting (done)
+  - Operator debugging walkthrough — gold metric -> run/source/quality/lineage evidence (next)
   - Spark/Iceberg translation (backlog, still core)
 - **Optional** (only pursued if a specific interview, e.g. Labrador-style, makes it relevant):
   - AI Dataset QA slice
@@ -109,7 +111,7 @@ docker compose up -d
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-PYTHONPATH=src uvicorn robot_data_platform.api:app --reload
+PYTHONPATH=src uvicorn manufacturing_data_platform.api:app --reload
 ```
 
 > `src` layout이라 `PYTHONPATH=src`가 필요하다. (운영용으로 패키징하려면 `pip install -e .` + pyproject `[project]` 추가.)
@@ -136,41 +138,41 @@ docker compose up -d
 Then run the lakehouse slice:
 
 ```bash
-PYTHONPATH=src python -m robot_data_platform.pipeline.run
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run
 ```
 
 Useful options:
 
 ```bash
-PYTHONPATH=src python -m robot_data_platform.pipeline.run \
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run \
   --business-date 2026-06-29 \
-  --raw-path data/raw/manufacturing_robot_events.csv \
+  --raw-path data/raw/manufacturing_events.csv \
   --output-dir data/lakehouse
 ```
 
 For offline demos without MongoDB, use the JSON catalog backend:
 
 ```bash
-PYTHONPATH=src python -m robot_data_platform.pipeline.run --catalog-backend json
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run --catalog-backend json
 ```
 
 ## Run EAV mini CLI
 
 ```bash
-PYTHONPATH=src python -m robot_data_platform.pipeline.run_eav --catalog-backend json --output-dir data/lakehouse_eav
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run_eav --catalog-backend json --output-dir data/lakehouse_eav
 ```
 
 Synthetic inputs (`data/raw/eav/`) and mapping configs (`config/eav_mappings/`) are used automatically; missing synthetic inputs are generated from `sample_eav.py`. Re-running the same inputs for the same date is idempotent (`status="skipped"`). To add a new file format, drop one more `config/eav_mappings/<source>.json` (+ its CSV) — no code change.
 
 ## Airflow Wrapper
 
-`dags/robot_lakehouse_daily.py` defines `robot_lakehouse_daily` with a single `run_pipeline_task`. It calls:
+`dags/manufacturing_lakehouse_daily.py` defines `manufacturing_lakehouse_daily` with a single `run_pipeline_task`. It calls:
 
 ```bash
-PYTHONPATH=src python -m robot_data_platform.pipeline.run
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run
 ```
 
-The DAG can receive `business_date` and `raw_path` through `dag_run.conf` for manual backfill-style runs. The next split, if needed, is `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task`, but the logic should stay in `robot_data_platform.pipeline`, not inside the DAG body.
+The DAG can receive `business_date` and `raw_path` through `dag_run.conf` for manual backfill-style runs. The next split, if needed, is `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task`, but the logic should stay in `manufacturing_data_platform.pipeline`, not inside the DAG body.
 
 ## Test
 
@@ -182,9 +184,10 @@ Tests use `mongomock`, so they do not need a running MongoDB instance.
 
 ## Phase 1 Done Checklist
 
-- [ ] `docker compose up`으로 Mongo 실행
-- [ ] 샘플 CSV ingest 성공
-- [ ] `datasets`·`dataset_versions`에 document 생성
-- [ ] `source_hash`·`schema_hash`·`row_count`·`null_counts` 저장
-- [ ] `GET /datasets/{id}`로 확인 가능
-- [ ] README에 실행 명령 + 설계 결정 3개 설명
+- [x] 샘플 CSV ingest path test-covered with `mongomock`
+- [x] `datasets`·`dataset_versions` document creation test-covered
+- [x] `source_hash`·`schema_hash`·`row_count`·`null_counts` stored in the manifest/catalog model
+- [x] `GET /datasets/{id}` test-covered
+- [x] README에 실행 명령 + 설계 결정 3개 설명
+- [ ] `docker compose up`으로 real Mongo runtime 실행
+- [ ] real Mongo runtime에서 샘플 ingest/API 확인

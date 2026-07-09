@@ -4,8 +4,8 @@ from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from pymongo.database import Database
 
-from robot_data_platform.catalog import get_dataset, ingest_dataset, list_datasets
-from robot_data_platform.db import get_database
+from manufacturing_data_platform.catalog import get_dataset, ingest_dataset, list_datasets
+from manufacturing_data_platform.db import get_database
 
 
 class IngestRequest(BaseModel):
@@ -14,7 +14,7 @@ class IngestRequest(BaseModel):
 
 
 def create_app(db: Database | None = None) -> FastAPI:
-    app = FastAPI(title="robot-data-platform-mini", version="0.1.0")
+    app = FastAPI(title="manufacturing-data-platform-mini", version="0.1.0")
 
     def database_dependency() -> Database:
         return db if db is not None else get_database()

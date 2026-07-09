@@ -4,19 +4,19 @@
 
 ## Phase 1 v0 — MongoDB catalog gate
 
-This is the active scope. It closes the closest Robotis gap first: **NoSQL/MongoDB + metadata catalog**.
+This scope is implemented and test-covered, but still has a runtime verification gap. It closes the closest metadata-catalog gap first: **NoSQL/MongoDB + metadata catalog**.
 
-- [x] **MongoDB metadata catalog** — ingest a sensor-ish CSV and register `schema · row/null stats · source · ingested_at`.
+- [x] **MongoDB metadata catalog** — ingest a synthetic manufacturing-style CSV and register `schema · row/null stats · source · ingested_at`.
 - [x] **Version manifest** — `dataset_id · version · source_hash · schema_hash · ingested_at · row_count`.
 - [x] **FastAPI catalog endpoints** — `GET /datasets`, `GET /datasets/{id}`.
 - [x] **README design rationale** — architecture, tradeoffs, run commands, and Done checklist.
 - [ ] **Runtime Mongo verification** — `docker compose up` + real Mongo ingest. Blocked in this environment because Docker Desktop engine is unavailable.
 
-End of v0 = the catalog loop is implemented and test-covered. The cover-letter claim can move from "implementation started" to "catalog/version manifest implemented" after runtime Mongo is verified on a machine with Docker available.
+End of v0 for this environment = the catalog loop is implemented and test-covered with `mongomock`. The stronger runtime claim should wait until real MongoDB verification succeeds on a machine with Docker available.
 
 ## Phase 1 v0.5 — DaaS extract
 
-- [ ] `GET /datasets/{id}/extract?version=&columns=` — conditional extract for the Robotis DaaS keyword.
+- [ ] `GET /datasets/{id}/extract?version=&columns=` — conditional extract for the conditional extract keyword.
 
 ## Phase 1 v1 — orchestration polish
 
@@ -28,7 +28,7 @@ This is useful later, but not part of the current MongoDB/catalog gate.
 
 ### Slice 1 (implemented)
 - [x] **Slice 1 CLI** — synthetic manufacturing CSV -> bronze -> silver -> gold -> quality -> Mongo catalog/lineage.
-- [x] **Airflow wrapper** — `dags/robot_lakehouse_daily.py` triggers the CLI as an operational wrapper.
+- [x] **Airflow wrapper** — `dags/manufacturing_lakehouse_daily.py` triggers the CLI as an operational wrapper.
 
 ### Slice 1 hardening — NOW (implemented this pass)
 Goal: make the claims (data quality, schema drift, idempotency, transform/IO separation) actually true in code.

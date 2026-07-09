@@ -1,6 +1,6 @@
 # 시나리오 -> 상태 변화 지도
 
-이 문서는 코드 읽기 루프를 `robot-data-platform-mini`에 적용한 학습용 지도다.
+이 문서는 코드 읽기 루프를 `manufacturing-data-platform-mini`에 적용한 학습용 지도다.
 
 ```text
 시나리오 -> 상태 변화 -> 필요한 정보 -> 테이블/컬럼/파일 -> 함수/API
@@ -20,7 +20,7 @@
 
 ## 한 줄 시스템
 
-`robot-data-platform-mini`는 작은 데이터 플랫폼 slice다.
+`manufacturing-data-platform-mini`는 작은 데이터 플랫폼 slice다.
 
 ```text
 source files
@@ -187,7 +187,7 @@ Silver rows:
 - `plant_id`
 - `line_id`
 - `work_order_id`
-- `robot_id`
+- `machine_id`
 - `product_code`
 - `operation`
 - `units_produced`
@@ -224,7 +224,7 @@ Run/lineage doc:
 
 ### 함수 / CLI
 
-- `python -m robot_data_platform.pipeline.run`
+- `python -m manufacturing_data_platform.pipeline.run`
 - `run_lakehouse_pipeline`
 - `read_rows`
 - `build_paths`
@@ -478,7 +478,7 @@ Run/lineage doc:
 
 ### 함수 / CLI
 
-- `python -m robot_data_platform.pipeline.run_eav`
+- `python -m manufacturing_data_platform.pipeline.run_eav`
 - `run_eav_pipeline`
 - `ensure_sample_eav_inputs`
 - `load_sources`

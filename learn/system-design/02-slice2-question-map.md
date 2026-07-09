@@ -1,13 +1,17 @@
 # 02. Slice2 — Spark/Iceberg question map
 
 상태: 같이 검토할 초안
-프로젝트: `robot-data-platform-mini`
+프로젝트: `manufacturing-data-platform-mini`
 
 > 목적: Slice2에서 "무슨 질문들이 나올 수 있고, 각각 어디서/어떻게 풀리는가"를 먼저 넓게 펼친다.
 > 방식: `plastic-labs-honcho/learn/15-backend-question-map.md`와 같은 question-map. decision을 확정하기 전에 질문 지도를 먼저 그린다.
-> 짝 문서: [`03-slice2-spark-iceberg-shift.md`](03-slice2-spark-iceberg-shift.md) (무엇이 유지/바뀌나 + pressure 개요).
+> 짝 문서: [`04-slice2-spark-iceberg-shift.md`](04-slice2-spark-iceberg-shift.md) (무엇이 유지/바뀌나 + pressure 개요).
 
-이 문서가 Slice2 설계 대화의 중심이다. `00`은 질문을 만들기 위한 scenario seed이고, `03`은 질문을 state trace로 검증하기 위한 보조 지도다.
+이 문서가 Slice2 설계 대화의 중심이다. `01`은 질문을 만들기 위한 scenario seed이고, `04`는 질문을 state trace로 검증하기 위한 보조 지도다.
+
+감사 상태: **Claude / 외부 benchmark 기반 question map audit 필요.**
+
+이 문서는 Codex 단독 최종본이 아니다. 질문을 잘 뽑는 것이 설계 품질을 결정하므로, 구현 전에 반드시 다른 관점으로 빠진 질문/과한 질문/과장 위험을 감사한다.
 
 ---
 
@@ -70,6 +74,18 @@ questions:
   lineage에 어떤 snapshot id를 남겨야 하는가?
 ```
 
+```text
+scenario:
+  gold defect_rate가 이상해서 operator가 원인을 좁혀야 한다.
+
+questions:
+  gold row grain은 무엇인가?
+  latest successful run을 어떻게 찾는가?
+  quality check 중 어떤 fail/warn이 RCA에 유효한가?
+  lineage parent links로 gold -> silver -> bronze/source를 어떻게 역추적하나?
+  source_hash/schema_hash/reuse_count를 보고 data change와 retry를 어떻게 구분하나?
+```
+
 질문을 볼 때는 각 항목에 아래 태그를 붙인다.
 
 ```text
@@ -85,13 +101,13 @@ Unknown  walking skeleton이나 작은 테스트를 해봐야 답할 수 있다.
 
 | 영역 | Covered in |
 |---|---|
-| medallion bronze/silver/gold 흐름 | `lakehouse.py`, `00-system-scenario.md`, `01-source-contract.md` |
-| source/schema identity (`source_hash`, `schema_hash`) | `01-source-contract.md`, `reference-decisions/schema-drift.md` |
+| medallion bronze/silver/gold 흐름 | `lakehouse.py`, `01-scenario-seed.md`, `03-source-contract.md` |
+| source/schema identity (`source_hash`, `schema_hash`) | `03-source-contract.md`, `reference-decisions/schema-drift.md` |
 | schema drift detect + warn 정책 | `reference-decisions/schema-drift.md` |
 | idempotency (skip existing successful run) | `lakehouse.find_existing_successful_run`, `02` |
 | quality suite (dbt식 check dict) | `lakehouse.build_quality_checks` |
 | lineage (parent links, run record) | `lakehouse.build_lineage_doc` |
-| 무엇이 유지/바뀌나 + pressure 개요 | `03-slice2-spark-iceberg-shift.md` |
+| 무엇이 유지/바뀌나 + pressure 개요 | `04-slice2-spark-iceberg-shift.md` |
 
 즉 Slice2는 이 위에서 **엔진/저장소만** 바꾼다. 아래는 그때 새로 생기는 질문들이다.
 
@@ -108,9 +124,12 @@ shuffle                           (python sum -> Spark 분산 집계)
 Iceberg catalog config            (namespace/warehouse/catalog type)
 local Spark session               (pyspark 미설치 -> walking skeleton)
 schema evolve as table op         (detect만 -> add column 실제 수행)
+operator RCA path                 (gold metric -> run/source/quality/lineage evidence)
+gold grain contract               (row 하나의 의미를 먼저 고정)
+age freshness SLA                 (현재 freshness_business_date와 별도 backlog)
 ```
 
-> ★ run_id ≠ snapshot_id: `run_id`(파이프라인 실행)는 유지되고, table마다의 `snapshot_id`(commit)를 참조로 기록한다. 한 run이 silver/gold snapshot을 각각 만든다. 자세히는 [`03` §3.1](03-slice2-spark-iceberg-shift.md).
+> ★ run_id ≠ snapshot_id: `run_id`(파이프라인 실행)는 유지되고, table마다의 `snapshot_id`(commit)를 참조로 기록한다. 한 run이 silver/gold snapshot을 각각 만든다. 자세히는 [`04` §3.1](04-slice2-spark-iceberg-shift.md).
 
 ---
 
@@ -273,6 +292,43 @@ commit 안 된 실패 write는 어떻게 보이나(안 보이나)?
 
 볼 곳: → operability 노트 (대부분 v0 backlog일 가능성)
 
+### 14. Operator RCA path — suspicious gold metric
+
+```text
+gold 숫자가 이상하면 operator는 무엇을 어떤 순서로 조회하나?
+gold grain을 모르면 defect_rate 이상을 어떤 단위로 볼 수 있나?
+latest successful run과 source_hash/schema_hash는 어디에 남나?
+quality fail/warn 중 어떤 것이 원인 후보인가?
+lineage parent links는 gold -> silver -> bronze/source 역추적에 충분한가?
+reuse_count는 단순 retry와 새 입력 처리를 구분하는 데 도움이 되나?
+```
+
+볼 곳: `scenarios/02-operator-debugging-wrong-gold.md`, `../reference-decisions/gold-grain.md`, `lakehouse.build_lineage_doc`, `persist_catalog`
+
+분류:
+
+```text
+Core-design: walkthrough + doc contract
+Core-implementation candidate: read-only evidence report helper
+Backlog: OpenLineage backend, column-level lineage, UI
+```
+
+### 15. Freshness meaning — date validity vs age SLA
+
+```text
+현재 freshness_business_date는 dbt/DataHub식 "source가 몇 시간 이내에 도착했나"가 아니다.
+active business_date가 유효한 ISO date이고 gold가 그 날짜로 필터링됐는지 보는 partition/date guard다.
+이름이 freshness라서 age-based SLA로 오독될 수 있다.
+```
+
+분류:
+
+```text
+Core-doc: README와 decision notes에서 의미를 명시
+Backlog: source-arrival timestamp 기반 age freshness SLA
+Possible rename: active_business_date_validity
+```
+
 ---
 
 ## How To Use This Map
@@ -283,12 +339,41 @@ honcho 방식 그대로.
 1. scenario seed를 잡는다.
 2. 이 문서에서 scenario가 만드는 질문을 넓게 펼친다.
 3. 각 질문에 Core / Demo / Backlog / Unknown 태그를 붙인다.
-4. 03의 state trace에서 질문이 실제 어디서 발생하는지 확인한다.
-5. reference(Iceberg/Spark/dbt/playbook)의 답을 본다.
-6. Slice1에 이미 있는 contract와 연결한다.
-7. copy / simplify / avoid를 정한다.
-8. 그 결과를 reference-decisions/*.md(schema-drift.md 포맷)로 내려쓴다.
-9. test contract를 먼저 쓰고, 작은 구현으로 검증한다.
+4. Claude / 외부 benchmark로 question map audit을 받는다.
+5. 빠진 질문, 과한 질문, 과장 위험을 반영한다.
+6. 03의 state trace에서 질문이 실제 어디서 발생하는지 확인한다.
+7. reference(Iceberg/Spark/dbt/playbook)의 답을 본다.
+8. Slice1에 이미 있는 contract와 연결한다.
+9. copy / simplify / avoid를 정한다.
+10. 그 결과를 reference-decisions/*.md(schema-drift.md 포맷)로 내려쓴다.
+11. test contract를 먼저 쓰고, 작은 구현으로 검증한다.
+```
+
+## Claude Audit Prompt
+
+```text
+아래 문서를 구현 계획이 아니라 question map audit 대상으로 봐줘.
+
+목표:
+- Apache Spark / Apache Iceberg / lakehouse medallion / data quality / lineage 관점에서 빠진 설계 질문을 찾는다.
+- 잘 만든 프로젝트나 공식 문서의 관점과 비교한다.
+- 단, 구현 범위를 늘리지 말고 질문만 보강한다.
+- 각 피드백은 Core / Demo / Backlog / Unknown으로 분류한다.
+- v0에서 하지 말아야 할 것도 명시한다.
+
+볼 문서:
+- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/02-slice2-question-map.md
+- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/04-slice2-spark-iceberg-shift.md
+- /home/junhyun/dev/DECISION_LEARNING_PLAYBOOK.md
+
+출력 형식:
+1. 현재 question map에서 잘 잡힌 질문
+2. 빠진 질문
+3. 과한 질문
+4. Core로 올려야 할 질문
+5. Backlog로 내려야 할 질문
+6. README/면접에서 과장 위험이 있는 표현
+7. 수정 제안
 ```
 
 예:
@@ -316,11 +401,13 @@ honcho 방식 그대로.
 ## Suggested Next Deep Dives (순서)
 
 ```text
-0. walking skeleton (11)          먼저: pyspark+iceberg가 로컬에서 실제로 도는가
-1. iceberg-write-semantics (1,2,10)  append/overwrite/merge + idempotency 재해석 = Slice2의 심장
-2. partitioning-and-shuffle (3,4)    partition 선택 + shuffle 발생 지점(설명 가능성)
-3. schema-evolution (5)              detect -> evolve, 무엇을 허용/금지
-4. time-travel-snapshot (6)          real pressure 정하기(또는 demo로 표시) + 증명 test
+0. operator RCA path (14)            먼저: 기존 lineage/catalog claim을 walkthrough로 검증
+1. gold-grain contract               gold row의 의미를 문서/면접 claim으로 고정
+2. walking skeleton (11)             그 다음: pyspark+iceberg가 로컬에서 실제로 도는가
+3. iceberg-write-semantics (1,2,10)  append/overwrite/merge + idempotency 재해석 = Slice2의 심장
+4. partitioning-and-shuffle (3,4)    partition 선택 + shuffle 발생 지점(설명 가능성)
+5. schema-evolution (5)              detect -> evolve, 무엇을 허용/금지
+6. time-travel-snapshot (6)          real pressure 정하기(또는 demo로 표시) + 증명 test
 ```
 
 이 순서가 좋은 이유:

@@ -11,19 +11,19 @@ from uuid import uuid4
 
 from pymongo.database import Database
 
-from robot_data_platform.ingest import hash_file, hash_schema, infer_schema
-from robot_data_platform.pipeline.models import PipelinePaths, PipelineResult
-from robot_data_platform.pipeline.sample_data import ensure_sample_manufacturing_csv
+from manufacturing_data_platform.ingest import hash_file, hash_schema, infer_schema
+from manufacturing_data_platform.pipeline.models import PipelinePaths, PipelineResult
+from manufacturing_data_platform.pipeline.sample_data import ensure_sample_manufacturing_csv
 
 
-DATASET_ID = "manufacturing_robot_daily"
+DATASET_ID = "manufacturing_daily_metrics"
 
 REQUIRED_COLUMNS = [
     "event_time",
     "plant_id",
     "line_id",
     "work_order_id",
-    "robot_id",
+    "machine_id",
     "product_code",
     "operation",
     "units_produced",
@@ -33,7 +33,7 @@ REQUIRED_COLUMNS = [
 ]
 
 # The grain of a silver event. Used for dedup and for the uniqueness check.
-NATURAL_KEY_COLUMNS = ("work_order_id", "robot_id", "event_time")
+NATURAL_KEY_COLUMNS = ("work_order_id", "machine_id", "event_time")
 
 # accepted_values domain for the `operation` column (dbt accepted_values test).
 ACCEPTED_OPERATIONS = {
@@ -52,7 +52,7 @@ SCHEMA_DRIFT_POLICY = "warn"
 
 
 def run_lakehouse_pipeline(
-    raw_path: str | Path = "data/raw/manufacturing_robot_events.csv",
+    raw_path: str | Path = "data/raw/manufacturing_events.csv",
     output_dir: str | Path = "data/lakehouse",
     business_date: str | None = None,
     db: Database | None = None,
@@ -202,8 +202,8 @@ def build_paths(
     run_dir = base_dir / f"business_date={business_date}" / f"run_id={run_id}"
     return PipelinePaths(
         raw_path=source_path,
-        bronze_path=run_dir / "bronze" / "manufacturing_robot_events.csv",
-        silver_path=run_dir / "silver" / "manufacturing_robot_events.csv",
+        bronze_path=run_dir / "bronze" / "manufacturing_events.csv",
+        silver_path=run_dir / "silver" / "manufacturing_events.csv",
         gold_path=run_dir / "gold" / "daily_line_metrics.csv",
         quality_path=run_dir / "quality" / "quality_report.json",
         manifest_path=run_dir / "manifest.json",
@@ -255,7 +255,7 @@ def transform_silver(
     for row in rows:
         if row["business_date"] != business_date:
             continue
-        key = (row["work_order_id"], row["robot_id"], row["event_time"])
+        key = (row["work_order_id"], row["machine_id"], row["event_time"])
         if key in seen_keys:
             continue
         seen_keys.add(key)
@@ -266,7 +266,7 @@ def transform_silver(
                 "plant_id": row["plant_id"].strip().lower(),
                 "line_id": row["line_id"].strip().lower(),
                 "work_order_id": row["work_order_id"].strip().lower(),
-                "robot_id": row["robot_id"].strip().lower(),
+                "machine_id": row["machine_id"].strip().lower(),
                 "product_code": row["product_code"].strip().lower(),
                 "operation": row["operation"].strip().lower(),
                 "units_produced": int(row["units_produced"]),

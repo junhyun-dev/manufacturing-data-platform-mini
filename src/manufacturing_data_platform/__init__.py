@@ -1,4 +1,4 @@
-"""Mini robot data platform package."""
+"""Mini manufacturing data platform package."""
 
 __all__ = ["__version__"]
 

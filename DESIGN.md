@@ -1,4 +1,4 @@
-# DESIGN — robot-data-platform-mini (v0)
+# DESIGN — manufacturing-data-platform-mini (v0)
 
 > "제대로 참고해서 만든" 설계. **결정 + 왜**를 남긴다(= 면접에서 보여줄 핵심).
 > 참고(사례집): **honcho**(서비스 골격), **OpenMetadata/DataHub**(카탈로그 데이터 모델), **DVC·OpenLineage**(버전·lineage).
@@ -108,7 +108,7 @@ synthetic manufacturing CSV -> bronze -> silver -> gold -> quality -> Mongo cata
 ```
 
 Design decisions:
-- Pipeline logic lives under `robot_data_platform.pipeline` and is executable by CLI.
+- Pipeline logic lives under `manufacturing_data_platform.pipeline` and is executable by CLI.
 - Airflow is only the operational wrapper: schedule, retry, timeout, date parameters, and manual trigger config.
 - `business_date` is explicit and can come from CLI args or Airflow `dag_run.conf`.
 - `source_hash` and `schema_hash` are the idempotency/drift primitives.

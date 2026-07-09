@@ -28,7 +28,7 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 
 ### Slice 1 (구현 완료)
 - [x] **Slice 1 CLI** — 합성 manufacturing CSV → bronze → silver → gold → quality → Mongo catalog/lineage.
-- [x] **Airflow wrapper** — `dags/robot_lakehouse_daily.py`가 CLI를 운영 wrapper로 trigger.
+- [x] **Airflow wrapper** — `dags/manufacturing_lakehouse_daily.py`가 CLI를 운영 wrapper로 trigger.
 
 ### Slice 1 hardening — NOW (이번 pass에서 구현)
 목표: 주장(data quality, schema drift, idempotency, transform/IO 분리)을 코드에서 실제로 참으로 만든다.

@@ -5,7 +5,7 @@ import os
 @dataclass(frozen=True)
 class Settings:
     mongo_uri: str = "mongodb://localhost:27017"
-    mongo_db: str = "robot_data_platform"
+    mongo_db: str = "manufacturing_data_platform"
 
 
 def get_settings() -> Settings:

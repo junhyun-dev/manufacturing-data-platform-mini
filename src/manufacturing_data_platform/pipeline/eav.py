@@ -22,8 +22,8 @@ from pathlib import Path
 
 from pymongo.database import Database
 
-from robot_data_platform.ingest import hash_file, read_csv
-from robot_data_platform.pipeline.lakehouse import (
+from manufacturing_data_platform.ingest import hash_file, read_csv
+from manufacturing_data_platform.pipeline.lakehouse import (
     build_run_id,
     build_schema_drift_check,
     find_existing_successful_run,
@@ -35,7 +35,7 @@ from robot_data_platform.pipeline.lakehouse import (
     write_csv,
     write_quality_report,
 )
-from robot_data_platform.pipeline.sample_eav import ensure_sample_eav_inputs
+from manufacturing_data_platform.pipeline.sample_eav import ensure_sample_eav_inputs
 
 
 DATASET_ID = "manufacturing_wide_eav"

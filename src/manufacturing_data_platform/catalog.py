@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pymongo.database import Database
 
-from robot_data_platform.ingest import IngestedFile, inspect_csv
+from manufacturing_data_platform.ingest import IngestedFile, inspect_csv
 
 
 CATALOG_SCHEMA_VERSION = 1

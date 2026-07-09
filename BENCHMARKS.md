@@ -16,7 +16,7 @@ uses fully synthetic manufacturing data.
 | Reference | What we take | Where it lives in this repo |
 |---|---|---|
 | **Databricks Medallion architecture** (bronze/silver/gold) | raw → cleaned/typed → aggregated mart layering | `pipeline/lakehouse.py` (`write_bronze`, `transform_silver`, `transform_gold`) |
-| **Apache Airflow Best Practices** | task = retryable transaction; derive the window from `business_date`/`data_interval`, never from `now()`; no heavy top-level code; logic outside the DAG | `dags/robot_lakehouse_daily.py` (thin wrapper only), `business_date` passed via `dag_run.conf` / `ds` |
+| **Apache Airflow Best Practices** | task = retryable transaction; derive the window from `business_date`/`data_interval`, never from `now()`; no heavy top-level code; logic outside the DAG | `dags/manufacturing_lakehouse_daily.py` (thin wrapper only), `business_date` passed via `dag_run.conf` / `ds` |
 | **Apache Iceberg** (partitioning, schema evolution, snapshots) | partition by `business_date`; treat schema change as evolution, not breakage; idempotent overwrite of a partition | partition layout in `build_paths`; `schema_drift` check (policy = `warn`); idempotency gate. *Engine itself = backlog.* |
 | **OpenLineage** (run / job / dataset model) | a run record with input → output datasets and parent layers | `lineage_events` + `lakehouse_runs` docs (`layers[].parents`). *Vocabulary borrowed; full facet spec + backend = backlog.* |
 | **dbt generic tests** (`not_null`, `unique`, `accepted_values`, relationships) | the **names and shape** of the quality assertions | `build_quality_checks` — `not_null_required_columns`, `unique_natural_key`, `accepted_values_operation`, plus reconciliation/range/freshness |

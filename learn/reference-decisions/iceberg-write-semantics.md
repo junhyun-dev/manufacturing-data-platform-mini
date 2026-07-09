@@ -1,16 +1,18 @@
 # Iceberg Write Semantics 의사결정 노트
 
 상태: 같이 검토할 초안
-프로젝트: `robot-data-platform-mini`
+프로젝트: `manufacturing-data-platform-mini`
+
+> **STATUS: design-only.** 이 repo에는 아직 Spark/Iceberg 구현 코드가 없고, `pyspark`도 설치되어 있지 않다. 이 노트는 write semantics decision draft이며 구현 evidence가 아니다.
 
 이 노트는 Slice2에서 "table에 write를 어떻게 commit하나"를 다룬다. `02-slice2-question-map.md`의 #1(ACID) + #2(write semantics) + #10(idempotency)을 하나로 수렴한다. 이게 Slice2의 심장이다.
 
 관련 문서/코드:
 
-- [`../system-design/03-slice2-spark-iceberg-shift.md`](../system-design/03-slice2-spark-iceberg-shift.md) (§3.1 run_id≠snapshot_id, §3.2 layer 모델)
+- [`../system-design/04-slice2-spark-iceberg-shift.md`](../system-design/04-slice2-spark-iceberg-shift.md) (§3.1 run_id≠snapshot_id, §3.2 layer 모델)
 - [`../system-design/02-slice2-question-map.md`](../system-design/02-slice2-question-map.md)
 - [`schema-drift.md`](schema-drift.md) (같은 포맷의 exemplar)
-- `src/robot_data_platform/pipeline/lakehouse.py` (`find_existing_successful_run`, `persist_catalog`)
+- `src/manufacturing_data_platform/pipeline/lakehouse.py` (`find_existing_successful_run`, `persist_catalog`)
 
 ## 1. 시나리오
 

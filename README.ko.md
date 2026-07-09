@@ -1,10 +1,10 @@
-# robot-data-platform-mini 한국어판
+# manufacturing-data-platform-mini 한국어판
 
 원문: [`README.md`](README.md)
 
 ## 한 줄 요약
 
-synthetic manufacturing/robot-ish CSV를 ingest해서 bronze -> silver -> gold -> quality -> catalog/lineage -> dataset version manifest까지 이어지는 작은 data platform slice다.
+synthetic manufacturing-ish CSV를 ingest해서 bronze -> silver -> gold -> quality -> catalog/lineage -> dataset version manifest까지 이어지는 작은 data platform slice다.
 
 ```text
 CSV

@@ -3,8 +3,8 @@ from pathlib import Path
 
 import mongomock
 
-from robot_data_platform.db import ensure_indexes
-from robot_data_platform.pipeline.lakehouse import (
+from manufacturing_data_platform.db import ensure_indexes
+from manufacturing_data_platform.pipeline.lakehouse import (
     DATASET_ID,
     build_schema_drift_check,
     run_lakehouse_pipeline,
@@ -14,13 +14,13 @@ from robot_data_platform.pipeline.lakehouse import (
 
 
 HEADER = (
-    "event_time,plant_id,line_id,work_order_id,robot_id,product_code,"
+    "event_time,plant_id,line_id,work_order_id,machine_id,product_code,"
     "operation,units_produced,defect_count,cycle_time_ms,business_date"
 )
 
 
 def _mongo():
-    db = mongomock.MongoClient()["test_robot_data_platform"]
+    db = mongomock.MongoClient()["test_manufacturing_data_platform"]
     ensure_indexes(db)
     return db
 
@@ -40,12 +40,12 @@ def _check(result, name):
 # --------------------------------------------------------------------------- #
 def test_transform_silver_filters_other_dates_and_dedups():
     rows = [
-        {"event_time": "t1", "business_date": "2026-06-29", "plant_id": "plant-a", "line_id": "line-1", "work_order_id": "wo-1", "robot_id": "rb-1", "product_code": "p", "operation": "assembly", "units_produced": "10", "defect_count": "1", "cycle_time_ms": "100"},
+        {"event_time": "t1", "business_date": "2026-06-29", "plant_id": "plant-a", "line_id": "line-1", "work_order_id": "wo-1", "machine_id": "mc-1", "product_code": "p", "operation": "assembly", "units_produced": "10", "defect_count": "1", "cycle_time_ms": "100"},
         # exact natural-key duplicate -> dropped
-        {"event_time": "t1", "business_date": "2026-06-29", "plant_id": "plant-a", "line_id": "line-1", "work_order_id": "wo-1", "robot_id": "rb-1", "product_code": "p", "operation": "assembly", "units_produced": "10", "defect_count": "1", "cycle_time_ms": "100"},
-        {"event_time": "t2", "business_date": "2026-06-29", "plant_id": "plant-a", "line_id": "line-1", "work_order_id": "wo-2", "robot_id": "rb-2", "product_code": "p", "operation": "assembly", "units_produced": "20", "defect_count": "0", "cycle_time_ms": "120"},
+        {"event_time": "t1", "business_date": "2026-06-29", "plant_id": "plant-a", "line_id": "line-1", "work_order_id": "wo-1", "machine_id": "mc-1", "product_code": "p", "operation": "assembly", "units_produced": "10", "defect_count": "1", "cycle_time_ms": "100"},
+        {"event_time": "t2", "business_date": "2026-06-29", "plant_id": "plant-a", "line_id": "line-1", "work_order_id": "wo-2", "machine_id": "mc-2", "product_code": "p", "operation": "assembly", "units_produced": "20", "defect_count": "0", "cycle_time_ms": "120"},
         # different business_date -> filtered out
-        {"event_time": "t3", "business_date": "2026-06-28", "plant_id": "plant-a", "line_id": "line-1", "work_order_id": "wo-3", "robot_id": "rb-3", "product_code": "p", "operation": "assembly", "units_produced": "30", "defect_count": "0", "cycle_time_ms": "130"},
+        {"event_time": "t3", "business_date": "2026-06-28", "plant_id": "plant-a", "line_id": "line-1", "work_order_id": "wo-3", "machine_id": "mc-3", "product_code": "p", "operation": "assembly", "units_produced": "30", "defect_count": "0", "cycle_time_ms": "130"},
     ]
     silver = transform_silver(rows, "2026-06-29", "hash")
     assert len(silver) == 2
@@ -57,8 +57,8 @@ def test_transform_silver_filters_other_dates_and_dedups():
 def test_transform_gold_conserves_units_and_defects():
     silver = transform_silver(
         [
-            {"event_time": "t1", "business_date": "d", "plant_id": "a", "line_id": "1", "work_order_id": "w1", "robot_id": "r1", "product_code": "p", "operation": "assembly", "units_produced": "10", "defect_count": "1", "cycle_time_ms": "100"},
-            {"event_time": "t2", "business_date": "d", "plant_id": "a", "line_id": "1", "work_order_id": "w2", "robot_id": "r2", "product_code": "p", "operation": "assembly", "units_produced": "20", "defect_count": "2", "cycle_time_ms": "200"},
+            {"event_time": "t1", "business_date": "d", "plant_id": "a", "line_id": "1", "work_order_id": "w1", "machine_id": "mc-1", "product_code": "p", "operation": "assembly", "units_produced": "10", "defect_count": "1", "cycle_time_ms": "100"},
+            {"event_time": "t2", "business_date": "d", "plant_id": "a", "line_id": "1", "work_order_id": "w2", "machine_id": "mc-2", "product_code": "p", "operation": "assembly", "units_produced": "20", "defect_count": "2", "cycle_time_ms": "200"},
         ],
         "d",
         "h",
@@ -96,11 +96,11 @@ def test_quality_suite_passes_on_synthetic_sample(tmp_path):
 
 def test_quality_reconciliation_distinguishes_filtering_from_loss(tmp_path):
     rows = [
-        "2026-06-29T08:00:00Z,plant-a,line-1,wo-1,rb-1,gearbox-a,assembly,10,1,100,2026-06-29",
-        "2026-06-29T08:00:00Z,plant-a,line-1,wo-1,rb-1,gearbox-a,assembly,10,1,100,2026-06-29",  # dup
-        "2026-06-29T09:00:00Z,plant-a,line-1,wo-2,rb-2,gearbox-a,assembly,20,0,120,2026-06-29",
-        "2026-06-29T10:00:00Z,plant-a,line-2,wo-3,rb-3,motor-b,assembly,30,2,130,2026-06-29",
-        "2026-06-28T08:00:00Z,plant-a,line-1,wo-0,rb-1,gearbox-a,assembly,99,0,100,2026-06-28",  # other date
+        "2026-06-29T08:00:00Z,plant-a,line-1,wo-1,mc-1,gearbox-a,assembly,10,1,100,2026-06-29",
+        "2026-06-29T08:00:00Z,plant-a,line-1,wo-1,mc-1,gearbox-a,assembly,10,1,100,2026-06-29",  # dup
+        "2026-06-29T09:00:00Z,plant-a,line-1,wo-2,mc-2,gearbox-a,assembly,20,0,120,2026-06-29",
+        "2026-06-29T10:00:00Z,plant-a,line-2,wo-3,mc-3,motor-b,assembly,30,2,130,2026-06-29",
+        "2026-06-28T08:00:00Z,plant-a,line-1,wo-0,mc-1,gearbox-a,assembly,99,0,100,2026-06-28",  # other date
     ]
     raw = _write_csv(tmp_path / "raw" / "m.csv", rows)
     result = run_lakehouse_pipeline(
@@ -118,7 +118,7 @@ def test_quality_reconciliation_distinguishes_filtering_from_loss(tmp_path):
 
 
 def test_quality_fails_on_accepted_values_violation(tmp_path):
-    rows = ["2026-06-29T08:00:00Z,plant-a,line-1,wo-1,rb-1,gearbox-a,teleport,10,1,100,2026-06-29"]
+    rows = ["2026-06-29T08:00:00Z,plant-a,line-1,wo-1,mc-1,gearbox-a,teleport,10,1,100,2026-06-29"]
     raw = _write_csv(tmp_path / "raw" / "m.csv", rows)
     result = run_lakehouse_pipeline(
         raw_path=raw, output_dir=tmp_path / "lh", business_date="2026-06-29", catalog_backend="json"
@@ -131,7 +131,7 @@ def test_quality_fails_on_accepted_values_violation(tmp_path):
 
 def test_quality_fails_on_numeric_range_violation(tmp_path):
     # defect_count (20) > units_produced (10)
-    rows = ["2026-06-29T08:00:00Z,plant-a,line-1,wo-1,rb-1,gearbox-a,assembly,10,20,100,2026-06-29"]
+    rows = ["2026-06-29T08:00:00Z,plant-a,line-1,wo-1,mc-1,gearbox-a,assembly,10,20,100,2026-06-29"]
     raw = _write_csv(tmp_path / "raw" / "m.csv", rows)
     result = run_lakehouse_pipeline(
         raw_path=raw, output_dir=tmp_path / "lh", business_date="2026-06-29", catalog_backend="json"
@@ -143,7 +143,7 @@ def test_quality_fails_on_numeric_range_violation(tmp_path):
 
 def test_quality_fails_on_not_null_violation(tmp_path):
     # empty plant_id (a string field, so no cast crash) -> not_null fail
-    rows = ["2026-06-29T08:00:00Z,,line-1,wo-1,rb-1,gearbox-a,assembly,10,1,100,2026-06-29"]
+    rows = ["2026-06-29T08:00:00Z,,line-1,wo-1,mc-1,gearbox-a,assembly,10,1,100,2026-06-29"]
     raw = _write_csv(tmp_path / "raw" / "m.csv", rows)
     result = run_lakehouse_pipeline(
         raw_path=raw, output_dir=tmp_path / "lh", business_date="2026-06-29", catalog_backend="json"
@@ -156,7 +156,7 @@ def test_quality_fails_on_not_null_violation(tmp_path):
 
 def test_quality_fails_on_unparseable_business_date(tmp_path):
     # freshness check also guards that the active partition is a valid ISO date
-    rows = ["2026-06-29T08:00:00Z,plant-a,line-1,wo-1,rb-1,gearbox-a,assembly,10,1,100,not-a-date"]
+    rows = ["2026-06-29T08:00:00Z,plant-a,line-1,wo-1,mc-1,gearbox-a,assembly,10,1,100,not-a-date"]
     raw = _write_csv(tmp_path / "raw" / "m.csv", rows)
     result = run_lakehouse_pipeline(
         raw_path=raw, output_dir=tmp_path / "lh", business_date="not-a-date", catalog_backend="json"
@@ -212,7 +212,7 @@ def test_schema_stable_when_schema_unchanged_across_dates(tmp_path):
         catalog_backend="mongo",
     )
     # Same schema, different date + different source content -> not skipped, stable.
-    rows = ["2026-06-28T08:00:00Z,plant-a,line-1,wo-9,rb-9,gearbox-a,assembly,10,1,100,2026-06-28"]
+    rows = ["2026-06-28T08:00:00Z,plant-a,line-1,wo-9,mc-9,gearbox-a,assembly,10,1,100,2026-06-28"]
     raw2 = _write_csv(tmp_path / "raw2" / "m.csv", rows)
     second = run_lakehouse_pipeline(
         raw_path=raw2,
@@ -238,7 +238,7 @@ def test_schema_drift_warns_on_added_column(tmp_path):
     raw2.parent.mkdir(parents=True)
     raw2.write_text(
         HEADER + ",operator_id\n"
-        "2026-06-28T08:00:00Z,plant-a,line-1,wo-9,rb-9,gearbox-a,assembly,10,1,100,2026-06-28,op-1\n",
+        "2026-06-28T08:00:00Z,plant-a,line-1,wo-9,mc-9,gearbox-a,assembly,10,1,100,2026-06-28,op-1\n",
         encoding="utf-8",
     )
     second = run_lakehouse_pipeline(
@@ -287,7 +287,7 @@ def test_changed_source_same_date_creates_new_run_mongo(tmp_path):
     first = run_lakehouse_pipeline(
         raw_path=tmp_path / "raw" / "m.csv", output_dir=out, db=db, catalog_backend="mongo"
     )
-    rows = ["2026-06-29T08:00:00Z,plant-a,line-1,wo-1001,rb-101,gearbox-a,assembly,121,2,840,2026-06-29"]
+    rows = ["2026-06-29T08:00:00Z,plant-a,line-1,wo-1001,mc-101,gearbox-a,assembly,121,2,840,2026-06-29"]
     raw2 = _write_csv(tmp_path / "raw2" / "m.csv", rows)
     second = run_lakehouse_pipeline(
         raw_path=raw2, output_dir=out, business_date="2026-06-29", db=db, catalog_backend="mongo"

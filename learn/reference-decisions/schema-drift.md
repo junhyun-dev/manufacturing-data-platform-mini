@@ -1,13 +1,13 @@
 # Schema Drift 의사결정 노트
 
 상태: 같이 검토할 초안  
-프로젝트: `robot-data-platform-mini`
+프로젝트: `manufacturing-data-platform-mini`
 
 관련 문서/코드:
 
 - [`README.md`](../../README.md)
 - [`DESIGN.md`](../../DESIGN.md)
-- [`src/robot_data_platform/pipeline/lakehouse.py`](../../src/robot_data_platform/pipeline/lakehouse.py)
+- [`src/manufacturing_data_platform/pipeline/lakehouse.py`](../../src/manufacturing_data_platform/pipeline/lakehouse.py)
 - [`tests/test_lakehouse_pipeline.py`](../../tests/test_lakehouse_pipeline.py)
 
 ## 1. 시나리오
@@ -30,14 +30,14 @@ raw CSV
 기존 header:
 
 ```text
-event_time,plant_id,line_id,work_order_id,robot_id,product_code,
+event_time,plant_id,line_id,work_order_id,machine_id,product_code,
 operation,units_produced,defect_count,cycle_time_ms,business_date
 ```
 
 새 header:
 
 ```text
-event_time,plant_id,line_id,work_order_id,robot_id,product_code,
+event_time,plant_id,line_id,work_order_id,machine_id,product_code,
 operation,units_produced,defect_count,cycle_time_ms,business_date,operator_id
 ```
 

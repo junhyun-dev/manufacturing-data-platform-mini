@@ -1,6 +1,6 @@
 # Reference Decision Notes
 
-이 폴더는 `robot-data-platform-mini`를 공부하면서 상용 서비스/OSS의 의사결정을 작은 local contract로 바꾸는 학습 노트다.
+이 폴더는 `manufacturing-data-platform-mini`를 공부하면서 상용 서비스/OSS의 의사결정을 작은 local contract로 바꾸는 학습 노트다.
 
 읽는 방식:
 

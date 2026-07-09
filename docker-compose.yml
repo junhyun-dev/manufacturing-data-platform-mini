@@ -1,7 +1,7 @@
 services:
   mongo:
     image: mongo:7
-    container_name: robot-data-platform-mini-mongo
+    container_name: manufacturing-data-platform-mini-mongo
     ports:
       - "27017:27017"
     volumes:
