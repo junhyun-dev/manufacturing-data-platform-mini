@@ -10,7 +10,7 @@ This is a personal learning and portfolio project. It uses only synthetic data a
 
 This repo is intended as a market-recognizable data engineering proof: metadata cataloging, medallion-style pipelines, data quality checks, lineage/catalog records, and reproducible dataset versioning.
 
-The architecture source of truth for this project lives in this public repo: `README.md`, `DESIGN.md`, `ROADMAP.md`, `BENCHMARKS.md`, and tests.
+The architecture source of truth for this project lives in this public repo: `README.md`, `PROJECT_PROGRESS_MAP.md`, `DESIGN.md`, `ROADMAP.md`, `BENCHMARKS.md`, and tests.
 
 This repo exists to close a concrete data-platform gap: **NoSQL/MongoDB-style metadata catalog + dataset version manifest + quality/lineage evidence**. The data is synthetic manufacturing-style CSV, not real ROS2 bag / MCAP / Jetson data. Until a machine/session source slice exists, describe this externally as a **manufacturing-style/tabular mini data platform**, not a production manufacturing data platform. The point is the platform loop, kept deliberately small.
 
