@@ -326,3 +326,37 @@ Notes:
 
 - This closes the first operator-debugging/RCA walkthrough without adding Spark/Iceberg scope.
 - Next portfolio artifact can be B4: gold 숫자가 이상할 때 source_hash, quality, lineage로 원인 좁히기.
+
+## 2026-07-10 — B2 schema drift publication evidence check
+
+Scope:
+
+- Verify the code/test evidence behind the B2 schema drift blog draft.
+- Confirm the public claim boundary: actual-header `schema_hash`, `schema_drift=warn`, required-column fast failure, no Iceberg/Delta schema evolution implementation.
+
+Commands:
+
+```bash
+pytest
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run --catalog-backend json --output-dir /tmp/manufacturing-mini-b2-schema-drift-check
+```
+
+Results:
+
+```text
+pytest: 35 passed
+lakehouse JSON CLI: passed, status=processed, quality_passed=true
+```
+
+Verified:
+
+- [x] `test_schema_drift_helper_states` covers baseline/stable/warn helper states.
+- [x] `test_schema_drift_warns_against_previous_successful_run` covers warn policy without failing the run.
+- [x] `test_schema_stable_when_schema_unchanged_across_dates` covers stable schema across different source content/date.
+- [x] `test_schema_drift_warns_on_added_column` covers the actual-header bug fix for added columns such as `operator_id`.
+- [x] B2 blog wording keeps Iceberg/Delta schema evolution as design-only / future direction.
+
+Notes:
+
+- This is a publication evidence check, not a new feature slice.
+- Current missing required-column behavior is `ValueError` fast failure, not a structured quality report.
