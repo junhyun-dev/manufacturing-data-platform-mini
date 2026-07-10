@@ -360,3 +360,42 @@ Notes:
 
 - This is a publication evidence check, not a new feature slice.
 - Current missing required-column behavior is `ValueError` fast failure, not a structured quality report.
+
+## 2026-07-10 — B3 EAV publication evidence check
+
+Scope:
+
+- Verify the code/test evidence behind the B3 wide CSV -> EAV -> gold blog draft.
+- Confirm the public claim boundary: clean-room synthetic data, config-driven mapping, no company/customer schemas, no Spark/Iceberg/Kafka implementation in this slice.
+
+Commands:
+
+```bash
+pytest
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run_eav --catalog-backend json --output-dir /tmp/manufacturing-mini-b3-eav-check
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run_eav --catalog-backend json --output-dir /tmp/manufacturing-mini-b3-eav-check
+```
+
+Results:
+
+```text
+pytest: 35 passed
+EAV JSON CLI run 1: status=processed, quality_passed=true, dataset_id=manufacturing_wide_eav
+EAV JSON CLI run 2: status=skipped, quality_passed=true, dataset_id=manufacturing_wide_eav
+gold_rows=4, gold_units_total=540, gold_defects_total=12
+lineage_layers=bronze -> silver_eav -> gold
+```
+
+Verified:
+
+- [x] `test_transform_to_eav_maps_and_converts_units` covers deterministic unit conversion.
+- [x] `test_transform_to_eav_captures_type_errors_gracefully` covers bad-value capture as quality evidence, not transform crash.
+- [x] `test_transform_eav_to_gold_aggregates_sum_and_avg` covers sum/average rollups.
+- [x] `test_eav_run_passes_and_unifies_three_formats` covers the 3-format synthetic sample and conservation.
+- [x] `test_new_format_is_onboarded_by_adding_one_config` covers adding `vendor_d.csv` + `vendor_d.json` without pipeline code change.
+- [x] `test_eav_idempotent_rerun_is_skipped` covers repeat-run idempotency.
+
+Notes:
+
+- `source_file_id` is each file-content hash; run-level idempotency uses the combined `source_hash` across source files.
+- This is publication evidence for B3, not a new feature slice.
