@@ -104,12 +104,12 @@ Korean headers / English headers / mixed units
 ## 읽는 순서
 
 1. 이 파일
-2. [`DESIGN.ko.md`](DESIGN.ko.md)
-3. [`docs/scenario-state-map.md`](docs/scenario-state-map.md)
-4. [`BENCHMARKS.ko.md`](BENCHMARKS.ko.md)
-5. [`ROADMAP.ko.md`](ROADMAP.ko.md)
+2. [`PROJECT_PROGRESS_MAP.ko.md`](PROJECT_PROGRESS_MAP.ko.md)
+3. [`DESIGN.ko.md`](DESIGN.ko.md)
+4. [`docs/scenario-state-map.md`](docs/scenario-state-map.md)
+5. [`BENCHMARKS.ko.md`](BENCHMARKS.ko.md)
+6. [`ROADMAP.ko.md`](ROADMAP.ko.md)
 
 ## 면접 답변용 설명
 
 이 프로젝트는 synthetic CSV를 bronze/silver/gold로 처리하고, quality check와 schema drift, idempotent rerun, catalog/lineage 기록까지 남기는 작은 data platform입니다. 핵심은 단순 ETL이 아니라 운영자가 재처리, drift, 품질 실패, lineage를 inspect할 수 있는 metadata surface를 만든 점입니다.
-

@@ -1,5 +1,7 @@
 # Project Progress Map
 
+Korean version: [`PROJECT_PROGRESS_MAP.ko.md`](PROJECT_PROGRESS_MAP.ko.md)
+
 This document is the one-screen map for `manufacturing-data-platform-mini`.
 Use it before opening the deeper design notes.
 
@@ -192,4 +194,3 @@ build thesis
 -> verification log
 -> blog/resume claim boundary
 ```
-
