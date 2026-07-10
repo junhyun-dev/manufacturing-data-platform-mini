@@ -156,6 +156,18 @@ For offline demos without MongoDB, use the JSON catalog backend:
 PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run --catalog-backend json
 ```
 
+## Inspect Operator Evidence
+
+After a JSON-backed lakehouse run, inspect the run/source/quality/lineage evidence for one `business_date`:
+
+```bash
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.operator_report \
+  --output-dir data/lakehouse \
+  --business-date 2026-06-29
+```
+
+This is a read-only operator report. It summarizes the gold row grain, `run_id`, `source_hash`, `schema_hash`, quality check status, row counts, and the path-level lineage trace (`gold -> silver -> bronze -> source`). It does not claim column-level lineage or an OpenLineage backend.
+
 ## Run EAV mini CLI
 
 ```bash

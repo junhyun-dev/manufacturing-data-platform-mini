@@ -21,6 +21,7 @@ rg -n -i "(api[_-]?key|access[_-]?key|secret|token|password|passwd|private[_-]?k
 rg -n -i "(personal path|private email|private company name|customer name|internal path)" --glob '!**/.venv/**' --glob '!**/__pycache__/**' --glob '!**/.pytest_cache/**' --glob '!PUBLICATION_CHECKLIST.md' .
 pytest
 PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run --catalog-backend json --output-dir /tmp/manufacturing-mini-publication-cli
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.operator_report --output-dir /tmp/manufacturing-mini-publication-cli --business-date 2026-06-29
 PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run_eav --catalog-backend json --output-dir /tmp/manufacturing-mini-publication-eav-cli
 ```
 
@@ -30,6 +31,7 @@ Expected:
 - Personal path/name scan returns no public-facing leakage.
 - Tests pass.
 - JSON CLI path succeeds.
+- Operator evidence report CLI path succeeds.
 - EAV JSON CLI path succeeds.
 
 ## Not Public

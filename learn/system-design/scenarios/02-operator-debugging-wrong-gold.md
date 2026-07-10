@@ -1,6 +1,6 @@
 # 02. Scenario Walkthrough — gold 숫자가 이상할 때 원인 추적
 
-상태: next slice design / existing evidence exercise
+상태: implemented read-only helper / existing evidence exercise
 
 목적: 이 프로젝트의 catalog/lineage claim을 "문서상 존재"가 아니라 operator가 실제로 따라갈 수 있는 RCA path로 검증한다.
 
@@ -79,7 +79,36 @@ interactive lineage UI
 production incident workflow
 ```
 
-## Test / Implementation Candidate
+## Implemented Helper
+
+Command:
+
+```bash
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.operator_report \
+  --output-dir data/lakehouse \
+  --business-date 2026-06-29
+```
+
+Implemented evidence:
+
+```text
+src/manufacturing_data_platform/pipeline/operator_report.py
+tests/test_operator_report.py
+```
+
+The helper reads the JSON catalog state for a successful `business_date` and returns:
+
+```text
+gold grain
+run_id
+source_hash
+schema_hash
+quality status summary
+lineage path chain: gold -> silver -> bronze -> source
+claim boundary
+```
+
+## Test Contract
 
 Small next slice:
 

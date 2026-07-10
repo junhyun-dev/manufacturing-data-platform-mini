@@ -215,7 +215,7 @@ Scope:
 Commands:
 
 ```bash
-rg -n "00-system-scenario|01-source-contract|02-source-contract|01-slice2-question-map|03-slice2-spark-iceberg-shift|04-iceberg-spark-mini-primer" learn README.md /home/junhyun/dev/blog-drafts/README.md /home/junhyun/dev/PORTFOLIO_PUBLICATION_LEDGER.md
+rg -n "00-system-scenario|01-source-contract|02-source-contract|01-slice2-question-map|03-slice2-spark-iceberg-shift|04-iceberg-spark-mini-primer" learn README.md <local blog drafts README> <local publication ledger>
 pytest
 ```
 
@@ -289,3 +289,40 @@ Notes:
 
 - This was a naming/claim-boundary correction, not a new feature.
 - Existing DEV.to B1 draft URL was created before this rename; update or recreate the external draft before publishing.
+
+## 2026-07-10 — Operator evidence report slice
+
+Scope:
+
+- Implement a read-only operator report over the JSON catalog state.
+- Exercise the existing catalog/lineage/quality evidence for a suspicious gold metric scenario.
+- Keep the claim boundary explicit: path-level lineage only, not column-level lineage or OpenLineage integration.
+
+Commands:
+
+```bash
+pytest
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run --catalog-backend json --output-dir /tmp/manufacturing-mini-operator-report-cli
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.operator_report --output-dir /tmp/manufacturing-mini-operator-report-cli --business-date 2026-06-29
+```
+
+Results:
+
+```text
+pytest: 35 passed
+lakehouse JSON CLI: passed, status=processed, quality_passed=true
+operator evidence report CLI: passed
+```
+
+Verified:
+
+- [x] Added `src/manufacturing_data_platform/pipeline/operator_report.py`.
+- [x] Added `tests/test_operator_report.py`.
+- [x] Report returns gold grain, run identity, source/schema hashes, stats, quality summary, and lineage trace.
+- [x] Report includes explicit claim boundary: no column-level lineage, no OpenLineage backend, no production incident workflow.
+- [x] README and publication checklist include the operator report command.
+
+Notes:
+
+- This closes the first operator-debugging/RCA walkthrough without adding Spark/Iceberg scope.
+- Next portfolio artifact can be B4: gold 숫자가 이상할 때 source_hash, quality, lineage로 원인 좁히기.
