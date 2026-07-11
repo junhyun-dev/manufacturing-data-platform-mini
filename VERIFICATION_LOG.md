@@ -229,7 +229,7 @@ pytest: 33 passed
 Verified:
 
 - [x] `learn/system-design/README.md` now starts from service purpose charter, then scenario seed, question map, decision, test, implementation.
-- [x] System-design docs use stable names: `00-service-purpose-charter`, `00a-plain-project-map`, `01-scenario-seed`, `02-slice2-question-map`, `03-source-contract`, `04-slice2-spark-iceberg-shift`, `05-iceberg-spark-mini-primer`.
+- [x] System-design docs use stable names. Current layout keeps root docs thin and moves scenario/source/Spark details under `scenarios/`, `source-contracts/`, and `spark-iceberg/`.
 - [x] Added `learn/reference-decisions/gold-grain.md`.
 - [x] Added `learn/system-design/scenarios/02-operator-debugging-wrong-gold.md`.
 - [x] Blog ledger moved Iceberg post to B5; B4 is now operator debugging / RCA.
@@ -447,7 +447,7 @@ New files:
 - `requirements-spark.txt`
 - `src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py`
 - `tests/test_spark_iceberg_skeleton.py`
-- `learn/system-design/07-spark-iceberg-version-pin.md`
+- `learn/system-design/spark-iceberg/05-version-pin.md`
 
 Commands:
 

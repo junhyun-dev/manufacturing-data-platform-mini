@@ -36,9 +36,9 @@ business_date=2026-06-29의 gold 결과가 이미 있다.
 관련 scenario / 배경 문서:
 
 - [`../scenarios/01-rerun-same-business-date.md`](../scenarios/01-rerun-same-business-date.md)
-- [`../02-slice2-question-map.md`](../02-slice2-question-map.md)
-- [`../04-slice2-spark-iceberg-shift.md`](../04-slice2-spark-iceberg-shift.md)
-- [`../05-iceberg-spark-mini-primer.md`](../05-iceberg-spark-mini-primer.md)
+- [`../spark-iceberg/01-question-map.md`](../spark-iceberg/01-question-map.md)
+- [`../spark-iceberg/02-state-shift.md`](../spark-iceberg/02-state-shift.md)
+- [`../spark-iceberg/03-mini-primer.md`](../spark-iceberg/03-mini-primer.md)
 
 ## 3. Question Areas Pulled
 
@@ -91,7 +91,7 @@ business_date=2026-06-29의 gold 결과가 이미 있다.
 
 | Unknown | Closed by |
 |---|---|
-| PySpark/Iceberg runtime jar/catalog 조합이 local에서 뜨는가? | [`../07-spark-iceberg-version-pin.md`](../07-spark-iceberg-version-pin.md), tests |
+| PySpark/Iceberg runtime jar/catalog 조합이 local에서 뜨는가? | [`../spark-iceberg/05-version-pin.md`](../spark-iceberg/05-version-pin.md), tests |
 | `.snapshots` metadata를 local Spark에서 읽을 수 있는가? | Spark/Iceberg skeleton tests |
 | `overwritePartitions()`가 D2 partition을 보존하는가? | Spark/Iceberg skeleton tests |
 
@@ -100,8 +100,8 @@ business_date=2026-06-29의 gold 결과가 이미 있다.
 세부 decision 문서:
 
 - [`../../reference-decisions/iceberg-write-semantics.md`](../../reference-decisions/iceberg-write-semantics.md)
-- [`../06-spark-iceberg-walking-skeleton-plan.md`](../06-spark-iceberg-walking-skeleton-plan.md)
-- [`../07-spark-iceberg-version-pin.md`](../07-spark-iceberg-version-pin.md)
+- [`../spark-iceberg/04-walking-skeleton-plan.md`](../spark-iceberg/04-walking-skeleton-plan.md)
+- [`../spark-iceberg/05-version-pin.md`](../spark-iceberg/05-version-pin.md)
 
 핵심 결정만 요약:
 

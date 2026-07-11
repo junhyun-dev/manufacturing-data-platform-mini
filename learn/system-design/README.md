@@ -45,7 +45,9 @@ service purpose charter
 8. **Implementation**
    - decision의 test contract를 먼저 검증하고 코드를 붙인다.
 
-## Documents
+## Root Documents
+
+루트에는 전체 진입점만 둔다. 특정 slice나 상세 영역 문서는 하위 폴더로 내려간다.
 
 0. [`00-service-purpose-charter.md`](00-service-purpose-charter.md)
    - 이 프로젝트가 왜 존재하는지, 누가 어떤 질문을 위해 쓰는지, 어떤 상태를 만들어야 하는지 고정한다.
@@ -56,35 +58,20 @@ service purpose charter
 2. [`live-study-notes.md`](live-study-notes.md)
    - 정식 decision이 되기 전, 채팅하며 이해한 내용을 쌓는 실시간 공부장.
    - 충분히 정리된 내용만 `scenarios/`나 `reference-decisions/`로 승격한다.
-3. [`01-scenario-seed.md`](01-scenario-seed.md)
-   - question map을 만들기 위한 scenario seed.
-   - 애초에 어떤 상황에서 어떤 문제가 생기는가?
-   - 시나리오는 앞으로 계속 추가될 수 있다.
-4. [`02-slice2-question-map.md`](02-slice2-question-map.md)
-   - Slice2에서 무슨 질문들이 나올 수 있고 각각 어디서/어떻게 풀리나?
-   - 이 문서가 Slice2 설계 대화의 중심이다.
-   - 질문을 먼저 넓게 펼치고, 이후 decision note로 하나씩 수렴한다.
-5. [`03-source-contract.md`](03-source-contract.md)
-   - question map 이후에 보는 source evidence.
-   - 이 시스템은 정확히 무엇을 입력으로 받는가?
-   - source row의 grain과 required columns는 무엇인가?
-6. [`04-slice2-spark-iceberg-shift.md`](04-slice2-spark-iceberg-shift.md)
-   - Slice1의 state 전이를 Spark/Iceberg로 어떻게 다시 표현하는가?
-   - 무엇이 그대로고(contract) 무엇이 바뀌나(엔진/저장소)?
-   - question map에서 고른 질문을 state trace로 검증할 때 참고한다.
-7. [`05-iceberg-spark-mini-primer.md`](05-iceberg-spark-mini-primer.md)
-   - Iceberg/Spark 전체 공부가 아니라, Slice2에 필요한 공식 문서 범위와 walking skeleton을 정리한다.
-   - `business_date` 재처리, partition overwrite, snapshot, run_id vs snapshot_id를 연결한다.
-8. [`06-spark-iceberg-walking-skeleton-plan.md`](06-spark-iceberg-walking-skeleton-plan.md)
-   - Spark/Iceberg 구현 직전의 작은 question map + test contract.
-   - Claude audit에 넘길 Core/Demo/Backlog/Unknown 분류와 claim boundary를 고정한다.
-9. [`07-spark-iceberg-version-pin.md`](07-spark-iceberg-version-pin.md)
-   - Spark/Iceberg walking skeleton 구현 전에 `pyspark`, Iceberg runtime jar, Scala suffix, Java, catalog 설정을 고정한다.
-   - Test 0이 무엇을 검증해야 하는지 implementation gate를 정의한다.
-10. [`08-area-question-bank.ko.md`](08-area-question-bank.ko.md)
+3. [`08-area-question-bank.ko.md`](08-area-question-bank.ko.md)
    - 보안, 분산처리, 재처리, 장애, 품질, 운영, claim boundary 등 영역별 질문 은행.
    - 특정 slice를 구현하기 전에 관련 질문을 넓게 뽑고 Core/Demo/Backlog/Unknown으로 내릴 때 사용한다.
    - 상세 질문은 [`question-bank/`](question-bank/) 아래에 영역별로 나뉘어 있다. 처음 읽을 때는 [`question-bank/00-plain-language-guide.ko.md`](question-bank/00-plain-language-guide.ko.md)부터 본다.
+
+## Folder Layout
+
+| 폴더 | 역할 |
+|---|---|
+| [`scenarios/`](scenarios/) | 문제 상황과 walkthrough |
+| [`source-contracts/`](source-contracts/) | 입력 파일/row/schema/source identity 계약 |
+| [`question-bank/`](question-bank/) | 영역별 상세 질문 은행 |
+| [`slices/`](slices/) | build 단위의 얇은 질문/범위/evidence 지도 |
+| [`spark-iceberg/`](spark-iceberg/) | Spark/Iceberg slice supporting docs |
 
 ## Slice Maps
 
@@ -99,12 +86,25 @@ service purpose charter
 
 ## Scenario Walkthroughs
 
+- [`scenarios/00-scenario-seed.md`](scenarios/00-scenario-seed.md)
+  - question map을 만들기 위한 scenario seed.
+  - 애초에 어떤 상황에서 어떤 문제가 생기는가?
 - [`scenarios/01-rerun-same-business-date.md`](scenarios/01-rerun-same-business-date.md)
   - 같은 `business_date`를 다시 처리할 때 append/skip/overwrite/merge 중 무엇을 선택하는가?
   - #1 ACID, #2 write semantics, #10 idempotency를 하나의 시나리오로 이해한다.
 - [`scenarios/02-operator-debugging-wrong-gold.md`](scenarios/02-operator-debugging-wrong-gold.md)
   - gold 숫자가 이상할 때 operator가 source/run/quality/lineage evidence를 어떤 순서로 확인하는가?
   - 기존 catalog/lineage claim을 실제 RCA walkthrough로 exercise한다.
+
+## Spark/Iceberg Supporting Docs
+
+- [`spark-iceberg/README.md`](spark-iceberg/README.md)
+  - Spark/Iceberg 관련 질문 지도, state shift, primer, walking skeleton plan, version pin의 진입점.
+
+## Source Contracts
+
+- [`source-contracts/README.md`](source-contracts/README.md)
+  - 입력 파일/row/schema/source identity 계약의 진입점.
 
 그 다음에 개별 의사결정으로 내려간다.
 

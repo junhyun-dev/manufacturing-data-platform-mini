@@ -1,4 +1,4 @@
-# 06. Spark/Iceberg Walking Skeleton Plan
+# 04. Spark/Iceberg Walking Skeleton Plan
 
 상태: implemented local walking skeleton / claim-boundary reference
 프로젝트: `manufacturing-data-platform-mini`
@@ -385,4 +385,4 @@ jar_resolution:
 warehouse_path:
 ```
 
-이 결정은 `07-spark-iceberg-version-pin.md`에 고정했고, 첫 구현은 해당 pin으로 통과했다.
+이 결정은 [`05-version-pin.md`](05-version-pin.md)에 고정했고, 첫 구현은 해당 pin으로 통과했다.

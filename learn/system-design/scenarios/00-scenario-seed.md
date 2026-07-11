@@ -244,12 +244,12 @@ v0에서 피한 것:
 
 먼저 source contract를 본다.
 
-- [`03-source-contract.md`](03-source-contract.md)
-- [`../reference-decisions/gold-grain.md`](../reference-decisions/gold-grain.md)
+- [`../source-contracts/01-manufacturing-csv.md`](../source-contracts/01-manufacturing-csv.md)
+- [`../../reference-decisions/gold-grain.md`](../../reference-decisions/gold-grain.md)
 
 첫 번째 decision note:
 
-- [`../reference-decisions/schema-drift.md`](../reference-decisions/schema-drift.md)
+- [`../../reference-decisions/schema-drift.md`](../../reference-decisions/schema-drift.md)
 
 다음으로 만들 후보:
 

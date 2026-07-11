@@ -8,12 +8,12 @@ ADR Status: Implemented
 > full Spark medallion rewrite, production lakehouse operation, concurrent writer handling, retention/rollback은 아직 Backlog다.
 > 최신 runtime/test 결과는 [`../../VERIFICATION_LOG.md`](../../VERIFICATION_LOG.md)가 source of truth다.
 
-이 노트는 Slice2에서 "table에 write를 어떻게 commit하나"를 다룬다. `02-slice2-question-map.md`의 #1(ACID) + #2(write semantics) + #10(idempotency)을 하나로 수렴한다. 이게 Slice2의 심장이다.
+이 노트는 Slice2에서 "table에 write를 어떻게 commit하나"를 다룬다. `spark-iceberg/01-question-map.md`의 #1(ACID) + #2(write semantics) + #10(idempotency)을 하나로 수렴한다. 이게 Slice2의 심장이다.
 
 관련 문서/코드:
 
-- [`../system-design/04-slice2-spark-iceberg-shift.md`](../system-design/04-slice2-spark-iceberg-shift.md) (§3.1 run_id≠snapshot_id, §3.2 layer 모델)
-- [`../system-design/02-slice2-question-map.md`](../system-design/02-slice2-question-map.md)
+- [`../system-design/spark-iceberg/02-state-shift.md`](../system-design/spark-iceberg/02-state-shift.md) (§3.1 run_id≠snapshot_id, §3.2 layer 모델)
+- [`../system-design/spark-iceberg/01-question-map.md`](../system-design/spark-iceberg/01-question-map.md)
 - [`schema-drift.md`](schema-drift.md) (같은 포맷의 exemplar)
 - `src/manufacturing_data_platform/pipeline/lakehouse.py` (`find_existing_successful_run`, `persist_catalog`)
 

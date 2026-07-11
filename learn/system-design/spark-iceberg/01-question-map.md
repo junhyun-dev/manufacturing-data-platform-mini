@@ -1,24 +1,24 @@
-# 02. Slice2 — Spark/Iceberg question map
+# 01. Spark/Iceberg Question Map
 
 상태: 같이 검토할 초안
 프로젝트: `manufacturing-data-platform-mini`
 
 > 목적: Slice2에서 "무슨 질문들이 나올 수 있고, 각각 어디서/어떻게 풀리는가"를 먼저 넓게 펼친다.
 > 방식: `plastic-labs-honcho/learn/15-backend-question-map.md`와 같은 question-map. decision을 확정하기 전에 질문 지도를 먼저 그린다.
-> 짝 문서: [`04-slice2-spark-iceberg-shift.md`](04-slice2-spark-iceberg-shift.md) (무엇이 유지/바뀌나 + pressure 개요).
+> 짝 문서: [`02-state-shift.md`](02-state-shift.md) (무엇이 유지/바뀌나 + pressure 개요).
 
 이 문서가 Slice2 설계 대화의 중심이다. `01`은 질문을 만들기 위한 scenario seed이고, `04`는 질문을 state trace로 검증하기 위한 보조 지도다.
 
 읽는 법:
 
 ```text
-08-area-question-bank.ko.md
+../08-area-question-bank.ko.md
   -> 보안 / 분산처리 / 재처리 / 장애 / 품질 / 운영 / claim 같은 전체 질문 축
 
-02-slice2-question-map.md
+spark-iceberg/01-question-map.md
   -> 그중 Spark/Iceberg Slice2에 걸리는 질문만 모은 slice-specific 지도
 
-06-spark-iceberg-walking-skeleton-plan.md
+spark-iceberg/04-walking-skeleton-plan.md
   -> 02에서 고른 Core 질문을 실제 walking skeleton test contract로 내린 문서
 ```
 
@@ -114,13 +114,13 @@ Unknown  walking skeleton이나 작은 테스트를 해봐야 답할 수 있다.
 
 | 영역 | Covered in |
 |---|---|
-| medallion bronze/silver/gold 흐름 | `lakehouse.py`, `01-scenario-seed.md`, `03-source-contract.md` |
-| source/schema identity (`source_hash`, `schema_hash`) | `03-source-contract.md`, `reference-decisions/schema-drift.md` |
-| schema drift detect + warn 정책 | `reference-decisions/schema-drift.md` |
+| medallion bronze/silver/gold 흐름 | `lakehouse.py`, `../scenarios/00-scenario-seed.md`, `../source-contracts/01-manufacturing-csv.md` |
+| source/schema identity (`source_hash`, `schema_hash`) | `../source-contracts/01-manufacturing-csv.md`, `../../reference-decisions/schema-drift.md` |
+| schema drift detect + warn 정책 | `../../reference-decisions/schema-drift.md` |
 | idempotency (skip existing successful run) | `lakehouse.find_existing_successful_run`, `02` |
 | quality suite (dbt식 check dict) | `lakehouse.build_quality_checks` |
 | lineage (parent links, run record) | `lakehouse.build_lineage_doc` |
-| 무엇이 유지/바뀌나 + pressure 개요 | `04-slice2-spark-iceberg-shift.md` |
+| 무엇이 유지/바뀌나 + pressure 개요 | `02-state-shift.md` |
 
 즉 Slice2는 이 위에서 **엔진/저장소만** 바꾼다. 아래는 그때 새로 생기는 질문들이다.
 
@@ -142,7 +142,7 @@ gold grain contract               (row 하나의 의미를 먼저 고정)
 age freshness SLA                 (현재 freshness_business_date와 별도 backlog)
 ```
 
-> ★ run_id ≠ snapshot_id: `run_id`(파이프라인 실행)는 유지되고, table마다의 `snapshot_id`(commit)를 참조로 기록한다. 한 run이 silver/gold snapshot을 각각 만든다. 자세히는 [`04` §3.1](04-slice2-spark-iceberg-shift.md).
+> ★ run_id ≠ snapshot_id: `run_id`(파이프라인 실행)는 유지되고, table마다의 `snapshot_id`(commit)를 참조로 기록한다. 한 run이 silver/gold snapshot을 각각 만든다. 자세히는 [`02-state-shift.md` §3.1](02-state-shift.md).
 
 ---
 
@@ -375,8 +375,8 @@ honcho 방식 그대로.
 - v0에서 하지 말아야 할 것도 명시한다.
 
 볼 문서:
-- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/02-slice2-question-map.md
-- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/04-slice2-spark-iceberg-shift.md
+- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/spark-iceberg/01-question-map.md
+- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/spark-iceberg/02-state-shift.md
 - /home/junhyun/dev/DECISION_LEARNING_PLAYBOOK.md
 
 출력 형식:

@@ -1,4 +1,4 @@
-# 07. Spark/Iceberg Version Pin
+# 05. Spark/Iceberg Version Pin
 
 상태: implementation gate / verified locally
 프로젝트: `manufacturing-data-platform-mini`
@@ -248,4 +248,4 @@ src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py
 tests/test_spark_iceberg_skeleton.py
 ```
 
-The first implementation commit should only prove Test 0 and the partition overwrite contract from `06-spark-iceberg-walking-skeleton-plan.md`.
+The first implementation commit should only prove Test 0 and the partition overwrite contract from [`04-walking-skeleton-plan.md`](04-walking-skeleton-plan.md).
