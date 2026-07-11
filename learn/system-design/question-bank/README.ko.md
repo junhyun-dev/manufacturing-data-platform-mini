@@ -17,6 +17,11 @@
 
 ## 읽는 순서
 
+처음 읽는다면 먼저 쉬운 말 버전부터 본다.
+
+0. [`00-plain-language-guide.ko.md`](00-plain-language-guide.ko.md)
+   - 어려운 설계 용어를 쉬운 말과 예시로 번역한다.
+   - `current state`, `snapshot`, `atomicity`, `shuffle`, `claim boundary` 같은 말을 먼저 풀어준다.
 1. [`01-service-identity-contract.ko.md`](01-service-identity-contract.ko.md)
    - service/user workflow
    - data grain / identity / versioning

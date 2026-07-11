@@ -61,6 +61,7 @@ Iceberg는 무엇을 해결하는가?
 
 | 상세 문서 | 다루는 영역 |
 |---|---|
+| [`question-bank/00-plain-language-guide.ko.md`](question-bank/00-plain-language-guide.ko.md) | 어려운 설계 용어를 쉬운 말과 예시로 번역 |
 | [`question-bank/01-service-identity-contract.ko.md`](question-bank/01-service-identity-contract.ko.md) | service workflow, identity, source contract |
 | [`question-bank/02-quality-rerun-failure.ko.md`](question-bank/02-quality-rerun-failure.ko.md) | quality, rerun/correction, failure state |
 | [`question-bank/03-storage-spark-consistency.ko.md`](question-bank/03-storage-spark-consistency.ko.md) | storage/table format, Spark/distributed processing, consistency |
