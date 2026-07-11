@@ -18,7 +18,7 @@ cataloged, versioned, quality-checked dataset/mart로 바꾸고,
 
 ```text
 production manufacturing platform
-Spark/Iceberg implemented
+full Spark/Iceberg medallion pipeline implemented
 Kafka streaming implemented
 real Mongo runtime verified
 Airflow runtime verified
@@ -60,7 +60,7 @@ flowchart LR
 | Operator debugging report | 구현 완료, test-covered | `tests/test_operator_report.py`, B4 published | read-only path-level evidence report; automatic RCA나 column-level lineage 아님 |
 | Runtime Mongo | Backlog / environment-blocked | `mongomock` tests only | model은 구현됨; real runtime verification pending |
 | Runtime Airflow | wrapper command contract test-covered, runtime 미검증 | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py` | DAG wrapper command는 검증됨; runtime trigger pending |
-| Spark/Iceberg | design-only | question map, primer, write-semantics note | 다음 slice 설계; 아직 code 없음 |
+| Spark/Iceberg | local walking skeleton 구현 완료, test-covered | `tests/test_spark_iceberg_skeleton.py`, Spark CLI | 단일 gold Iceberg table에서 `business_date` partition overwrite + snapshot evidence; full medallion Spark 아님 |
 | Kafka / streaming | Backlog | 없음 | claim하지 않음 |
 | Robot/session/MCAP | Backlog | 없음 | claim하지 않음 |
 
@@ -72,7 +72,7 @@ flowchart LR
 | B2 | schema drift as warn, not fail | DEV.to draft | schema drift tests, latest verification log |
 | B3 | wide CSV -> EAV -> gold | DEV.to draft | EAV tests, processed/skipped CLI run |
 | B4 | operator debugging with quality/lineage evidence | Published | operator report tests, CLI, DEV.to |
-| B5 | skip -> Iceberg partition overwrite | Blocked | Spark/Iceberg walking skeleton 필요 |
+| B5 | skip -> Iceberg partition overwrite | draft 준비 가능 | Spark/Iceberg walking skeleton test + CLI evidence |
 
 ## 설계 완료 지도
 
@@ -85,8 +85,8 @@ flowchart TD
   eav["EAV modeling\nDONE"]
   rca["Operator debugging path\nDONE"]
   airflow["Airflow runtime verification\nNEXT"]
-  iceberg["Spark/Iceberg walking skeleton\nNEXT AFTER AIRFLOW OR PARALLEL"]
-  b5["B5 Iceberg blog\nBLOCKED UNTIL SKELETON"]
+  iceberg["Spark/Iceberg walking skeleton\nDONE"]
+  b5["B5 Iceberg blog\nREADY"]
   streaming["Kafka / streaming\nBACKLOG"]
   robot["Robot/session/MCAP\nBACKLOG"]
 
@@ -235,8 +235,8 @@ evidence 기반 blog / resume claim 관리
 
 ```text
 Airflow runtime verification
-Spark/Iceberg walking skeleton
-partition overwrite / snapshot
+full Spark medallion rewrite는 여전히 out of scope
+Spark/Iceberg blog/resume packaging
 possibly dbt-style modeling or semantic layer later
 streaming/Kafka는 backlog
 ```
@@ -245,15 +245,15 @@ streaming/Kafka는 backlog
 
 ```text
 Airflow runtime 검증
--> Spark/Iceberg 작은 skeleton
 -> B5: skip에서 partition overwrite로 가는 글
+-> optional later: full Spark medallion rewrite 결정
 ```
 
 이 순서가 가장 효율적인 이유:
 
 ```text
 Airflow는 현재 wrapper command contract까지 검증됐으므로, 남은 runtime caveat를 작게 닫을 수 있다.
-Spark/Iceberg는 현재 design-only라 walking skeleton evidence가 필요하다.
+Spark/Iceberg는 local walking skeleton evidence가 생겼으므로, 이제 B5 글과 claim 반영으로 이어갈 수 있다.
 Iceberg는 "도구 추가"가 아니라 business_date 재처리 문제를 해결하는 storage/table layer로 설명해야 한다.
 Kafka/streaming은 지금 thesis의 Core가 아니므로 backlog에 둔다.
 ```

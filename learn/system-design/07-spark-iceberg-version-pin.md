@@ -1,9 +1,9 @@
 # 07. Spark/Iceberg Version Pin
 
-상태: implementation gate / design-only
+상태: implementation gate / verified locally
 프로젝트: `manufacturing-data-platform-mini`
 
-> **STATUS: design-only.** 이 문서는 Spark/Iceberg walking skeleton 구현 전에 버전, jar, catalog 설정을 고정하기 위한 gate다. 아직 이 repo에는 Spark/Iceberg 구현 코드가 없다.
+> **STATUS: verified locally.** 이 문서는 Spark/Iceberg walking skeleton 구현 전에 버전, jar, catalog 설정을 고정하기 위한 gate다. 이 pin으로 `tests/test_spark_iceberg_skeleton.py`와 CLI skeleton이 통과했다. 구현 범위는 local single-gold-table walking skeleton이다.
 
 ## 1. Why This Gate Exists
 
@@ -47,6 +47,15 @@ Java: OpenJDK 17.0.19
 PyPI pyspark versions include: 3.5.8, 3.5.7, 3.5.6, ...
 ```
 
+Verification result on 2026-07-11:
+
+```text
+python -m pip install -r requirements-spark.txt: passed
+pytest tests/test_spark_iceberg_skeleton.py -q: 2 passed
+pytest: 40 passed
+Spark/Iceberg CLI skeleton: passed
+```
+
 ## 3. Pinned Candidate
 
 이번 walking skeleton의 기본 pin:
@@ -82,12 +91,18 @@ Apache Spark 3.5.8 docs exist.
 Iceberg's Spark 3.5 runtime artifact is tied to the Spark minor line, not the patch number.
 ```
 
-Risk:
+Risk before Test 0:
 
 ```text
 The Scala suffix must match the Spark distribution actually used by PySpark.
 This pin assumes the PyPI Spark 3.5.x runtime is compatible with the 3.5_2.12 Iceberg runtime jar.
 Test 0 must verify this by creating and reading a trivial Iceberg table.
+```
+
+Observed:
+
+```text
+Test 0 verified this locally with PySpark 3.5.8 and Iceberg runtime 3.5_2.12:1.11.0.
 ```
 
 ## 4. SparkSession Config Draft

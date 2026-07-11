@@ -46,6 +46,17 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [x] **EAV quality suite** — `mapping_coverage`, `unmapped_source_columns` (warn), `not_null_value`, `accepted_values_attribute`, `value_type_valid`, `numeric_range`, `eav_to_gold_conservation`, `freshness` + 공유 `schema_drift`.
 - [x] **Catalog/lineage + idempotency 재사용** — 동일한 `lakehouse_runs`/`lineage_events`, `file_id`(파일 해시) idempotency.
 
+### Spark/Iceberg walking skeleton — CORE-lite (구현 완료)
+목표: full Spark rewrite가 아니라, 정정된 `business_date`를 중복 없이 교체하는 storage/table contract를 증명한다.
+- [x] **Optional Spark dependency pin** — `requirements-spark.txt`에서 `pyspark==3.5.8` 고정.
+- [x] **Local Iceberg catalog** — Spark hadoop catalog + local warehouse.
+- [x] **단일 gold table** — `local.db.gold_daily_metrics`, `business_date` partition.
+- [x] **Partition overwrite** — 정정 row는 `DataFrameWriterV2.overwritePartitions()` 사용.
+- [x] **안전성 assertion** — 대상 날짜는 중복 없이 교체되고, 다른 날짜 partition은 유지됨.
+- [x] **Snapshot evidence** — `run_id -> snapshot_id` evidence JSON; 같은 `source_hash` rerun은 새 snapshot을 만들지 않음.
+- [ ] **Full medallion Spark rewrite** — 의도적으로 미구현.
+- [ ] **Airflow-triggered Spark runtime** — 미검증.
+
 ## 범위: CORE vs OPTIONAL
 
 - **CORE** (thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · Spark/Iceberg.
@@ -53,7 +64,7 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 
 ### BACKLOG (freeze — 앞으로 당겨오지 말 것)
 CORE-backlog:
-- [ ] **Spark/Iceberg 번역** — `transform_*`의 엔진을 Spark로 교체; gold를 Iceberg/Delta로 저장.
+- [ ] **Full Spark/Iceberg 번역** — optional future work: 전체 `transform_*` engine을 Spark로 교체하고 더 많은 layer를 Iceberg/Delta로 저장. 현재 evidence는 단일 gold table walking skeleton이다.
 - [ ] **Runtime Mongo verification** — 여기선 보류(Docker 엔진 없음). Mongo 경로는 `mongomock`으로 커버.
 - [ ] **Runtime Airflow trigger verification** — 이 환경에 Airflow 미설치.
 - [ ] **Task split** — one-task wrapper 안정화 후 `bronze_task → silver_task → gold_task → quality_task → catalog_task`로 분리.

@@ -433,3 +433,58 @@ Notes:
 
 - This verifies the Airflow wrapper command contract, not Airflow runtime execution.
 - Airflow is not installed in this environment; DAG import/trigger under a real Airflow runtime remains pending.
+
+## 2026-07-11 — Spark/Iceberg single-gold-table walking skeleton
+
+Scope:
+
+- Implement the smallest Spark/Iceberg slice for the correction-rerun scenario.
+- Keep scope to one local Iceberg gold table: `local.db.gold_daily_metrics`.
+- Prove `business_date` partition overwrite, D2 partition preservation, snapshot evidence, and same-`source_hash` rerun without a new snapshot.
+
+New files:
+
+- `requirements-spark.txt`
+- `src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py`
+- `tests/test_spark_iceberg_skeleton.py`
+- `learn/system-design/07-spark-iceberg-version-pin.md`
+
+Commands:
+
+```bash
+python -m pip install -r requirements-spark.txt
+pytest tests/test_spark_iceberg_skeleton.py -q
+pytest
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skeleton \
+  --warehouse /tmp/manufacturing-mini-iceberg-warehouse \
+  --output-dir /tmp/manufacturing-mini-iceberg-evidence \
+  --clean
+```
+
+Results:
+
+```text
+pip install requirements-spark.txt: passed (pyspark==3.5.8)
+spark skeleton tests: 2 passed
+pytest: 40 passed
+spark CLI: passed
+Iceberg runtime coordinate: org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.11.0
+target partition row count: 1
+snapshot count: 1 -> 2 after correction
+same source rerun created snapshot: false
+other business_date partition preserved: true
+```
+
+Verified:
+
+- [x] Local SparkSession starts with Iceberg extensions.
+- [x] Local hadoop catalog creates and reads an Iceberg table.
+- [x] Corrected `business_date` partition is overwritten without duplicates.
+- [x] Another `business_date` partition remains unchanged.
+- [x] `run_id` and numeric `snapshot_id` are recorded separately.
+- [x] Same `source_hash` rerun does not create a new snapshot.
+
+Claim boundary:
+
+- Allowed: local Spark/Iceberg single-gold-table walking skeleton with `business_date` partition overwrite and snapshot evidence.
+- Not allowed: full Spark medallion pipeline, production lakehouse, Iceberg rollback system, concurrent writer handling, Airflow-triggered Spark runtime.

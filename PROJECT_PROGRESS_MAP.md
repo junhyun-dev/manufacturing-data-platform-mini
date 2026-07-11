@@ -17,7 +17,7 @@ Not claimed:
 
 ```text
 production manufacturing platform
-Spark/Iceberg implemented
+full Spark/Iceberg medallion pipeline implemented
 Kafka streaming implemented
 real Mongo runtime verified
 Airflow runtime verified
@@ -59,7 +59,7 @@ flowchart LR
 | Operator debugging report | Implemented, test-covered | `tests/test_operator_report.py`, B4 published | read-only path-level evidence report; not automatic RCA or column-level lineage |
 | Runtime Mongo | Backlog / environment-blocked | `mongomock` tests only | model implemented; real runtime verification pending |
 | Runtime Airflow | Wrapper command contract test-covered, runtime unverified | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py` | DAG wrapper command verified; runtime trigger pending |
-| Spark/Iceberg | Design-only | question map, primer, write-semantics note | next slice design; no code yet |
+| Spark/Iceberg | Local walking skeleton implemented, test-covered | `tests/test_spark_iceberg_skeleton.py`, Spark CLI | single gold Iceberg table with `business_date` partition overwrite + snapshot evidence; not full medallion Spark |
 | Kafka / streaming | Backlog | none | not claimed |
 | Robot/session/MCAP | Backlog | none | not claimed |
 
@@ -71,7 +71,7 @@ flowchart LR
 | B2 | schema drift as warn, not fail | DEV.to draft | schema drift tests, latest verification log |
 | B3 | wide CSV -> EAV -> gold | DEV.to draft | EAV tests, processed/skipped CLI run |
 | B4 | operator debugging with quality/lineage evidence | Published | operator report tests, CLI, DEV.to |
-| B5 | skip -> Iceberg partition overwrite | Blocked | requires Spark/Iceberg walking skeleton first |
+| B5 | skip -> Iceberg partition overwrite | Ready for draft | Spark/Iceberg walking skeleton test + CLI evidence |
 
 ## Design Completion Map
 
@@ -84,8 +84,8 @@ flowchart TD
   eav["EAV modeling\nDONE"]
   rca["Operator debugging path\nDONE"]
   airflow["Airflow runtime verification\nNEXT"]
-  iceberg["Spark/Iceberg walking skeleton\nNEXT AFTER AIRFLOW OR PARALLEL"]
-  b5["B5 Iceberg blog\nBLOCKED UNTIL SKELETON"]
+  iceberg["Spark/Iceberg walking skeleton\nDONE"]
+  b5["B5 Iceberg blog\nREADY"]
   streaming["Kafka / streaming\nBACKLOG"]
   robot["Robot/session/MCAP\nBACKLOG"]
 
@@ -232,8 +232,8 @@ Still to cover:
 
 ```text
 Airflow runtime verification
-Spark/Iceberg walking skeleton
-partition overwrite / snapshot evidence
+full Spark medallion rewrite remains out of scope
+Spark/Iceberg blog/resume packaging
 possibly dbt-style modeling or semantic layer later
 streaming/Kafka remains backlog
 ```
@@ -242,8 +242,8 @@ Recommended sequence:
 
 ```text
 Airflow runtime verification
--> Spark/Iceberg walking skeleton
 -> B5: skip to partition overwrite
+-> optional later: full Spark medallion rewrite decision
 ```
 
 ## Process Rule

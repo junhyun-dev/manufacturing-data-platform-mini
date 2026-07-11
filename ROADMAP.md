@@ -46,6 +46,17 @@ Goal: data modeling + multi-format intake, reusing the Slice 1 spine (no fork).
 - [x] **EAV quality suite** — `mapping_coverage`, `unmapped_source_columns` (warn), `not_null_value`, `accepted_values_attribute`, `value_type_valid`, `numeric_range`, `eav_to_gold_conservation`, `freshness` + shared `schema_drift`.
 - [x] **Catalog/lineage + idempotency reuse** — same `lakehouse_runs`/`lineage_events`, `file_id` (file hash) idempotency.
 
+### Spark/Iceberg walking skeleton — CORE-lite (implemented)
+Goal: prove the storage/table contract for a corrected `business_date` without doing a full Spark rewrite.
+- [x] **Optional Spark dependency pin** — `requirements-spark.txt` pins `pyspark==3.5.8`.
+- [x] **Local Iceberg catalog** — Spark hadoop catalog + local warehouse.
+- [x] **Single gold table** — `local.db.gold_daily_metrics`, partitioned by `business_date`.
+- [x] **Partition overwrite** — corrected rows use `DataFrameWriterV2.overwritePartitions()`.
+- [x] **Safety assertion** — target date is replaced without duplicates while another date partition remains unchanged.
+- [x] **Snapshot evidence** — `run_id -> snapshot_id` evidence JSON; same `source_hash` rerun creates no new snapshot.
+- [ ] **Full medallion Spark rewrite** — intentionally not implemented.
+- [ ] **Airflow-triggered Spark runtime** — not verified.
+
 ## Scope: CORE vs OPTIONAL
 
 - **CORE** (the thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · Spark/Iceberg.
@@ -77,7 +88,7 @@ RAG, Kafka, Spark, dbt, and monitoring are valid design topics when the scenario
 ### BACKLOG (frozen — do not pull forward)
 CORE-backlog:
 - [ ] **Deep design: streaming + batch platform** — design source events/files, Kafka topic shape, bronze/silver/gold boundary, idempotency keys, late data/backfill, quality gates, mart grain, monitoring, and recovery before implementing a Kafka slice.
-- [ ] **Spark/Iceberg translation** — swap the `transform_*` engine to Spark; store gold as Iceberg/Delta.
+- [ ] **Full Spark/Iceberg translation** — optional future work: swap the full `transform_*` engine to Spark and store more layers as Iceberg/Delta. The current evidence is only a single-gold-table walking skeleton.
 - [ ] **Runtime Mongo verification** — blocked here (no Docker engine). Mongo path covered by `mongomock`.
 - [ ] **Runtime Airflow trigger verification** — Airflow not installed in this env.
 - [ ] **Task split** — `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task` after the one-task wrapper is stable.

@@ -83,8 +83,9 @@ In prior **professional** work I **operated and improved** an EAV-based structur
   - Medallion pipeline — Slice 1 (done + hardened)
   - EAV mini — multi-format → mapping → EAV → gold (done)
   - Quality checks, catalog/lineage — cross-cutting (done)
-  - Operator debugging walkthrough — gold metric -> run/source/quality/lineage evidence (next)
-  - Spark/Iceberg translation (backlog, still core)
+  - Operator debugging walkthrough — gold metric -> run/source/quality/lineage evidence (done)
+  - Spark/Iceberg single-gold-table walking skeleton — partition overwrite + snapshot evidence (done)
+  - Full medallion Spark rewrite (backlog)
 - **Optional** (only pursued if a specific interview, e.g. Labrador-style, makes it relevant):
   - AI Dataset QA slice
   - RAG / vectorDB / LLM-preprocessing
@@ -175,6 +176,23 @@ PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run_eav --catalog-
 ```
 
 Synthetic inputs (`data/raw/eav/`) and mapping configs (`config/eav_mappings/`) are used automatically; missing synthetic inputs are generated from `sample_eav.py`. Re-running the same inputs for the same date is idempotent (`status="skipped"`). To add a new file format, drop one more `config/eav_mappings/<source>.json` (+ its CSV) — no code change.
+
+## Run Spark/Iceberg walking skeleton
+
+This is an optional local skeleton, not the main lightweight install:
+
+```bash
+pip install -r requirements-spark.txt
+
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skeleton \
+  --warehouse /tmp/manufacturing-mini-iceberg-warehouse \
+  --output-dir /tmp/manufacturing-mini-iceberg-evidence \
+  --clean
+```
+
+It creates one local Iceberg table, `local.db.gold_daily_metrics`, partitioned by `business_date`. It writes initial rows, skips a same-`source_hash` rerun without creating a new snapshot, then overwrites the corrected `business_date` partition with `DataFrameWriterV2.overwritePartitions()`. Evidence is written as JSON under the output directory.
+
+Honest boundary: this proves a single-gold-table Spark/Iceberg partition-overwrite contract. It is not a full Spark medallion rewrite, production lakehouse, rollback system, or Airflow-triggered Spark runtime.
 
 ## Airflow Wrapper
 

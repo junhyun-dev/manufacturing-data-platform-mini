@@ -30,6 +30,7 @@ CSV
 - medallion architecture
 - lineage
 - EAV multi-format intake
+- Spark/Iceberg partition overwrite skeleton
 
 ## Phase 1
 
@@ -94,9 +95,32 @@ Korean headers / English headers / mixed units
 
 새 file format은 pipeline code를 바꾸지 않고 mapping config 하나를 추가해서 onboarding한다.
 
+## Spark/Iceberg walking skeleton
+
+full Spark rewrite가 아니라, `business_date` 정정 시 gold partition을 중복 없이 교체하는 작은 skeleton이다.
+
+```bash
+pip install -r requirements-spark.txt
+
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skeleton \
+  --warehouse /tmp/manufacturing-mini-iceberg-warehouse \
+  --output-dir /tmp/manufacturing-mini-iceberg-evidence \
+  --clean
+```
+
+구현된 범위:
+
+- local SparkSession + Iceberg hadoop catalog
+- `local.db.gold_daily_metrics` 단일 gold table
+- `business_date` partition overwrite
+- same `source_hash` rerun 시 새 snapshot 없음
+- `run_id -> snapshot_id` evidence JSON
+
+정직한 경계: full Spark medallion pipeline, production lakehouse, rollback system, Airflow-triggered Spark runtime은 아니다.
+
 ## 정직한 한계
 
-- Spark/Iceberg engine은 backlog다.
+- Spark/Iceberg는 단일 gold table walking skeleton까지만 구현됐다. full Spark medallion rewrite는 backlog다.
 - runtime Mongo와 Airflow trigger는 현재 환경에서 완전 검증되지 않았다. 다만 Airflow wrapper command contract는 `tests/test_orchestration.py`로 검증했다.
 - manufacturing strict numeric cast는 일부 bad row를 graceful quarantine하지 못하고 fail-fast한다.
 - EAV 쪽은 unparseable value를 graceful quality failure로 잡는다.

@@ -1,9 +1,9 @@
 # 06. Spark/Iceberg Walking Skeleton Plan
 
-상태: implementation pre-plan / Claude audit target
+상태: implemented local walking skeleton / claim-boundary reference
 프로젝트: `manufacturing-data-platform-mini`
 
-> **STATUS: design-only.** 이 repo에는 아직 Spark/Iceberg 구현 코드가 없고, `pyspark`도 설치되어 있지 않다. 이 문서는 구현 직전의 작은 question map + test contract다.
+> **STATUS: implemented as a local single-gold-table walking skeleton.** 이 문서는 구현 전에 만든 question map + test contract이며, 현재 구현은 `src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py`와 `tests/test_spark_iceberg_skeleton.py`에 있다. 범위는 `gold_daily_metrics` Iceberg table 하나다. full medallion Spark rewrite나 production lakehouse는 아니다.
 
 감사 반영 상태:
 
@@ -353,7 +353,7 @@ and run_id -> snapshot_id lineage, implementation pending.
 현재 repo 상태:
 - Python/CSV Slice1, EAV, operator report는 구현+테스트됨.
 - Airflow wrapper command contract는 test-covered지만 runtime Airflow는 미검증.
-- Spark/Iceberg code는 0줄이고 pyspark도 미설치.
+- Spark/Iceberg는 local single-gold-table walking skeleton이 구현됨.
 - 목표는 full Spark rewrite가 아니라 gold_daily_metrics table 하나로 partition overwrite + snapshot evidence를 확인하는 walking skeleton.
 ```
 
@@ -385,4 +385,4 @@ jar_resolution:
 warehouse_path:
 ```
 
-이 결정이 끝나기 전에는 Spark/Iceberg code를 작성하지 않는다.
+이 결정은 `07-spark-iceberg-version-pin.md`에 고정했고, 첫 구현은 해당 pin으로 통과했다.
