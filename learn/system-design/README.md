@@ -73,6 +73,9 @@ service purpose charter
 8. [`06-spark-iceberg-walking-skeleton-plan.md`](06-spark-iceberg-walking-skeleton-plan.md)
    - Spark/Iceberg 구현 직전의 작은 question map + test contract.
    - Claude audit에 넘길 Core/Demo/Backlog/Unknown 분류와 claim boundary를 고정한다.
+9. [`07-spark-iceberg-version-pin.md`](07-spark-iceberg-version-pin.md)
+   - Spark/Iceberg walking skeleton 구현 전에 `pyspark`, Iceberg runtime jar, Scala suffix, Java, catalog 설정을 고정한다.
+   - Test 0이 무엇을 검증해야 하는지 implementation gate를 정의한다.
 
 ## Scenario Walkthroughs
 
