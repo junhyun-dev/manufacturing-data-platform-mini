@@ -1,6 +1,6 @@
 # System Design Notes
 
-이 폴더는 `manufacturing-data-platform-mini`를 기능별로 보기 전에, 시스템을 **서비스 목적 -> 시나리오 -> 질문 지도 -> 결정 -> 테스트 -> 구현** 순서로 이해하기 위한 학습 노트다.
+이 폴더는 `manufacturing-data-platform-mini`를 기능별로 보기 전에, 시스템을 **서비스 목적 -> 시나리오 -> 질문 지도 -> slice map -> 결정 -> 테스트 -> 구현** 순서로 이해하기 위한 학습 노트다.
 
 기준 프로세스: [`scenario-question-decision-loop.md`](/home/junhyun/personal/learning/method/scenario-question-decision-loop.md)
 
@@ -12,6 +12,7 @@ service purpose charter
 -> question map
 -> question map audit / challenge
 -> state trace / evidence
+-> slice map
 -> reference decision
 -> test contract
 -> implementation
@@ -36,9 +37,12 @@ service purpose charter
 5. **State trace / evidence**
    - 질문이 실제 데이터 상태 전이 어디에서 생기는지 확인한다.
    - 기존 코드와 테스트가 이미 답한 contract를 확인한다.
-6. **Reference decision**
+6. **Slice map**
+   - 한 build 단위에서 어떤 질문을 Core로 잡고 무엇을 Backlog로 뺐는지 얇게 묶는다.
+   - 상세 상태를 복사하지 않고 code/test/verification log를 링크한다.
+7. **Reference decision**
    - 질문 하나를 골라 options/tradeoff/decision/test로 수렴한다.
-7. **Implementation**
+8. **Implementation**
    - decision의 test contract를 먼저 검증하고 코드를 붙인다.
 
 ## Documents
@@ -82,6 +86,15 @@ service purpose charter
    - 특정 slice를 구현하기 전에 관련 질문을 넓게 뽑고 Core/Demo/Backlog/Unknown으로 내릴 때 사용한다.
    - 상세 질문은 [`question-bank/`](question-bank/) 아래에 영역별로 나뉘어 있다. 처음 읽을 때는 [`question-bank/00-plain-language-guide.ko.md`](question-bank/00-plain-language-guide.ko.md)부터 본다.
 
+## Slice Maps
+
+- [`slices/README.ko.md`](slices/README.ko.md)
+  - 시나리오와 구현 사이에서, 이번 build가 어떤 질문을 Core/Backlog로 잘랐는지 보는 얇은 index.
+- [`slices/01-spark-iceberg-partition-overwrite.ko.md`](slices/01-spark-iceberg-partition-overwrite.ko.md)
+  - Spark/Iceberg partition overwrite slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
+- [`slices/02-airflow-wrapper-command-contract.ko.md`](slices/02-airflow-wrapper-command-contract.ko.md)
+  - Airflow wrapper command contract slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
+
 ## Scenario Walkthroughs
 
 - [`scenarios/01-rerun-same-business-date.md`](scenarios/01-rerun-same-business-date.md)
@@ -98,6 +111,7 @@ scenario
 -> question map
 -> question map audit
 -> state trace
+-> slice map
 -> decision note
 -> test contract
 -> implementation
