@@ -29,6 +29,7 @@ service purpose charter
 3. **Question map**
    - 시나리오에서 어떤 설계 질문이 생기는지 넓게 펼친다.
    - 각 질문을 `Core`, `Demo`, `Backlog`, `Unknown`으로 나눈다.
+   - 질문이 국소적으로 좁아지면 [`08-area-question-bank.ko.md`](08-area-question-bank.ko.md)에서 보안/분산처리/재처리/장애/운영/claim 축을 다시 확인한다.
 4. **Question map audit / challenge**
    - Claude/외부 benchmark 관점으로 빠진 질문, 과한 질문, 과장 위험을 찾는다.
    - 구현 범위는 늘리지 않고 질문 품질만 검토한다.
@@ -76,6 +77,9 @@ service purpose charter
 9. [`07-spark-iceberg-version-pin.md`](07-spark-iceberg-version-pin.md)
    - Spark/Iceberg walking skeleton 구현 전에 `pyspark`, Iceberg runtime jar, Scala suffix, Java, catalog 설정을 고정한다.
    - Test 0이 무엇을 검증해야 하는지 implementation gate를 정의한다.
+10. [`08-area-question-bank.ko.md`](08-area-question-bank.ko.md)
+   - 보안, 분산처리, 재처리, 장애, 품질, 운영, claim boundary 등 영역별 질문 은행.
+   - 특정 slice를 구현하기 전에 관련 질문을 넓게 뽑고 Core/Demo/Backlog/Unknown으로 내릴 때 사용한다.
 
 ## Scenario Walkthroughs
 

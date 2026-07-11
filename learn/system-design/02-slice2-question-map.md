@@ -9,6 +9,19 @@
 
 이 문서가 Slice2 설계 대화의 중심이다. `01`은 질문을 만들기 위한 scenario seed이고, `04`는 질문을 state trace로 검증하기 위한 보조 지도다.
 
+읽는 법:
+
+```text
+08-area-question-bank.ko.md
+  -> 보안 / 분산처리 / 재처리 / 장애 / 품질 / 운영 / claim 같은 전체 질문 축
+
+02-slice2-question-map.md
+  -> 그중 Spark/Iceberg Slice2에 걸리는 질문만 모은 slice-specific 지도
+
+06-spark-iceberg-walking-skeleton-plan.md
+  -> 02에서 고른 Core 질문을 실제 walking skeleton test contract로 내린 문서
+```
+
 감사 상태: **Claude / 외부 benchmark 기반 question map audit 필요.**
 
 이 문서는 Codex 단독 최종본이 아니다. 질문을 잘 뽑는 것이 설계 품질을 결정하므로, 구현 전에 반드시 다른 관점으로 빠진 질문/과한 질문/과장 위험을 감사한다.
