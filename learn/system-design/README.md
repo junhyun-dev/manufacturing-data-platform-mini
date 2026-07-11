@@ -73,6 +73,39 @@ service purpose charter
 | [`slices/`](slices/) | build 단위의 얇은 질문/범위/evidence 지도 |
 | [`spark-iceberg/`](spark-iceberg/) | Spark/Iceberg slice supporting docs |
 
+## Folder Axis Rule
+
+기본 원칙은 `by stage/type`이다.
+
+```text
+scenario        = 문제 상황
+source contract = 입력 약속
+question-bank   = 질문 축
+slice           = 이번 build 범위
+decision        = 특정 선택의 tradeoff
+```
+
+`spark-iceberg/`는 현재 예외다. Spark/Iceberg supporting 문서가 이미 여러 개로 커져서 루트에서 분리했지만, 분류 축으로 보면 `by topic/technology`에 가깝다.
+
+앞으로 새 기술 문서가 늘어날 때는 새 top-level topic folder를 바로 만들지 않는다.
+
+```text
+좋음:
+  slices/<slice-name>/
+    00-slice-map.ko.md
+    supporting-primer.md
+    version-pin.md
+    audit-notes.md
+
+피함:
+  airflow/
+  kafka/
+  streaming/
+  spark-iceberg-v2/
+```
+
+즉 top-level은 계속 stage/type 중심으로 유지하고, 큰 slice의 상세 supporting docs는 해당 slice 아래로 중첩한다. 현재 `spark-iceberg/`는 기존 리오그 직후라 유지하되, 다음 구조 변경 때 `slices/spark-iceberg-partition-overwrite/`로 접을 수 있다.
+
 ## Slice Maps
 
 - [`slices/README.ko.md`](slices/README.ko.md)

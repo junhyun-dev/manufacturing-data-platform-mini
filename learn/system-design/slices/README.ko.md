@@ -46,6 +46,22 @@ slice map의 고유 가치는 아래 세 가지다.
 3. 다음 질문
 ```
 
+## Supporting Docs Rule
+
+작은 slice는 이 폴더에 `NN-name.ko.md` 한 파일로 둔다.
+
+supporting 문서가 여러 개로 커지는 slice는 새 top-level 기술 폴더를 만들지 않고, slice 하위 폴더로 묶는다.
+
+```text
+slices/<slice-name>/
+  00-slice-map.ko.md
+  primer.md
+  version-pin.md
+  audit-notes.md
+```
+
+현재 `../spark-iceberg/`는 기존 Spark/Iceberg supporting 문서를 모아둔 예외다. 다음 리오그가 필요해질 때 이 규칙에 맞춰 `slices/spark-iceberg-partition-overwrite/`로 접을 수 있다.
+
 ## Slices
 
 Template:
