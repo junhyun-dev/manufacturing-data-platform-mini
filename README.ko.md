@@ -97,7 +97,7 @@ Korean headers / English headers / mixed units
 ## 정직한 한계
 
 - Spark/Iceberg engine은 backlog다.
-- runtime Mongo와 Airflow trigger는 현재 환경에서 완전 검증되지 않았다.
+- runtime Mongo와 Airflow trigger는 현재 환경에서 완전 검증되지 않았다. 다만 Airflow wrapper command contract는 `tests/test_orchestration.py`로 검증했다.
 - manufacturing strict numeric cast는 일부 bad row를 graceful quarantine하지 못하고 fail-fast한다.
 - EAV 쪽은 unparseable value를 graceful quality failure로 잡는다.
 

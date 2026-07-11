@@ -58,7 +58,7 @@ flowchart LR
 | EAV multi-format modeling | Implemented, test-covered | `tests/test_eav_pipeline.py`, EAV JSON CLI | clean-room wide -> EAV -> gold flow; new format by config |
 | Operator debugging report | Implemented, test-covered | `tests/test_operator_report.py`, B4 published | read-only path-level evidence report; not automatic RCA or column-level lineage |
 | Runtime Mongo | Backlog / environment-blocked | `mongomock` tests only | model implemented; real runtime verification pending |
-| Runtime Airflow | Thin wrapper exists, runtime unverified | `dags/manufacturing_lakehouse_daily.py` | DAG wrapper written; runtime trigger pending |
+| Runtime Airflow | Wrapper command contract test-covered, runtime unverified | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py` | DAG wrapper command verified; runtime trigger pending |
 | Spark/Iceberg | Design-only | question map, primer, write-semantics note | next slice design; no code yet |
 | Kafka / streaming | Backlog | none | not claimed |
 | Robot/session/MCAP | Backlog | none | not claimed |
@@ -110,7 +110,7 @@ Airflow runtime verification
 Why:
 
 ```text
-The DAG already exists, but runtime trigger is not verified.
+The DAG exists and the wrapper command contract is test-covered, but runtime trigger is not verified.
 This is smaller and lower-risk than Spark/Iceberg.
 It closes an explicit caveat in README/resume wording.
 It should not change business logic; it should prove orchestration only.

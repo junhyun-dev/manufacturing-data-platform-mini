@@ -6,6 +6,8 @@ from pathlib import Path
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 
+from manufacturing_data_platform.orchestration import build_lakehouse_cli_command
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -32,10 +34,10 @@ with DAG(
     run_pipeline_task = BashOperator(
         task_id="run_pipeline_task",
         cwd=str(REPO_ROOT),
-        bash_command=(
-            "PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run "
-            "--business-date '{{ dag_run.conf.get(\"business_date\", ds) }}' "
-            "--raw-path '{{ dag_run.conf.get(\"raw_path\", \"data/raw/manufacturing_events.csv\") }}'"
+        bash_command=build_lakehouse_cli_command(
+            business_date='{{ dag_run.conf.get("business_date", ds) }}',
+            raw_path='{{ dag_run.conf.get("raw_path", "data/raw/manufacturing_events.csv") }}',
+            output_dir='{{ dag_run.conf.get("output_dir", "data/lakehouse_airflow") }}',
+            catalog_backend='{{ dag_run.conf.get("catalog_backend", "json") }}',
         ),
     )
-

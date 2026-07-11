@@ -181,10 +181,16 @@ Synthetic inputs (`data/raw/eav/`) and mapping configs (`config/eav_mappings/`) 
 `dags/manufacturing_lakehouse_daily.py` defines `manufacturing_lakehouse_daily` with a single `run_pipeline_task`. It calls:
 
 ```bash
-PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run \
+  --business-date <date> \
+  --raw-path <path> \
+  --output-dir <path> \
+  --catalog-backend <mongo|json>
 ```
 
-The DAG can receive `business_date` and `raw_path` through `dag_run.conf` for manual backfill-style runs. The next split, if needed, is `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task`, but the logic should stay in `manufacturing_data_platform.pipeline`, not inside the DAG body.
+The DAG can receive `business_date`, `raw_path`, `output_dir`, and `catalog_backend` through `dag_run.conf` for manual backfill-style runs. The command contract is built by `manufacturing_data_platform.orchestration.build_lakehouse_cli_command` and covered by `tests/test_orchestration.py`, so the wrapper stays testable without Airflow installed.
+
+Airflow runtime trigger is still unverified in this environment. The next split, if needed, is `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task`, but the logic should stay in `manufacturing_data_platform.pipeline`, not inside the DAG body.
 
 ## Test
 

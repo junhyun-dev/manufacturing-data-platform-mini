@@ -59,7 +59,7 @@ flowchart LR
 | EAV multi-format modeling | 구현 완료, test-covered | `tests/test_eav_pipeline.py`, EAV JSON CLI | clean-room wide -> EAV -> gold flow; 새 format은 config로 onboarding |
 | Operator debugging report | 구현 완료, test-covered | `tests/test_operator_report.py`, B4 published | read-only path-level evidence report; automatic RCA나 column-level lineage 아님 |
 | Runtime Mongo | Backlog / environment-blocked | `mongomock` tests only | model은 구현됨; real runtime verification pending |
-| Runtime Airflow | thin wrapper 존재, runtime 미검증 | `dags/manufacturing_lakehouse_daily.py` | DAG wrapper 작성됨; runtime trigger pending |
+| Runtime Airflow | wrapper command contract test-covered, runtime 미검증 | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py` | DAG wrapper command는 검증됨; runtime trigger pending |
 | Spark/Iceberg | design-only | question map, primer, write-semantics note | 다음 slice 설계; 아직 code 없음 |
 | Kafka / streaming | Backlog | 없음 | claim하지 않음 |
 | Robot/session/MCAP | Backlog | 없음 | claim하지 않음 |
@@ -111,7 +111,7 @@ Airflow runtime verification
 이유:
 
 ```text
-DAG는 이미 있지만 runtime trigger가 검증되지 않았다.
+DAG는 있고 wrapper command contract는 test-covered지만 runtime trigger는 검증되지 않았다.
 Spark/Iceberg보다 작고 위험이 낮다.
 README/resume caveat 하나를 실제 evidence로 닫을 수 있다.
 business logic을 DAG로 옮기지 않고 orchestration만 증명하면 된다.
@@ -252,7 +252,7 @@ Airflow runtime 검증
 이 순서가 가장 효율적인 이유:
 
 ```text
-Airflow는 현재 wrapper가 있으므로 runtime caveat를 작게 닫을 수 있다.
+Airflow는 현재 wrapper command contract까지 검증됐으므로, 남은 runtime caveat를 작게 닫을 수 있다.
 Spark/Iceberg는 현재 design-only라 walking skeleton evidence가 필요하다.
 Iceberg는 "도구 추가"가 아니라 business_date 재처리 문제를 해결하는 storage/table layer로 설명해야 한다.
 Kafka/streaming은 지금 thesis의 Core가 아니므로 backlog에 둔다.

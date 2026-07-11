@@ -399,3 +399,37 @@ Notes:
 
 - `source_file_id` is each file-content hash; run-level idempotency uses the combined `source_hash` across source files.
 - This is publication evidence for B3, not a new feature slice.
+
+## 2026-07-11 — Airflow wrapper command contract
+
+Scope:
+
+- Make the Airflow wrapper command testable without requiring Airflow to be installed.
+- Keep business logic in the lakehouse CLI/pipeline module, not inside the DAG body.
+- Verify the same concrete CLI command still runs with the JSON catalog backend.
+
+Commands:
+
+```bash
+pytest
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run --business-date 2026-06-29 --raw-path data/raw/manufacturing_events.csv --output-dir /tmp/manufacturing-mini-airflow-contract-check --catalog-backend json
+```
+
+Results:
+
+```text
+pytest: 38 passed
+lakehouse JSON CLI: passed, status=processed, quality_passed=true
+```
+
+Verified:
+
+- [x] Added `manufacturing_data_platform.orchestration.build_lakehouse_cli_command`.
+- [x] Airflow DAG uses the shared command builder instead of owning business logic.
+- [x] Command builder supports Airflow Jinja runtime parameters for `business_date`, `raw_path`, `output_dir`, and `catalog_backend`.
+- [x] Command builder rejects invalid concrete catalog backends.
+
+Notes:
+
+- This verifies the Airflow wrapper command contract, not Airflow runtime execution.
+- Airflow is not installed in this environment; DAG import/trigger under a real Airflow runtime remains pending.
