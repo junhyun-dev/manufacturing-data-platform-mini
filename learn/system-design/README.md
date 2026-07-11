@@ -70,6 +70,9 @@ service purpose charter
 7. [`05-iceberg-spark-mini-primer.md`](05-iceberg-spark-mini-primer.md)
    - Iceberg/Spark 전체 공부가 아니라, Slice2에 필요한 공식 문서 범위와 walking skeleton을 정리한다.
    - `business_date` 재처리, partition overwrite, snapshot, run_id vs snapshot_id를 연결한다.
+8. [`06-spark-iceberg-walking-skeleton-plan.md`](06-spark-iceberg-walking-skeleton-plan.md)
+   - Spark/Iceberg 구현 직전의 작은 question map + test contract.
+   - Claude audit에 넘길 Core/Demo/Backlog/Unknown 분류와 claim boundary를 고정한다.
 
 ## Scenario Walkthroughs
 

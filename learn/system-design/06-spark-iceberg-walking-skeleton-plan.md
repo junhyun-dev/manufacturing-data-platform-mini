@@ -1,0 +1,267 @@
+# 06. Spark/Iceberg Walking Skeleton Plan
+
+상태: implementation pre-plan / Claude audit target
+프로젝트: `manufacturing-data-platform-mini`
+
+> **STATUS: design-only.** 이 repo에는 아직 Spark/Iceberg 구현 코드가 없고, `pyspark`도 설치되어 있지 않다. 이 문서는 구현 직전의 작은 question map + test contract다.
+
+## 1. Build Thesis
+
+```text
+같은 business_date에 정정 source가 들어왔을 때,
+gold 결과를 중복 없이 교체하고,
+overwrite 전후 snapshot evidence를 남겨 비교할 수 있게 한다.
+```
+
+이 slice는 "Spark/Iceberg를 붙였다"가 목적이 아니다.
+
+목적은 Slice1의 핵심 contract를 Spark/Iceberg의 table/snapshot 모델로 작게 재표현하는 것이다.
+
+```text
+Slice1:
+  same source_hash rerun -> skip
+  changed source same business_date -> new run, but CSV output is run-folder based
+
+Walking skeleton:
+  same source_hash rerun -> skip remains possible
+  changed source same business_date -> business_date partition overwrite
+  overwrite creates a new Iceberg snapshot
+  run metadata records run_id -> snapshot_id
+```
+
+## 2. Primary Scenario
+
+```text
+business_date=2026-06-29 gold_daily_metrics가 이미 있다.
+나중에 같은 business_date의 정정 데이터가 들어온다.
+운영자는 같은 날짜 결과가 append 중복되지 않고 새 값으로 교체되길 원한다.
+또한 재처리 전/후 결과를 snapshot으로 비교할 수 있어야 한다.
+```
+
+## 3. Wide Question Expansion
+
+질문은 넓게 뽑고, 이번 walking skeleton에서 Core만 구현한다.
+
+| Axis | Question | Initial classification |
+|---|---|---:|
+| Local feasibility | 이 WSL/local 환경에서 `pyspark` + Iceberg runtime jar가 실제로 뜨는가? | Unknown/Core |
+| Catalog | local Iceberg catalog는 hadoop catalog로 충분한가? warehouse path는 어디인가? | Core |
+| Table scope | bronze/silver/gold 전체가 아니라 `gold_daily_metrics` 하나만으로 충분한가? | Core |
+| Partitioning | partition column은 `business_date` 하나로 고정해도 되는가? | Core |
+| Write semantics | append / whole-table overwrite / partition overwrite 중 무엇인가? | Core |
+| Idempotency | 같은 source_hash rerun은 skip할 것인가, overwrite를 또 할 것인가? | Core |
+| Correction | 다른 source_hash + 같은 business_date는 partition overwrite로 처리할 것인가? | Core |
+| Snapshot | overwrite 후 current snapshot id를 어떻게 읽을 것인가? | Core |
+| Run metadata | `run_id`와 `snapshot_id`를 어떻게 구분하고 기록할 것인가? | Core |
+| Time travel | 이전 snapshot 읽기는 Core인가 Demo인가? | Demo |
+| Other partitions | 다른 business_date partition이 보존되는지 확인할 것인가? | Demo/Core-lite |
+| Schema evolution | added column을 Iceberg table schema에 반영할 것인가? | Backlog |
+| Quality on Spark | 기존 quality suite를 Spark agg로 옮길 것인가? | Backlog |
+| Full Spark port | bronze/silver/gold 전체를 DataFrame으로 이식할 것인가? | Backlog |
+| MERGE/upsert | late row 단위 upsert를 할 것인가? | Backlog |
+| Concurrency | concurrent writers를 검증할 것인가? | Backlog |
+| Runtime Airflow | Airflow가 Spark/Iceberg run을 trigger할 것인가? | Backlog for this slice |
+| Public claim | 구현 후 어디까지 말할 수 있는가? | Core |
+
+## 4. Core Scope
+
+이번 skeleton에서 구현할 최소 범위:
+
+```text
+1. local SparkSession 생성
+2. local Iceberg catalog / warehouse 설정
+3. `gold_daily_metrics` Iceberg table 생성
+4. business_date=2026-06-29 initial rows write
+5. snapshot S1 읽기
+6. 같은 business_date corrected rows로 partition overwrite
+7. snapshot S2 읽기
+8. current table에 corrected rows만 있고 중복이 없는지 확인
+9. 가능하면 S1/S2를 비교해서 time-travel demo 확인
+10. run_id -> gold_snapshot_id mapping을 JSON evidence로 저장
+```
+
+구현하지 않을 것:
+
+```text
+bronze/silver/gold full Spark rewrite
+quality-on-Spark
+schema evolution
+MERGE/upsert
+retention/expire
+concurrent writers
+cluster deployment
+Airflow runtime integration
+Kafka streaming
+production rollback
+```
+
+## 5. Proposed File/Module Shape
+
+초안:
+
+```text
+src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py
+tests/test_spark_iceberg_skeleton.py
+```
+
+CLI 후보:
+
+```bash
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skeleton \
+  --warehouse /tmp/manufacturing-mini-iceberg-warehouse \
+  --output-dir /tmp/manufacturing-mini-iceberg-evidence
+```
+
+Evidence output 후보:
+
+```text
+/tmp/manufacturing-mini-iceberg-evidence/
+  run_snapshot_map.json
+  current_gold.json
+  snapshot_comparison.json
+```
+
+`run_snapshot_map.json` 예:
+
+```json
+{
+  "dataset_id": "manufacturing_daily_metrics",
+  "table": "local.db.gold_daily_metrics",
+  "business_date": "2026-06-29",
+  "runs": [
+    {
+      "run_id": "R1",
+      "source_hash": "H1",
+      "gold_snapshot_id": 111
+    },
+    {
+      "run_id": "R2",
+      "source_hash": "H2",
+      "gold_snapshot_id": 222
+    }
+  ],
+  "claim_boundary": {
+    "supports": [
+      "local Spark/Iceberg table creation",
+      "business_date partition overwrite",
+      "snapshot id evidence",
+      "run_id to snapshot_id mapping"
+    ],
+    "does_not_support": [
+      "production rollback",
+      "concurrent writer handling",
+      "full medallion Spark rewrite",
+      "Airflow runtime orchestration"
+    ]
+  }
+}
+```
+
+## 6. Test Contract
+
+### Test 0. Environment gate
+
+```text
+given local environment
+when importing pyspark / starting SparkSession with Iceberg catalog
+then either:
+  test runs and verifies the skeleton
+or:
+  test is explicitly skipped with reason "pyspark/Iceberg runtime unavailable"
+```
+
+이 test는 실패를 숨기기 위한 skip이 아니다. 환경 제약을 명시하기 위한 gate다.
+
+### Test 1. Table creation
+
+```text
+given warehouse path
+when skeleton runs initial write
+then gold_daily_metrics table exists
+and current rows include business_date=2026-06-29
+and a snapshot id is recorded
+```
+
+### Test 2. Partition overwrite
+
+```text
+given initial rows for business_date D and another date D2
+when corrected rows for D are written by partition overwrite
+then D rows reflect corrected values
+and D rows are not duplicated
+and D2 rows remain unchanged
+and new snapshot id != previous snapshot id
+```
+
+### Test 3. Run metadata mapping
+
+```text
+given initial run R1 and correction run R2
+when evidence is written
+then run_snapshot_map.json records:
+  R1 -> snapshot S1
+  R2 -> snapshot S2
+and run_id is not treated as snapshot_id
+```
+
+### Test 4. Time travel demo
+
+```text
+given S1 and S2 exist
+when reading VERSION AS OF S1 and S2
+then old and corrected gold metrics can be compared
+```
+
+Classification: Demo. If Iceberg/Spark version friction makes time-travel SQL painful, keep snapshot metadata evidence and do not overclaim.
+
+## 7. Claim Boundary
+
+If skeleton passes, allowed wording:
+
+```text
+Built a local Spark/Iceberg walking skeleton that overwrites a business_date
+partition and records snapshot metadata for rerun comparison.
+```
+
+Still forbidden:
+
+```text
+implemented full Spark/Iceberg medallion pipeline
+operated production Iceberg lakehouse
+handled concurrent writers
+implemented MERGE/upsert
+implemented production rollback/retention
+verified Airflow-triggered Spark runtime
+```
+
+Before skeleton passes, wording remains:
+
+```text
+Designed the Spark/Iceberg translation path for business_date partition overwrite
+and run_id -> snapshot_id lineage, implementation pending.
+```
+
+## 8. Claude Audit Prompt
+
+```text
+너는 external benchmark auditor + supplementer다.
+
+아래 문서를 Apache Iceberg/Spark 공식 문서와 2025-2026 lakehouse 관점에서 감사해줘.
+목표는 구현 범위를 늘리는 게 아니라, walking skeleton의 질문 품질과 claim boundary를 강화하는 것이다.
+
+감사 기준:
+1. Core/Demo/Backlog/Unknown 분류가 맞는가?
+2. business_date partition overwrite 구현 전에 빠진 Core 질문이 있는가?
+3. run_id와 snapshot_id 구분이 정확한가?
+4. Spark/Iceberg local skeleton에서 가장 깨지기 쉬운 버전/jar/catalog 설정 질문은 무엇인가?
+5. time travel을 Demo로 둔 것이 정직한가?
+6. public README/blog/resume에서 과장 위험이 있는 표현은 무엇인가?
+7. 더 좋은 test contract가 있는가?
+
+현재 repo 상태:
+- Python/CSV Slice1, EAV, operator report는 구현+테스트됨.
+- Airflow wrapper command contract는 test-covered지만 runtime Airflow는 미검증.
+- Spark/Iceberg code는 0줄이고 pyspark도 미설치.
+- 목표는 full Spark rewrite가 아니라 gold_daily_metrics table 하나로 partition overwrite + snapshot evidence를 확인하는 walking skeleton.
+```
+
