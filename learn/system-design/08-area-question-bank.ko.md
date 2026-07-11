@@ -516,7 +516,7 @@ Spark/Iceberg jar/version 문제를 Test 0으로 잡았나?
 | pytest | 최신 수치는 `VERIFICATION_LOG.md` 확인 | verification log |
 | Spark optional tests | optional dependency 설치 후 검증 기록 확인 | verification log |
 | CLI smoke | lakehouse/EAV/operator/Spark CLI 기록 확인 | verification log |
-| version pin | `spark-iceberg/05-version-pin.md` | 문서화됨 |
+| version pin | `slices/spark-iceberg-partition-overwrite/05-version-pin.md` | 문서화됨 |
 
 ### 5.15 Public Claim / Blog / Resume Boundary
 
@@ -543,7 +543,7 @@ Spark/Iceberg skeleton과 full Spark pipeline을 구분했는가?
 
 ## 6. Spark/Iceberg 질문을 다시 구조화하면
 
-기존 `spark-iceberg/01-question-map.md`와 `spark-iceberg/04-walking-skeleton-plan.md`의 질문은 아래처럼 읽으면 된다.
+기존 `slices/spark-iceberg-partition-overwrite/01-question-map.md`와 `slices/spark-iceberg-partition-overwrite/04-walking-skeleton-plan.md`의 질문은 아래처럼 읽으면 된다.
 
 ```text
 Service question:

@@ -218,7 +218,7 @@ schema가 바뀌면?
 2. README의 Phase 1 / Phase 2만 다시 읽는다.
 3. VERIFICATION_LOG의 2026-07-08 결과만 본다.
 4. `source_hash`, `business_date`, `quality`, `lineage` 네 단어만 설명해본다.
-5. 그 다음 `spark-iceberg/02-state-shift.md`를 읽는다.
+5. 그 다음 `slices/spark-iceberg-partition-overwrite/02-state-shift.md`를 읽는다.
 6. Spark/Iceberg 공식 문서는 그 다음이다.
 ```
 

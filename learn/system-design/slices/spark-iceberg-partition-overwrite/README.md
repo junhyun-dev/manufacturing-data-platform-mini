@@ -8,13 +8,13 @@
 
 ```text
 최신 실행/테스트 결과:
-  ../../../VERIFICATION_LOG.md
+  ../../../../VERIFICATION_LOG.md
 
 한 build 단위의 얇은 지도:
-  ../slices/01-spark-iceberg-partition-overwrite.ko.md
+  00-slice-map.ko.md
 
 write semantics 결정:
-  ../../reference-decisions/iceberg-write-semantics.md
+  ../../../reference-decisions/iceberg-write-semantics.md
 ```
 
 ## Reading Order

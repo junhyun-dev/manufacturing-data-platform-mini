@@ -71,7 +71,6 @@ service purpose charter
 | [`source-contracts/`](source-contracts/) | 입력 파일/row/schema/source identity 계약 |
 | [`question-bank/`](question-bank/) | 영역별 상세 질문 은행 |
 | [`slices/`](slices/) | build 단위의 얇은 질문/범위/evidence 지도 |
-| [`spark-iceberg/`](spark-iceberg/) | Spark/Iceberg slice supporting docs |
 
 ## Folder Axis Rule
 
@@ -85,9 +84,7 @@ slice           = 이번 build 범위
 decision        = 특정 선택의 tradeoff
 ```
 
-`spark-iceberg/`는 현재 예외다. Spark/Iceberg supporting 문서가 이미 여러 개로 커져서 루트에서 분리했지만, 분류 축으로 보면 `by topic/technology`에 가깝다.
-
-앞으로 새 기술 문서가 늘어날 때는 새 top-level topic folder를 바로 만들지 않는다.
+새 기술 문서가 늘어날 때도 새 top-level topic folder를 바로 만들지 않는다.
 
 ```text
 좋음:
@@ -104,7 +101,23 @@ decision        = 특정 선택의 tradeoff
   spark-iceberg-v2/
 ```
 
-즉 top-level은 계속 stage/type 중심으로 유지하고, 큰 slice의 상세 supporting docs는 해당 slice 아래로 중첩한다. 현재 `spark-iceberg/`는 기존 리오그 직후라 유지하되, 다음 구조 변경 때 `slices/spark-iceberg-partition-overwrite/`로 접을 수 있다.
+즉 top-level은 계속 stage/type 중심으로 유지하고, 큰 slice의 상세 supporting docs는 해당 slice 아래로 중첩한다.
+
+## Terminology Note
+
+이 문서의 용어는 표준 용어와 프로젝트 내부 용어가 섞여 있다.
+
+| 용어 | 일반성 | 이 프로젝트에서의 뜻 |
+|---|---|---|
+| scenario | 일반적 | 문제가 생기는 사용자/운영 상황 |
+| data contract / source contract | data contract는 일반적, source contract는 입력 쪽으로 좁힌 표현 | 입력 데이터가 지켜야 하는 schema, grain, identity 약속 |
+| ADR / decision note | 일반적 | 한 설계 선택의 options, tradeoff, decision 기록 |
+| vertical slice / slice | 일반적 | end-to-end로 작게 자른 build 단위 |
+| walking skeleton | 일반적 | 전체 구조를 아주 얇게 관통하는 실행 가능한 뼈대 |
+| question map | 내부 명명 | discovery/design review/RFC 질문을 한곳에 펼친 지도 |
+| slice map | 내부 명명 | 이번 build에서 Core/Backlog/Unknown을 자른 얇은 index |
+| claim boundary | 내부 명명 | 구현 evidence로 말해도 되는 범위와 금지 claim |
+| verification log | 내부 명명 | release checklist/run evidence에 가까운 실행 기록 |
 
 ## Slice Maps
 
@@ -112,7 +125,7 @@ decision        = 특정 선택의 tradeoff
   - 시나리오와 구현 사이에서, 이번 build가 어떤 질문을 Core/Backlog로 잘랐는지 보는 얇은 index.
 - [`slices/TEMPLATE.ko.md`](slices/TEMPLATE.ko.md)
   - 새 slice를 시작하거나 완료된 slice를 정리할 때 쓰는 7-section template.
-- [`slices/01-spark-iceberg-partition-overwrite.ko.md`](slices/01-spark-iceberg-partition-overwrite.ko.md)
+- [`slices/spark-iceberg-partition-overwrite/00-slice-map.ko.md`](slices/spark-iceberg-partition-overwrite/00-slice-map.ko.md)
   - Spark/Iceberg partition overwrite slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
 - [`slices/02-airflow-wrapper-command-contract.ko.md`](slices/02-airflow-wrapper-command-contract.ko.md)
   - Airflow wrapper command contract slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
@@ -129,10 +142,10 @@ decision        = 특정 선택의 tradeoff
   - gold 숫자가 이상할 때 operator가 source/run/quality/lineage evidence를 어떤 순서로 확인하는가?
   - 기존 catalog/lineage claim을 실제 RCA walkthrough로 exercise한다.
 
-## Spark/Iceberg Supporting Docs
+## Large Slice Supporting Docs
 
-- [`spark-iceberg/README.md`](spark-iceberg/README.md)
-  - Spark/Iceberg 관련 질문 지도, state shift, primer, walking skeleton plan, version pin의 진입점.
+- [`slices/spark-iceberg-partition-overwrite/README.md`](slices/spark-iceberg-partition-overwrite/README.md)
+  - Spark/Iceberg partition overwrite slice의 supporting docs 진입점.
 
 ## Source Contracts
 

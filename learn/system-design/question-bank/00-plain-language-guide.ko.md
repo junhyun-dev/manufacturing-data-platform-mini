@@ -787,7 +787,7 @@ production rollback
 1. 이 문서
 2. ../08-area-question-bank.ko.md
 3. 관심 있는 상세 문서 하나
-4. 실제 slice 문서: spark-iceberg/04-walking-skeleton-plan.md 같은 것
+4. 실제 slice 문서: slices/spark-iceberg-partition-overwrite/04-walking-skeleton-plan.md 같은 것
 ```
 
 이렇게 읽으면 어려운 용어를 먼저 외우는 것이 아니라, 쉬운 질문이 설계 질문으로 바뀌는 과정을 따라갈 수 있다.

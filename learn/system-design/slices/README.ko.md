@@ -60,7 +60,7 @@ slices/<slice-name>/
   audit-notes.md
 ```
 
-현재 `../spark-iceberg/`는 기존 Spark/Iceberg supporting 문서를 모아둔 예외다. 다음 리오그가 필요해질 때 이 규칙에 맞춰 `slices/spark-iceberg-partition-overwrite/`로 접을 수 있다.
+Spark/Iceberg partition overwrite slice는 이 규칙을 따른다.
 
 ## Slices
 
@@ -71,7 +71,7 @@ Template:
 
 Current slices:
 
-1. [`01-spark-iceberg-partition-overwrite.ko.md`](01-spark-iceberg-partition-overwrite.ko.md)
+1. [`spark-iceberg-partition-overwrite/00-slice-map.ko.md`](spark-iceberg-partition-overwrite/00-slice-map.ko.md)
    - same `business_date` correction을 Iceberg partition overwrite + snapshot evidence로 표현한 slice.
 2. [`02-airflow-wrapper-command-contract.ko.md`](02-airflow-wrapper-command-contract.ko.md)
    - Airflow가 business logic을 갖지 않고 같은 lakehouse CLI를 호출한다는 wrapper contract slice.

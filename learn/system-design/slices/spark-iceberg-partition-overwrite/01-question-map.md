@@ -12,13 +12,13 @@
 읽는 법:
 
 ```text
-../08-area-question-bank.ko.md
+../../08-area-question-bank.ko.md
   -> 보안 / 분산처리 / 재처리 / 장애 / 품질 / 운영 / claim 같은 전체 질문 축
 
-spark-iceberg/01-question-map.md
+01-question-map.md
   -> 그중 Spark/Iceberg Slice2에 걸리는 질문만 모은 slice-specific 지도
 
-spark-iceberg/04-walking-skeleton-plan.md
+04-walking-skeleton-plan.md
   -> 02에서 고른 Core 질문을 실제 walking skeleton test contract로 내린 문서
 ```
 
@@ -114,9 +114,9 @@ Unknown  walking skeleton이나 작은 테스트를 해봐야 답할 수 있다.
 
 | 영역 | Covered in |
 |---|---|
-| medallion bronze/silver/gold 흐름 | `lakehouse.py`, `../scenarios/00-scenario-seed.md`, `../source-contracts/01-manufacturing-csv.md` |
-| source/schema identity (`source_hash`, `schema_hash`) | `../source-contracts/01-manufacturing-csv.md`, `../../reference-decisions/schema-drift.md` |
-| schema drift detect + warn 정책 | `../../reference-decisions/schema-drift.md` |
+| medallion bronze/silver/gold 흐름 | `lakehouse.py`, `../../scenarios/00-scenario-seed.md`, `../../source-contracts/01-manufacturing-csv.md` |
+| source/schema identity (`source_hash`, `schema_hash`) | `../../source-contracts/01-manufacturing-csv.md`, `../../../reference-decisions/schema-drift.md` |
+| schema drift detect + warn 정책 | `../../../reference-decisions/schema-drift.md` |
 | idempotency (skip existing successful run) | `lakehouse.find_existing_successful_run`, `02` |
 | quality suite (dbt식 check dict) | `lakehouse.build_quality_checks` |
 | lineage (parent links, run record) | `lakehouse.build_lineage_doc` |
@@ -375,8 +375,8 @@ honcho 방식 그대로.
 - v0에서 하지 말아야 할 것도 명시한다.
 
 볼 문서:
-- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/spark-iceberg/01-question-map.md
-- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/spark-iceberg/02-state-shift.md
+- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/slices/spark-iceberg-partition-overwrite/01-question-map.md
+- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/slices/spark-iceberg-partition-overwrite/02-state-shift.md
 - /home/junhyun/dev/DECISION_LEARNING_PLAYBOOK.md
 
 출력 형식:

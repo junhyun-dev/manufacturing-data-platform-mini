@@ -3,7 +3,7 @@
 상태: implemented local walking skeleton / thin slice map
 
 > 이 문서는 Spark/Iceberg 관련 설계 흐름을 한눈에 보기 위한 index다.  
-> 최신 테스트 수와 실행 결과는 [`../../../VERIFICATION_LOG.md`](../../../VERIFICATION_LOG.md)가 source of truth다.
+> 최신 테스트 수와 실행 결과는 [`../../../../VERIFICATION_LOG.md`](../../../../VERIFICATION_LOG.md)가 source of truth다.
 
 ## 1. Slice Thesis
 
@@ -35,24 +35,24 @@ business_date=2026-06-29의 gold 결과가 이미 있다.
 
 관련 scenario / 배경 문서:
 
-- [`../scenarios/01-rerun-same-business-date.md`](../scenarios/01-rerun-same-business-date.md)
-- [`../spark-iceberg/01-question-map.md`](../spark-iceberg/01-question-map.md)
-- [`../spark-iceberg/02-state-shift.md`](../spark-iceberg/02-state-shift.md)
-- [`../spark-iceberg/03-mini-primer.md`](../spark-iceberg/03-mini-primer.md)
+- [`../../scenarios/01-rerun-same-business-date.md`](../../scenarios/01-rerun-same-business-date.md)
+- [`01-question-map.md`](01-question-map.md)
+- [`02-state-shift.md`](02-state-shift.md)
+- [`03-mini-primer.md`](03-mini-primer.md)
 
 ## 3. Question Areas Pulled
 
 관련 question-bank 영역:
 
-- [`../question-bank/02-quality-rerun-failure.ko.md`](../question-bank/02-quality-rerun-failure.ko.md)
+- [`../../question-bank/02-quality-rerun-failure.ko.md`](../../question-bank/02-quality-rerun-failure.ko.md)
   - rerun / correction / failure state
-- [`../question-bank/03-storage-spark-consistency.ko.md`](../question-bank/03-storage-spark-consistency.ko.md)
+- [`../../question-bank/03-storage-spark-consistency.ko.md`](../../question-bank/03-storage-spark-consistency.ko.md)
   - storage / table format / Spark / atomicity
-- [`../question-bank/06-cross-area-connection-questions.ko.md`](../question-bank/06-cross-area-connection-questions.ko.md)
+- [`../../question-bank/06-cross-area-connection-questions.ko.md`](../../question-bank/06-cross-area-connection-questions.ko.md)
   - correction x lineage
   - catalog x table commit
   - quality x current state
-- [`../question-bank/05-security-performance-testing-claim.ko.md`](../question-bank/05-security-performance-testing-claim.ko.md)
+- [`../../question-bank/05-security-performance-testing-claim.ko.md`](../../question-bank/05-security-performance-testing-claim.ko.md)
   - testing / claim boundary
 
 ### Core Questions
@@ -91,7 +91,7 @@ business_date=2026-06-29의 gold 결과가 이미 있다.
 
 | Unknown | Closed by |
 |---|---|
-| PySpark/Iceberg runtime jar/catalog 조합이 local에서 뜨는가? | [`../spark-iceberg/05-version-pin.md`](../spark-iceberg/05-version-pin.md), tests |
+| PySpark/Iceberg runtime jar/catalog 조합이 local에서 뜨는가? | [`05-version-pin.md`](05-version-pin.md), tests |
 | `.snapshots` metadata를 local Spark에서 읽을 수 있는가? | Spark/Iceberg skeleton tests |
 | `overwritePartitions()`가 D2 partition을 보존하는가? | Spark/Iceberg skeleton tests |
 
@@ -99,9 +99,9 @@ business_date=2026-06-29의 gold 결과가 이미 있다.
 
 세부 decision 문서:
 
-- [`../../reference-decisions/iceberg-write-semantics.md`](../../reference-decisions/iceberg-write-semantics.md)
-- [`../spark-iceberg/04-walking-skeleton-plan.md`](../spark-iceberg/04-walking-skeleton-plan.md)
-- [`../spark-iceberg/05-version-pin.md`](../spark-iceberg/05-version-pin.md)
+- [`../../../reference-decisions/iceberg-write-semantics.md`](../../../reference-decisions/iceberg-write-semantics.md)
+- [`04-walking-skeleton-plan.md`](04-walking-skeleton-plan.md)
+- [`05-version-pin.md`](05-version-pin.md)
 
 핵심 결정만 요약:
 
@@ -117,13 +117,13 @@ Keep full Spark medallion rewrite as Backlog
 
 Code / test:
 
-- [`../../../requirements-spark.txt`](../../../requirements-spark.txt)
-- [`../../../src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py`](../../../src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py)
-- [`../../../tests/test_spark_iceberg_skeleton.py`](../../../tests/test_spark_iceberg_skeleton.py)
+- [`../../../../requirements-spark.txt`](../../../../requirements-spark.txt)
+- [`../../../../src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py`](../../../../src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py)
+- [`../../../../tests/test_spark_iceberg_skeleton.py`](../../../../tests/test_spark_iceberg_skeleton.py)
 
 Verification:
 
-- [`../../../VERIFICATION_LOG.md`](../../../VERIFICATION_LOG.md)
+- [`../../../../VERIFICATION_LOG.md`](../../../../VERIFICATION_LOG.md)
   - `2026-07-11 — Spark/Iceberg single-gold-table walking skeleton`
 
 ## 6. Claim Boundary

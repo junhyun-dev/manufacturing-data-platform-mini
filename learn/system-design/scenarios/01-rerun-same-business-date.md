@@ -2,7 +2,7 @@
 
 상태: 이해용 초안
 
-목적: `spark-iceberg/01-question-map.md`의 #1(ACID), #2(write semantics), #10(idempotency)을 실제 시나리오 하나로 풀어서 이해한다.
+목적: `slices/spark-iceberg-partition-overwrite/01-question-map.md`의 #1(ACID), #2(write semantics), #10(idempotency)을 실제 시나리오 하나로 풀어서 이해한다.
 
 ---
 

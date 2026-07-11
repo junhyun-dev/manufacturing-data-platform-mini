@@ -4,7 +4,7 @@
 프로젝트: `manufacturing-data-platform-mini`
 
 > **Scope status:** 이 문서는 Spark/Iceberg로 state를 어떻게 재표현할지 설명하는 design bridge다.
-> local single-gold-table walking skeleton은 구현됐고, 최신 runtime/test 결과는 [`../../../VERIFICATION_LOG.md`](../../../VERIFICATION_LOG.md)가 source of truth다.
+> local single-gold-table walking skeleton은 구현됐고, 최신 runtime/test 결과는 [`../../../../VERIFICATION_LOG.md`](../../../../VERIFICATION_LOG.md)가 source of truth다.
 > full Spark medallion rewrite와 production lakehouse operation은 아직 Backlog다.
 
 이 문서는 Slice2를 "Spark/Iceberg를 붙인다"로 보지 않는다.
