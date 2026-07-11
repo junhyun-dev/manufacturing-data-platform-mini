@@ -1,9 +1,12 @@
 # Iceberg Write Semantics 의사결정 노트
 
-상태: 같이 검토할 초안
+ADR Status: Implemented
+상태: accepted local walking-skeleton decision
 프로젝트: `manufacturing-data-platform-mini`
 
-> **STATUS: design-only.** 이 repo에는 아직 Spark/Iceberg 구현 코드가 없고, `pyspark`도 설치되어 있지 않다. 이 노트는 write semantics decision draft이며 구현 evidence가 아니다.
+> **Scope status:** local single-gold-table Spark/Iceberg walking skeleton은 구현됐다.
+> full Spark medallion rewrite, production lakehouse operation, concurrent writer handling, retention/rollback은 아직 Backlog다.
+> 최신 runtime/test 결과는 [`../../VERIFICATION_LOG.md`](../../VERIFICATION_LOG.md)가 source of truth다.
 
 이 노트는 Slice2에서 "table에 write를 어떻게 commit하나"를 다룬다. `02-slice2-question-map.md`의 #1(ACID) + #2(write semantics) + #10(idempotency)을 하나로 수렴한다. 이게 Slice2의 심장이다.
 

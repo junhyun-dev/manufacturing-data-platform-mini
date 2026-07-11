@@ -599,6 +599,10 @@ production rollback
 
 ## 7. 다음 slice를 고를 때 쓰는 짧은 템플릿
 
+정식 템플릿은 [`slices/TEMPLATE.ko.md`](slices/TEMPLATE.ko.md)를 쓴다.
+
+짧게 생각할 때는 아래만 먼저 채운다.
+
 ```text
 Slice thesis:
   무엇을 만들고 싶은가?
@@ -626,10 +630,31 @@ Claim boundary:
 
 ## 8. 현재 우선순위 후보
 
-| 후보 | 관련 질문 영역 | 이유 | 추천 |
+우선순위는 "재미있어 보이는 기술"이 아니라 아래 기준으로 고른다.
+
+| 기준 | 질문 |
+|---|---|
+| Claim gap closure | 지금 claim에서 가장 오해되거나 비어 있는 부분을 닫는가? |
+| Resume/JD impact | 채용시장 언어로 설명 가능한 evidence가 생기는가? |
+| Blog value | scenario -> pressure -> decision -> evidence로 글이 되는가? |
+| Implementation risk | 작은 slice로 끝낼 수 있는가, 환경/버전 리스크가 큰가? |
+| Learning value | 다음 설계 질문을 더 잘 이해하게 만드는가? |
+| Evidence reuse | 이미 있는 code/test/catalog/log를 재사용해 닫을 수 있는가? |
+
+추천 판단:
+
+```text
+높음 = claim gap을 닫고, 작게 구현/검증 가능하며, 블로그/이력서 evidence가 된다.
+중간 = 중요하지만 별도 설계나 runtime 준비가 필요하다.
+낮음 = 이름은 알아야 하지만 지금 구현하면 scope가 커진다.
+```
+
+현재 후보:
+
+| 후보 | 관련 질문 영역 | 우선순위 근거 | 추천 |
 |---|---|---|---|
-| B5 블로그 audit/publish | claim / evidence / Spark/Iceberg | 구현 evidence가 생겼으므로 포트폴리오로 승격 가능 | 높음 |
-| Airflow runtime verification | orchestration / local reproducibility | wrapper contract는 있으나 runtime은 미검증 | 높음 |
-| failure-state forensics | failure / observability / catalog | 성공 run 중심 report의 다음 gap | 중간 |
-| Spark quality checks | distributed processing / quality / cost | full Spark port로 커질 위험 | 낮음 |
-| security/PII governance slice | governance / claim | synthetic data라 당장 Core는 아님 | 낮음 |
+| B5 블로그 audit/publish | claim / evidence / Spark/Iceberg | 구현 evidence가 이미 있고, full lakehouse가 아니라 walking skeleton이라는 claim boundary를 연습할 수 있다. | 높음 |
+| Airflow runtime verification | orchestration / local reproducibility | wrapper contract와 runtime 미검증 사이의 claim gap을 닫는다. 다만 Airflow 설치/runtime 리스크가 있다. | 높음 |
+| failure-state forensics | failure / observability / catalog | 성공 run 중심 operator report의 다음 gap이다. 기존 catalog/report 구조를 재사용할 수 있다. | 중간 |
+| Spark quality checks | distributed processing / quality / cost | JD impact는 있지만 full Spark port로 커질 위험이 크다. 별도 slice로 작게 잘라야 한다. | 낮음 |
+| security/PII governance slice | governance / claim | 공개 repo gate로는 중요하지만 synthetic data라 product feature evidence는 작다. | 낮음 |

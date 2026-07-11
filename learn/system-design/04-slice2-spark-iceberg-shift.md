@@ -1,9 +1,11 @@
 # 04. Slice2 — Spark/Iceberg로의 이동 (state 재표현)
 
-상태: 같이 검토할 초안
+상태: state-transition design bridge
 프로젝트: `manufacturing-data-platform-mini`
 
-> **STATUS: design-only.** 이 repo에는 아직 Spark/Iceberg 구현 코드가 없고, `pyspark`도 설치되어 있지 않다. 이 문서는 Slice2 설계/학습 노트이며 구현 evidence가 아니다.
+> **Scope status:** 이 문서는 Spark/Iceberg로 state를 어떻게 재표현할지 설명하는 design bridge다.
+> local single-gold-table walking skeleton은 구현됐고, 최신 runtime/test 결과는 [`../../VERIFICATION_LOG.md`](../../VERIFICATION_LOG.md)가 source of truth다.
+> full Spark medallion rewrite와 production lakehouse operation은 아직 Backlog다.
 
 이 문서는 Slice2를 "Spark/Iceberg를 붙인다"로 보지 않는다.
 대신 이렇게 본다.

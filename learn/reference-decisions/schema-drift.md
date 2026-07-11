@@ -1,6 +1,7 @@
 # Schema Drift 의사결정 노트
 
-상태: 같이 검토할 초안  
+ADR Status: Implemented
+상태: accepted implementation note
 프로젝트: `manufacturing-data-platform-mini`
 
 관련 문서/코드:
@@ -296,4 +297,3 @@ column-level semantic compatibility checking
 2. removed optional column도 `warn`인가, 일부 제거는 `fail`인가?
 3. `schema_drift` check가 hash만 보여줘도 충분한가, column names도 보여줘야 하나?
 4. missing required column은 `ValueError`로 터뜨릴지, structured quality failure로 남길지?
-

@@ -1,5 +1,6 @@
 # Gold Grain 의사결정 노트
 
+ADR Status: Implemented
 상태: implemented contract summary
 프로젝트: `manufacturing-data-platform-mini`
 

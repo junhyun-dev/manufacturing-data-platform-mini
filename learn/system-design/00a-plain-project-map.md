@@ -144,6 +144,7 @@ schema drift warning
 source_hash idempotency
 EAV multi-format mapping
 JSON CLI smoke run
+local Spark/Iceberg single-gold-table walking skeleton
 ```
 
 아직 아님:
@@ -151,7 +152,7 @@ JSON CLI smoke run
 ```text
 real Mongo runtime verification
 real Airflow runtime trigger
-Spark/Iceberg implementation
+full Spark/Iceberg medallion pipeline
 Kafka streaming
 ROS2/MCAP ingest
 production lakehouse

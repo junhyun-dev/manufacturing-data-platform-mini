@@ -90,6 +90,8 @@ service purpose charter
 
 - [`slices/README.ko.md`](slices/README.ko.md)
   - 시나리오와 구현 사이에서, 이번 build가 어떤 질문을 Core/Backlog로 잘랐는지 보는 얇은 index.
+- [`slices/TEMPLATE.ko.md`](slices/TEMPLATE.ko.md)
+  - 새 slice를 시작하거나 완료된 slice를 정리할 때 쓰는 7-section template.
 - [`slices/01-spark-iceberg-partition-overwrite.ko.md`](slices/01-spark-iceberg-partition-overwrite.ko.md)
   - Spark/Iceberg partition overwrite slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
 - [`slices/02-airflow-wrapper-command-contract.ko.md`](slices/02-airflow-wrapper-command-contract.ko.md)

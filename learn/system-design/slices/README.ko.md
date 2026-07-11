@@ -48,6 +48,13 @@ slice map의 고유 가치는 아래 세 가지다.
 
 ## Slices
 
+Template:
+
+- [`TEMPLATE.ko.md`](TEMPLATE.ko.md)
+  - 새 slice를 시작하거나, 이미 구현한 slice를 얇은 index로 정리할 때 쓰는 7-section 템플릿.
+
+Current slices:
+
 1. [`01-spark-iceberg-partition-overwrite.ko.md`](01-spark-iceberg-partition-overwrite.ko.md)
    - same `business_date` correction을 Iceberg partition overwrite + snapshot evidence로 표현한 slice.
 2. [`02-airflow-wrapper-command-contract.ko.md`](02-airflow-wrapper-command-contract.ko.md)

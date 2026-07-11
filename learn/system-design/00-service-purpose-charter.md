@@ -110,6 +110,7 @@ schema drift warning
 source_hash idempotency
 EAV multi-format mapping
 JSON CLI smoke runs
+local Spark/Iceberg single-gold-table walking skeleton
 ```
 
 Backlog / design-only:
@@ -117,7 +118,7 @@ Backlog / design-only:
 ```text
 real Mongo runtime verification
 Airflow runtime trigger verification
-Spark/Iceberg implementation
+full Spark/Iceberg medallion pipeline
 Kafka streaming
 ROS2/MCAP ingest
 column-level lineage
@@ -128,7 +129,7 @@ Explicitly not claiming:
 
 ```text
 production manufacturing data platform
-Spark/Iceberg implemented
+full Spark/Iceberg pipeline implemented
 Kafka streaming implemented
 real Mongo runtime verified
 Airflow runtime operated

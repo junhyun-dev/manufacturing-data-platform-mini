@@ -1,9 +1,11 @@
 # 05. Iceberg/Spark mini primer — business_date 재처리 시나리오에 필요한 만큼만
 
-상태: 학습/실습 브리지 초안
+상태: learning bridge / walking-skeleton primer
 프로젝트: `manufacturing-data-platform-mini`
 
-> **STATUS: design-only / learning bridge.** 이 repo에는 아직 Spark/Iceberg 구현 코드가 없고, `pyspark`도 설치되어 있지 않다. 이 문서는 walking skeleton 전 단계의 primer이며 구현 evidence가 아니다.
+> **Scope status:** 이 문서는 walking skeleton으로 가기 위한 primer다.
+> local single-gold-table Spark/Iceberg walking skeleton은 구현됐고, 최신 runtime/test 결과는 [`../../VERIFICATION_LOG.md`](../../VERIFICATION_LOG.md)가 source of truth다.
+> full Spark medallion rewrite와 production lakehouse operation은 아직 Backlog다.
 
 목적:
 
