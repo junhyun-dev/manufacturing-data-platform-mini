@@ -42,6 +42,20 @@
    - performance / scale / cost
    - testing / local reproducibility / CI
    - public claim / resume boundary
+6. [`06-cross-area-connection-questions.ko.md`](06-cross-area-connection-questions.ko.md)
+   - idempotency x failure
+   - schema drift x downstream contract
+   - quality x current state
+   - correction x lineage
+   - orchestration x retry
+   - catalog x table consistency
+7. [`07-external-benchmark-backlog-areas.ko.md`](07-external-benchmark-backlog-areas.ko.md)
+   - source integration / harmonization / mapping
+   - code / logic version identity
+   - dimensional modeling / SCD / reference data
+   - downstream impact / ownership / exposures
+   - streaming / CDC named backlog
+   - metric / semantic definition
 
 ## 사용법
 
@@ -62,3 +76,17 @@
 질문을 많이 뽑는 것은 scope를 키우기 위한 것이 아니다.
 질문을 많이 뽑는 이유는 무엇을 이번에 안 할지 명확히 하기 위해서다.
 ```
+
+## Status Source Rule
+
+이 폴더는 질문 은행이다. 최신 구현 상태를 추적하는 source of truth가 아니다.
+
+```text
+최신 테스트 수, CLI 검증 결과, 런타임 설치 상태:
+  VERIFICATION_LOG.md를 본다.
+
+질문이 왜 필요한지, 어떤 선택지가 있는지:
+  이 question-bank를 본다.
+```
+
+문서 안의 "현재 프로젝트 예시"는 이해를 돕기 위한 snapshot이다. 시간이 지나면 반드시 `VERIFICATION_LOG.md`와 README를 다시 확인한다.

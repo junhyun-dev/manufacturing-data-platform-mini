@@ -101,7 +101,9 @@ claim boundary
 | lineage 수준은 어디까지인가? | overclaim 방지 | path-level / dataset-level / column-level | lineage claim을 할 때 |
 | report가 판단을 자동화하는가? | anomaly/RCA 과장 방지 | evidence only / rule-based RCA / anomaly detection | 블로그/README 표현 시 |
 | successful run만 보는가? | scope 명시 | latest success / failed run / all attempts | debugging report를 만들 때 |
-| metric/log/alert는 있는가? | 운영 수준 | JSON report / logs / Prometheus / alert | production-like claim 시 |
+| report 자체가 stale한가? | 오래된 evidence 오해 방지 | generated_at / source run timestamp / freshness check | operator report를 소비자가 볼 때 |
+| metric/log/alert는 있는가? | 운영 수준 | JSON report / logs / SLI/SLO / delay alert / Prometheus | production-like claim 시 |
+| downstream consumer를 아는가? | impact analysis | none / manual list / dbt exposures / catalog ownership | gold schema나 metric을 바꿀 때 |
 
 ### 선택지 예시
 
@@ -116,6 +118,22 @@ failed run forensics:
 
 full incident workflow:
   alerts, owners, escalation까지 필요하다. 현재 scope 아님.
+```
+
+observability depth:
+
+```text
+JSON evidence report:
+  현재 프로젝트 수준. 작은 repo evidence로 적합하다.
+
+logs:
+  실행 중 어떤 일이 있었는지 시간 순서로 본다.
+
+SLI/SLO / alert:
+  지연, 실패율, freshness breach를 운영 신호로 본다.
+
+impact analysis:
+  upstream 변경이 어떤 downstream dataset/dashboard/model에 영향을 주는지 본다.
 ```
 
 lineage level:
@@ -137,4 +155,5 @@ column-level:
 report 자체가 stale하면 어떻게 알 수 있는가?
 quality fail이 없다는 것이 "데이터가 정상"이라는 뜻인가, "정의한 check는 통과"라는 뜻인가?
 operator report가 자동 RCA처럼 읽히지 않게 문구를 제한했는가?
+gold를 바꾸면 어떤 downstream 소비자가 영향을 받는지 알고 있는가?
 ```

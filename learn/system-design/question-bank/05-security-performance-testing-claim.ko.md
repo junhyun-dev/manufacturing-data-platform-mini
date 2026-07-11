@@ -92,6 +92,7 @@ toy project라도 scale 질문을 완전히 무시하면 설계가 얕아진다.
 |---|---|---|---|
 | 현재 row 수에서 Spark가 필요한가? | 도구 과잉 방지 | Python 충분 / Spark demo / Spark required | Spark 도입 명분을 말할 때 |
 | 가장 비싼 연산은 무엇인가? | 병목 이해 | groupBy / join / dedup / count checks | distributed processing claim 시 |
+| 비싼 연산을 어떻게 관측하나? | 감이 아니라 evidence로 설명 | explain plan / Spark UI stage / query metrics / simple timing | 성능이나 shuffle을 말할 때 |
 | small files 위험은 있는가? | table layout 이해 | ignore / compact backlog / partition 조정 | Iceberg 운영 claim 시 |
 | cost를 어떻게 제한하나? | 운영 현실 | local only / retention / partition pruning | cloud/object storage를 쓸 때 |
 | benchmark가 필요한가? | claim 근거 | no / micro benchmark / realistic load test | performance claim을 할 때 |
@@ -111,10 +112,26 @@ scale claim:
   load test, metrics, realistic data volume이 필요하다.
 ```
 
+관측 방법:
+
+```text
+explain plan:
+  어떤 연산에서 shuffle/exchange가 생기는지 본다.
+
+Spark UI / stages:
+  local mode에서도 stage 수와 shuffle을 볼 수 있다.
+
+simple timing:
+  toy project에서는 참고만 가능하다. scale claim 근거로는 약하다.
+
+load test:
+  성능 claim을 하려면 realistic data volume과 반복 측정이 필요하다.
+```
+
 ### 놓치기 쉬운 질문
 
 ```text
-40 passed 테스트는 correctness evidence이지 performance evidence가 아니다.
+pytest 통과는 correctness evidence이지 performance evidence가 아니다.
 Spark를 썼다고 자동으로 대규모 처리 경험이 되는 것은 아니다.
 partition pruning을 claim하려면 query/explain evidence가 있어야 하지 않는가?
 ```

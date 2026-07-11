@@ -87,6 +87,7 @@ gold row 하나는 무엇을 의미하는가?
 |---|---|---|---|
 | source identity는 무엇인가? | 같은 입력인지 판단 | file hash / path / upstream event id | rerun/idempotency가 필요할 때 |
 | schema identity는 무엇인가? | 구조 변화 감지 | required columns hash / actual header hash / catalog schema version | schema drift claim을 할 때 |
+| transform code identity는 무엇인가? | 같은 데이터라도 로직이 바뀌면 결과가 달라질 수 있음을 기록 | package version / git commit / pipeline_version field / not tracked | reproducibility claim을 강화할 때 |
 | run_id는 무엇인가? | 실행 단위를 고정 | timestamp+uuid / orchestrator run id / deterministic id | run evidence를 남길 때 |
 | gold row grain은 무엇인가? | metric 의미를 고정 | date-line-product / date-entity / date-plant | gold table/report/blog claim이 있을 때 |
 | snapshot_id는 run_id를 대체하는가? | engine id와 business id 분리 | 대체 / 참조 / 둘 다 기록 안 함 | Iceberg/Delta 같은 table format을 쓸 때 |
@@ -121,12 +122,35 @@ run_id만 사용:
 
 현재 프로젝트는 `run_id -> snapshot_id`를 선택했다.
 
+transform code identity:
+
+```text
+not tracked:
+  현재처럼 source_hash/schema_hash 중심으로 설명한다.
+  단, 같은 입력과 같은 schema라도 transform 로직이 바뀌면 결과가 달라질 수 있다.
+
+pipeline_version field:
+  run record에 사람이 관리하는 pipeline version을 남긴다.
+
+git commit / package version:
+  재현성은 강해지지만 public repo/runtime packaging과 연결해야 한다.
+```
+
+이 질문은 작지만 중요하다. 데이터 재현성은 보통 아래 셋이 함께 있어야 강해진다.
+
+```text
+source identity
+schema identity
+logic/code identity
+```
+
 ### 놓치기 쉬운 질문
 
 ```text
 한 run이 여러 table commit을 만들면 1:1 mapping이 깨지지 않는가?
 dataset_version과 lakehouse run은 같은 개념인가?
 gold row grain이 바뀌면 기존 블로그/이력서 claim도 바뀌는가?
+같은 source_hash와 schema_hash인데 transform code가 바뀌면 같은 version이라고 말할 수 있는가?
 ```
 
 ## 3. Source Contract / Schema Evolution
