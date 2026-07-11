@@ -5,6 +5,17 @@
 
 > **STATUS: design-only.** 이 repo에는 아직 Spark/Iceberg 구현 코드가 없고, `pyspark`도 설치되어 있지 않다. 이 문서는 구현 직전의 작은 question map + test contract다.
 
+감사 반영 상태:
+
+```text
+Claude external benchmark audit 반영 완료:
+  - D2 partition 보존을 Core로 승격
+  - write API를 overwritePartitions() 중심으로 명시
+  - version/jar/scala/java/catalog gate를 별도 Unknown으로 분해
+  - same-source rerun -> no new snapshot test 추가
+  - "single gold table walking skeleton" claim boundary 강화
+```
+
 ## 1. Build Thesis
 
 ```text
@@ -49,12 +60,15 @@ business_date=2026-06-29 gold_daily_metrics가 이미 있다.
 | Table scope | bronze/silver/gold 전체가 아니라 `gold_daily_metrics` 하나만으로 충분한가? | Core |
 | Partitioning | partition column은 `business_date` 하나로 고정해도 되는가? | Core |
 | Write semantics | append / whole-table overwrite / partition overwrite 중 무엇인가? | Core |
+| Write API | `df.writeTo(table).overwritePartitions()`를 쓸 것인가, SQL `INSERT OVERWRITE`를 쓸 것인가? | Core |
 | Idempotency | 같은 source_hash rerun은 skip할 것인가, overwrite를 또 할 것인가? | Core |
 | Correction | 다른 source_hash + 같은 business_date는 partition overwrite로 처리할 것인가? | Core |
 | Snapshot | overwrite 후 current snapshot id를 어떻게 읽을 것인가? | Core |
 | Run metadata | `run_id`와 `snapshot_id`를 어떻게 구분하고 기록할 것인가? | Core |
 | Time travel | 이전 snapshot 읽기는 Core인가 Demo인가? | Demo |
-| Other partitions | 다른 business_date partition이 보존되는지 확인할 것인가? | Demo/Core-lite |
+| Other partitions | 다른 business_date partition이 보존되는지 확인할 것인가? | Core |
+| Namespace / DDL | namespace 생성과 `PARTITIONED BY (business_date)` DDL을 어떻게 고정할 것인가? | Core-lite |
+| Snapshot test design | snapshot id는 non-deterministic인데 무엇을 assert할 것인가? | Core |
 | Schema evolution | added column을 Iceberg table schema에 반영할 것인가? | Backlog |
 | Quality on Spark | 기존 quality suite를 Spark agg로 옮길 것인가? | Backlog |
 | Full Spark port | bronze/silver/gold 전체를 DataFrame으로 이식할 것인가? | Backlog |
@@ -73,11 +87,27 @@ business_date=2026-06-29 gold_daily_metrics가 이미 있다.
 3. `gold_daily_metrics` Iceberg table 생성
 4. business_date=2026-06-29 initial rows write
 5. snapshot S1 읽기
-6. 같은 business_date corrected rows로 partition overwrite
+6. 같은 business_date corrected rows로 `DataFrameWriterV2.overwritePartitions()` partition overwrite
 7. snapshot S2 읽기
 8. current table에 corrected rows만 있고 중복이 없는지 확인
-9. 가능하면 S1/S2를 비교해서 time-travel demo 확인
-10. run_id -> gold_snapshot_id mapping을 JSON evidence로 저장
+9. 다른 business_date partition이 유지되는지 확인
+10. `.snapshots` metadata로 snapshot 증가와 current snapshot을 확인
+11. 가능하면 S1/S2를 비교해서 time-travel demo 확인
+12. run_id -> gold_snapshot_id mapping을 JSON evidence로 저장
+```
+
+write API 결정:
+
+```text
+Core decision:
+  Use df.writeTo("local.db.gold_daily_metrics").overwritePartitions()
+
+Avoid for this skeleton:
+  SQL INSERT OVERWRITE without explicitly controlling dynamic partition overwrite mode
+
+Why:
+  The skeleton must prove "D partition changed, D2 partition survived".
+  A static whole-table overwrite can accidentally pass a one-date test.
 ```
 
 구현하지 않을 것:
@@ -121,6 +151,19 @@ Evidence output 후보:
   snapshot_comparison.json
 ```
 
+Local runtime compatibility gate:
+
+```text
+Before coding the skeleton, pin one compatible set:
+  pyspark version
+  Iceberg Spark runtime jar name
+  Scala binary version in the jar suffix
+  Java version
+
+The fragile part is not the Python code.
+It is Spark version + Scala binary version + Iceberg runtime jar + Java compatibility.
+```
+
 `run_snapshot_map.json` 예:
 
 ```json
@@ -157,20 +200,33 @@ Evidence output 후보:
 }
 ```
 
+Invariant for this skeleton:
+
+```text
+one pipeline run -> one gold table commit -> one gold_snapshot_id
+```
+
+If a future implementation writes multiple Iceberg tables or multiple commits per run, the mapping becomes 1:N and this evidence shape must change.
+
 ## 6. Test Contract
 
 ### Test 0. Environment gate
 
 ```text
 given local environment
-when importing pyspark / starting SparkSession with Iceberg catalog
+when starting SparkSession with Iceberg extensions, hadoop catalog, and warehouse
 then either:
-  test runs and verifies the skeleton
+  test creates and reads a trivial Iceberg table
 or:
-  test is explicitly skipped with reason "pyspark/Iceberg runtime unavailable"
+  test is explicitly skipped with a concrete reason:
+    pyspark unavailable
+    Java incompatible
+    Iceberg runtime jar unavailable
+    Spark/Scala/Iceberg jar mismatch
+    catalog/warehouse config failed
 ```
 
-이 test는 실패를 숨기기 위한 skip이 아니다. 환경 제약을 명시하기 위한 gate다.
+이 test는 실패를 숨기기 위한 skip이 아니다. 환경 제약을 구체적으로 명시하기 위한 gate다.
 
 ### Test 1. Table creation
 
@@ -191,7 +247,19 @@ then D rows reflect corrected values
 and D rows are not duplicated
 and D2 rows remain unchanged
 and new snapshot id != previous snapshot id
+and snapshot count increased by exactly 1 for the correction write
 ```
+
+핵심 assertion:
+
+```text
+D row count == corrected row count
+D row values == corrected values
+D2 row values == original D2 values
+current_snapshot_id changed
+```
+
+이 test가 없으면 static whole-table overwrite를 해도 단일 날짜 테스트에서는 실수를 못 잡는다.
 
 ### Test 3. Run metadata mapping
 
@@ -202,9 +270,22 @@ then run_snapshot_map.json records:
   R1 -> snapshot S1
   R2 -> snapshot S2
 and run_id is not treated as snapshot_id
+and run_id is string-like while snapshot_id is numeric/long-like
 ```
 
-### Test 4. Time travel demo
+### Test 4. Same source rerun does not create a new snapshot
+
+```text
+given business_date D, source_hash H1, and current snapshot S1
+when the same source_hash is processed again
+then status is skipped
+and current snapshot remains S1
+and no new gold table commit is recorded
+```
+
+이 test는 Slice1 idempotency contract가 engine/storage 변경 후에도 살아있다는 증거다.
+
+### Test 5. Time travel demo
 
 ```text
 given S1 and S2 exist
@@ -212,27 +293,38 @@ when reading VERSION AS OF S1 and S2
 then old and corrected gold metrics can be compared
 ```
 
-Classification: Demo. If Iceberg/Spark version friction makes time-travel SQL painful, keep snapshot metadata evidence and do not overclaim.
+Classification: Demo.
+
+Primary demo evidence:
+
+```text
+SELECT * FROM local.db.gold_daily_metrics.snapshots
+```
+
+If `VERSION AS OF` SQL has Spark/Iceberg version friction, keep snapshot metadata evidence and do not overclaim time-travel reads.
 
 ## 7. Claim Boundary
 
 If skeleton passes, allowed wording:
 
 ```text
-Built a local Spark/Iceberg walking skeleton that overwrites a business_date
-partition and records snapshot metadata for rerun comparison.
+Built a local Spark/Iceberg single-gold-table walking skeleton that overwrites
+a business_date partition and records snapshot metadata for correction rerun comparison.
 ```
 
 Still forbidden:
 
 ```text
 implemented full Spark/Iceberg medallion pipeline
+implemented an Iceberg lakehouse
 operated production Iceberg lakehouse
 handled concurrent writers
 implemented MERGE/upsert
 implemented production rollback/retention
 verified Airflow-triggered Spark runtime
 ```
+
+Partition-overwrite wording is allowed only after the D2-preserved test passes.
 
 Before skeleton passes, wording remains:
 
@@ -265,3 +357,32 @@ and run_id -> snapshot_id lineage, implementation pending.
 - 목표는 full Spark rewrite가 아니라 gold_daily_metrics table 하나로 partition overwrite + snapshot evidence를 확인하는 walking skeleton.
 ```
 
+## 9. Next Action Before Coding
+
+구현 전에 아래를 먼저 결정한다.
+
+```text
+1. Java version 확인
+2. pyspark version 선택
+3. Spark version에 맞는 Scala binary suffix 확인
+4. Iceberg runtime jar coordinate 확정
+5. jar 획득 방식 선택:
+   - --packages로 Maven Central에서 받기
+   - 또는 local jar path를 spark.jars로 지정
+6. hadoop catalog warehouse path 확정
+```
+
+version pin 기록 형식:
+
+```text
+java_version:
+pyspark_version:
+spark_version:
+scala_binary_version:
+iceberg_version:
+iceberg_runtime_coordinate:
+jar_resolution:
+warehouse_path:
+```
+
+이 결정이 끝나기 전에는 Spark/Iceberg code를 작성하지 않는다.
