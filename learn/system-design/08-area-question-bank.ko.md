@@ -55,6 +55,28 @@ Iceberg는 무엇을 해결하는가?
 
 질문은 넓게 뽑고, 구현은 좁게 한다.
 
+## 2.1 상세 문서
+
+이 문서는 전체 지도다. 질문의 의도, 선택지, Core로 내려오는 조건, 놓치기 쉬운 질문은 아래 상세 문서에 나눠 둔다.
+
+| 상세 문서 | 다루는 영역 |
+|---|---|
+| [`question-bank/01-service-identity-contract.ko.md`](question-bank/01-service-identity-contract.ko.md) | service workflow, identity, source contract |
+| [`question-bank/02-quality-rerun-failure.ko.md`](question-bank/02-quality-rerun-failure.ko.md) | quality, rerun/correction, failure state |
+| [`question-bank/03-storage-spark-consistency.ko.md`](question-bank/03-storage-spark-consistency.ko.md) | storage/table format, Spark/distributed processing, consistency |
+| [`question-bank/04-orchestration-observability.ko.md`](question-bank/04-orchestration-observability.ko.md) | Airflow/orchestration, operator evidence |
+| [`question-bank/05-security-performance-testing-claim.ko.md`](question-bank/05-security-performance-testing-claim.ko.md) | security, performance, testing, public claim |
+
+상세 문서는 아래 형식을 따른다.
+
+```text
+질문
+-> 질문의 의도
+-> 선택지
+-> Core가 되는 경우
+-> 놓치기 쉬운 질문
+```
+
 ## 3. 현재 프로젝트의 큰 목적
 
 이 프로젝트의 목적은 도구 이름을 많이 붙이는 것이 아니다.

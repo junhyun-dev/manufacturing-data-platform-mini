@@ -80,6 +80,7 @@ service purpose charter
 10. [`08-area-question-bank.ko.md`](08-area-question-bank.ko.md)
    - 보안, 분산처리, 재처리, 장애, 품질, 운영, claim boundary 등 영역별 질문 은행.
    - 특정 slice를 구현하기 전에 관련 질문을 넓게 뽑고 Core/Demo/Backlog/Unknown으로 내릴 때 사용한다.
+   - 상세 질문은 [`question-bank/`](question-bank/) 아래에 영역별로 나뉘어 있다.
 
 ## Scenario Walkthroughs
 
