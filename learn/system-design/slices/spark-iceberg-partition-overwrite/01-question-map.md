@@ -375,9 +375,9 @@ honcho 방식 그대로.
 - v0에서 하지 말아야 할 것도 명시한다.
 
 볼 문서:
-- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/slices/spark-iceberg-partition-overwrite/01-question-map.md
-- /home/junhyun/dev/projects/manufacturing-data-platform-mini/learn/system-design/slices/spark-iceberg-partition-overwrite/02-state-shift.md
-- /home/junhyun/dev/DECISION_LEARNING_PLAYBOOK.md
+- `01-question-map.md`
+- `02-state-shift.md`
+- workspace-level decision learning playbook, if available
 
 출력 형식:
 1. 현재 question map에서 잘 잡힌 질문

@@ -452,7 +452,7 @@ logs/metrics/alerts는 있는가?
 질문:
 
 ```text
-repo에 secret/API key/path/private email이 들어가지 않았나?
+repo에 secret/API key/path/non-public contact가 들어가지 않았나?
 synthetic data임이 명확한가?
 회사/고객/내부 schema가 섞이지 않았나?
 PII column이 있다면 어떻게 분류하나?

@@ -172,7 +172,7 @@ Commands:
 
 ```bash
 rg -n -i "(api[_-]?key|access[_-]?key|secret|token|password|passwd|private[_-]?key|mongodb\\+srv|Bearer |AKIA|BEGIN RSA|BEGIN OPENSSH|client_secret|refresh_token)" --glob '!**/.venv/**' --glob '!**/__pycache__/**' --glob '!**/.pytest_cache/**' --glob '!PUBLICATION_CHECKLIST.md' .
-rg -n -i "(personal path|private email|private company name|customer name|internal path)" --glob '!**/.venv/**' --glob '!**/__pycache__/**' --glob '!**/.pytest_cache/**' --glob '!PUBLICATION_CHECKLIST.md' .
+path/privacy wording scan from `PUBLICATION_CHECKLIST.md`
 pytest
 PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run --catalog-backend json --output-dir /tmp/manufacturing-mini-publication-cli
 PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run_eav --catalog-backend json --output-dir /tmp/manufacturing-mini-publication-eav-cli

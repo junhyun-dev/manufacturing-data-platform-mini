@@ -16,7 +16,7 @@
 
 ```text
 real company/customer schemas
-private internal paths
+non-public workspace paths
 ROS2/MCAP/session/sensor source contracts
 ```
 

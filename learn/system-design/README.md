@@ -2,7 +2,7 @@
 
 이 폴더는 `manufacturing-data-platform-mini`를 기능별로 보기 전에, 시스템을 **서비스 목적 -> 시나리오 -> 질문 지도 -> slice map -> 결정 -> 테스트 -> 구현** 순서로 이해하기 위한 학습 노트다.
 
-기준 프로세스: [`scenario-question-decision-loop.md`](/home/junhyun/personal/learning/method/scenario-question-decision-loop.md)
+기준 프로세스: 이 README의 Thinking Order와 `slices/TEMPLATE.ko.md`에 공개 repo용으로 정리한다.
 
 핵심은 문서 번호가 아니라 사고 순서다. 앞으로 다른 프로젝트도 같은 방식으로 읽고 쓸 수 있게, 이 폴더의 기본 루프는 아래와 같다.
 
@@ -105,7 +105,7 @@ decision        = 특정 선택의 tradeoff
 
 ## Terminology Note
 
-이 문서의 용어는 표준 용어와 프로젝트 내부 용어가 섞여 있다.
+이 문서의 용어는 표준 용어와 프로젝트 내부 용어가 섞여 있다. 기술/데이터 엔지니어링 용어는 표준 표현을 우선하고, 내부 명명은 방법론 층에만 제한한다.
 
 | 용어 | 일반성 | 이 프로젝트에서의 뜻 |
 |---|---|---|
@@ -114,9 +114,9 @@ decision        = 특정 선택의 tradeoff
 | ADR / decision note | 일반적 | 한 설계 선택의 options, tradeoff, decision 기록 |
 | vertical slice / slice | 일반적 | end-to-end로 작게 자른 build 단위 |
 | walking skeleton | 일반적 | 전체 구조를 아주 얇게 관통하는 실행 가능한 뼈대 |
-| question map | 내부 명명 | discovery/design review/RFC 질문을 한곳에 펼친 지도 |
+| question map | 내부 명명 | discovery, requirements elicitation, design review 질문을 한곳에 펼친 지도 |
 | slice map | 내부 명명 | 이번 build에서 Core/Backlog/Unknown을 자른 얇은 index |
-| claim boundary | 내부 명명 | 구현 evidence로 말해도 되는 범위와 금지 claim |
+| claim boundary | 내부 명명 | RFC의 non-goals나 Definition of Done의 제외 범위를 이 프로젝트식으로 부르는 말 |
 | verification log | 내부 명명 | release checklist/run evidence에 가까운 실행 기록 |
 
 ## Slice Maps
