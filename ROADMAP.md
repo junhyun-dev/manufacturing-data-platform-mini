@@ -57,6 +57,17 @@ Goal: prove the storage/table contract for a corrected `business_date` without d
 - [ ] **Full medallion Spark rewrite** — intentionally not implemented.
 - [ ] **Airflow-triggered Spark runtime** — not verified.
 
+### Airflow runtime wrapper — CORE-lite (implemented)
+Goal: prove Airflow can import the DAG and trigger the same lakehouse CLI task locally, without moving business logic into the DAG.
+- [x] **Optional Airflow dependency pin** — `requirements-airflow.txt` pins `apache-airflow==3.3.0` with official Python 3.10 constraints.
+- [x] **DAG import** — `airflow dags list` loads `manufacturing_lakehouse_daily`.
+- [x] **Task discovery** — `airflow tasks list manufacturing_lakehouse_daily` shows `run_pipeline_task`.
+- [x] **Local runtime trigger** — `airflow dags test` runs the BashOperator and the JSON catalog CLI succeeds.
+- [x] **Retry/idempotency boundary** — running the same `dags test` again returns pipeline `status="skipped"`.
+- [x] **Runtime conf** — `dag_run.conf` passes `business_date`, `raw_path`, `output_dir`, and `catalog_backend`.
+- [ ] **Scheduler/worker/webserver deployment** — intentionally not implemented.
+- [ ] **Airflow-triggered Spark runtime** — not verified.
+
 ## Scope: CORE vs OPTIONAL
 
 - **CORE** (the thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · Spark/Iceberg.
@@ -90,7 +101,8 @@ CORE-backlog:
 - [ ] **Deep design: streaming + batch platform** — design source events/files, Kafka topic shape, bronze/silver/gold boundary, idempotency keys, late data/backfill, quality gates, mart grain, monitoring, and recovery before implementing a Kafka slice.
 - [ ] **Full Spark/Iceberg translation** — optional future work: swap the full `transform_*` engine to Spark and store more layers as Iceberg/Delta. The current evidence is only a single-gold-table walking skeleton.
 - [ ] **Runtime Mongo verification** — blocked here (no Docker engine). Mongo path covered by `mongomock`.
-- [ ] **Runtime Airflow trigger verification** — Airflow not installed in this env.
+- [x] **Runtime Airflow trigger verification** — local Airflow 3.3.0 `dags test` verified the CLI wrapper.
+- [ ] **Production Airflow scheduler/worker/webserver deployment** — not implemented.
 - [ ] **Task split** — `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task` after the one-task wrapper is stable.
 - [ ] **Graceful null/bad-row quarantine** — manufacturing `transform_silver` strict cast still fails fast (EAV already handles this gracefully).
 

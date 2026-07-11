@@ -1,6 +1,6 @@
 # 02. Airflow Wrapper Command Contract Slice
 
-상태: wrapper command contract implemented / runtime Airflow unverified
+상태: wrapper command contract implemented / local Airflow runtime verified
 
 > 이 문서는 Airflow 관련 설계 흐름을 한눈에 보기 위한 얇은 slice map이다.  
 > 최신 테스트 수와 실행 결과는 [`../../../VERIFICATION_LOG.md`](../../../VERIFICATION_LOG.md)가 source of truth다.
@@ -19,6 +19,8 @@ thin DAG wrapper
 testable command builder
 business_date/raw_path/output_dir/catalog_backend parameter pass-through
 pipeline idempotency remains inside the pipeline
+local Airflow DAG import + dags test evidence
+same-input Airflow rerun returns pipeline skipped
 ```
 
 ## 2. Primary Scenario
@@ -60,7 +62,7 @@ DAG는 raw_path, output_dir, catalog_backend를 넘긴다.
 | Airflow DAG가 business logic을 갖는가, CLI를 호출만 하는가? | code ownership과 testability가 달라진다. |
 | DAG가 호출하는 CLI entrypoint는 local verification과 같은가? | Airflow와 local 실행 결과가 갈라지면 안 된다. |
 | `business_date`, `raw_path`, `output_dir`, `catalog_backend`는 어떻게 전달되는가? | backfill/manual run contract가 달라진다. |
-| command construction을 Airflow 없이 테스트할 수 있는가? | 현재 환경에 Airflow가 없어도 contract evidence를 만들 수 있다. |
+| command construction을 Airflow 없이 테스트할 수 있는가? | Airflow runtime과 별개로 command contract를 빠르게 검증할 수 있다. |
 | Airflow retry와 pipeline idempotency는 어떻게 분리되는가? | retry가 중복 output을 만들지 않게 한다. |
 | runtime verified라고 말할 수 있는가? | public claim boundary를 결정한다. |
 
@@ -68,14 +70,13 @@ DAG는 raw_path, output_dir, catalog_backend를 넘긴다.
 
 | Demo question | Why not Core |
 |---|---|
-| Airflow UI에서 DAG를 수동 trigger할 것인가? | Airflow runtime 설치가 필요하고 현재 wrapper contract와 별도다. |
+| Airflow UI에서 DAG를 수동 trigger할 것인가? | local `dags test`보다 production-like scope로 커진다. |
 | task를 bronze/silver/gold/quality/catalog로 쪼갤 것인가? | one-task wrapper contract가 먼저 안정화되어야 한다. |
 
 ### Backlog Questions
 
 | Backlog question | Reason |
 |---|---|
-| Airflow runtime import/trigger를 실제로 검증할 것인가? | Airflow 설치/runtime 환경이 필요하다. |
 | Docker Compose에서 scheduler/worker/webserver를 띄울 것인가? | production-like orchestration scope로 커진다. |
 | Airflow가 Spark/Iceberg skeleton을 trigger할 것인가? | Spark optional dependency + Airflow runtime을 같이 다뤄야 한다. |
 | task-level failed run forensics를 만들 것인가? | failure-state slice와 연결된다. |
@@ -85,8 +86,8 @@ DAG는 raw_path, output_dir, catalog_backend를 넘긴다.
 
 | Unknown | Current handling |
 |---|---|
-| 이 환경에서 Airflow package/runtime이 설치되어 있는가? | runtime unverified로 명시한다. |
-| DAG import/trigger가 실제 Airflow에서 성공하는가? | Backlog: Airflow runtime verification slice. |
+| Airflow package/runtime은 어디에 설치했는가? | `/tmp` isolated virtualenv에서 검증했다. |
+| DAG import/trigger가 실제 Airflow에서 성공하는가? | Airflow 3.3.0 `dags list`, `tasks list`, `dags test`로 검증했다. |
 | Airflow retry attempt와 pipeline run status를 어떻게 같이 보여줄 것인가? | future failure/observability question. |
 
 ## 4. Decisions
@@ -98,7 +99,8 @@ Keep business logic in manufacturing_data_platform.pipeline.run
 Build the BashOperator command through manufacturing_data_platform.orchestration
 Make the command builder testable without Airflow installed
 Pass runtime values through dag_run.conf/Jinja
-Keep runtime Airflow trigger unverified until actual Airflow runtime exists
+Verify local Airflow runtime through an isolated Airflow 3.3.0 venv
+Keep scheduler/worker/webserver deployment out of scope
 ```
 
 이 결정은 아래 구현/테스트가 증명한다.
@@ -115,6 +117,7 @@ Verification:
 
 - [`../../../VERIFICATION_LOG.md`](../../../VERIFICATION_LOG.md)
   - `2026-07-11 — Airflow wrapper command contract`
+  - `2026-07-12 — Airflow local runtime wrapper verification`
 
 Related run command:
 
@@ -130,12 +133,13 @@ Airflow DAG wrapper command contract is test-covered.
 The DAG calls the same lakehouse CLI entrypoint.
 The command builder supports business_date/raw_path/output_dir/catalog_backend parameters.
 Business logic remains outside the DAG body.
+Airflow 3.3.0 local `dags test` triggered the JSON catalog CLI task successfully.
+Repeating the same `dags test` returns pipeline `status="skipped"`.
 ```
 
 Forbidden:
 
 ```text
-Airflow runtime trigger verified
 operated production Airflow pipeline
 scheduler/worker deployment verified
 multi-task production DAG
@@ -145,7 +149,6 @@ Airflow-triggered Spark runtime verified
 ## 7. Next Questions
 
 ```text
-Should Airflow runtime import/trigger be verified in this environment?
 Should execution_date and business_date be explicitly separated in docs/tests?
 Should failed Airflow attempts be linked to pipeline run evidence?
 Should a future task split produce better observability, or just extra complexity?

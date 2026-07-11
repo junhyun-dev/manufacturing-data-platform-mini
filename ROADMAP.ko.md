@@ -57,6 +57,17 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [ ] **Full medallion Spark rewrite** — 의도적으로 미구현.
 - [ ] **Airflow-triggered Spark runtime** — 미검증.
 
+### Airflow runtime wrapper — CORE-lite (구현 완료)
+목표: business logic을 DAG 안으로 옮기지 않고, Airflow가 같은 lakehouse CLI task를 local runtime에서 trigger할 수 있음을 증명한다.
+- [x] **Optional Airflow dependency pin** — `requirements-airflow.txt`에서 `apache-airflow==3.3.0` + Python 3.10 공식 constraints 사용.
+- [x] **DAG import** — `airflow dags list`에서 `manufacturing_lakehouse_daily` 로드 확인.
+- [x] **Task discovery** — `airflow tasks list manufacturing_lakehouse_daily`에서 `run_pipeline_task` 확인.
+- [x] **Local runtime trigger** — `airflow dags test`가 BashOperator를 실행하고 JSON catalog CLI 성공.
+- [x] **Retry/idempotency boundary** — 같은 `dags test` 재실행 시 pipeline `status="skipped"` 확인.
+- [x] **Runtime conf** — `dag_run.conf`로 `business_date`, `raw_path`, `output_dir`, `catalog_backend` 전달.
+- [ ] **Scheduler/worker/webserver deployment** — 의도적으로 미구현.
+- [ ] **Airflow-triggered Spark runtime** — 미검증.
+
 ## 범위: CORE vs OPTIONAL
 
 - **CORE** (thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · Spark/Iceberg.
@@ -66,7 +77,8 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 CORE-backlog:
 - [ ] **Full Spark/Iceberg 번역** — optional future work: 전체 `transform_*` engine을 Spark로 교체하고 더 많은 layer를 Iceberg/Delta로 저장. 현재 evidence는 단일 gold table walking skeleton이다.
 - [ ] **Runtime Mongo verification** — 여기선 보류(Docker 엔진 없음). Mongo 경로는 `mongomock`으로 커버.
-- [ ] **Runtime Airflow trigger verification** — 이 환경에 Airflow 미설치.
+- [x] **Runtime Airflow trigger verification** — local Airflow 3.3.0 `dags test`로 CLI wrapper 검증.
+- [ ] **Production Airflow scheduler/worker/webserver deployment** — 미구현.
 - [ ] **Task split** — one-task wrapper 안정화 후 `bronze_task → silver_task → gold_task → quality_task → catalog_task`로 분리.
 - [ ] **Graceful null/bad-row quarantine** — manufacturing `transform_silver`의 strict cast는 아직 fail-fast (EAV는 이미 graceful 처리).
 

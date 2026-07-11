@@ -1,0 +1,9 @@
+# Optional Airflow runtime verification dependency.
+# Install in a separate virtualenv because Airflow is an application-sized dependency:
+#
+#   python -m venv /tmp/manufacturing-mini-airflow-venv
+#   /tmp/manufacturing-mini-airflow-venv/bin/python -m pip install -r requirements-airflow.txt
+#
+# Airflow's official install flow requires version-specific constraints.
+-c https://raw.githubusercontent.com/apache/airflow/constraints-3.3.0/constraints-3.10.txt
+apache-airflow==3.3.0

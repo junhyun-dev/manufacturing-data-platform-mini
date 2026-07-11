@@ -118,10 +118,28 @@ PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skel
 
 정직한 경계: full Spark medallion pipeline, production lakehouse, rollback system, Airflow-triggered Spark runtime은 아니다.
 
+## Airflow runtime wrapper
+
+Airflow는 business logic을 갖지 않고, 이미 검증된 lakehouse CLI를 호출하는 얇은 wrapper다.
+
+검증된 범위:
+
+- Airflow 3.3.0 별도 virtualenv 설치
+- `airflow db migrate`
+- `airflow dags list`에서 `manufacturing_lakehouse_daily` import 확인
+- `airflow tasks list manufacturing_lakehouse_daily`에서 `run_pipeline_task` 확인
+- `airflow dags test`로 같은 CLI task 실행 성공
+- 같은 `dags test` 재실행 시 pipeline `status="skipped"` 확인
+- `dag_run.conf`로 `business_date`, `raw_path`, `output_dir`, `catalog_backend` 전달
+
+즉 Airflow retry/backfill 안전성은 Airflow가 아니라 pipeline의 `source_hash` idempotency gate가 보장한다.
+
+정직한 경계: production scheduler/worker/webserver deployment를 운영한 것은 아니다. Airflow-triggered Spark/Iceberg runtime도 아직 미검증이다.
+
 ## 정직한 한계
 
 - Spark/Iceberg는 단일 gold table walking skeleton까지만 구현됐다. full Spark medallion rewrite는 backlog다.
-- runtime Mongo와 Airflow trigger는 현재 환경에서 완전 검증되지 않았다. 다만 Airflow wrapper command contract는 `tests/test_orchestration.py`로 검증했다.
+- runtime Mongo는 현재 환경에서 완전 검증되지 않았다. Airflow는 local `dags test` runtime wrapper까지만 검증했다.
 - manufacturing strict numeric cast는 일부 bad row를 graceful quarantine하지 못하고 fail-fast한다.
 - EAV 쪽은 unparseable value를 graceful quality failure로 잡는다.
 

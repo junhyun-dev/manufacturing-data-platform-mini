@@ -63,7 +63,7 @@ rewrite.
 | Idempotency / backfill | skip re-run on `dataset_id + business_date + source_hash` | implemented (Airflow backfill = partial) |
 | Lineage | `lakehouse_runs` / `lineage_events` with `layers[].parents` | partial (path-level, not column-level) |
 | Catalog | Mongo `datasets` / `dataset_versions` (Phase 1) + run/lineage docs | implemented |
-| Orchestration | Airflow DAG as scheduling/retry/timeout wrapper around the CLI | partial (DAG written; runtime trigger unverified) |
+| Orchestration | Airflow DAG as scheduling/retry/timeout wrapper around the CLI | partial (local `dags test` runtime verified; production scheduler/worker not deployed) |
 | Spark / Iceberg | partition + schema-evolution + idempotency primitives are in place | backlog (engine swap is Slice 2) |
 
 ### Labrador Labs-style (AI training-data QA / governance / LLM preprocessing) — OPTIONAL

@@ -58,7 +58,7 @@ flowchart LR
 | EAV multi-format modeling | Implemented, test-covered | `tests/test_eav_pipeline.py`, EAV JSON CLI | clean-room wide -> EAV -> gold flow; new format by config |
 | Operator debugging report | Implemented, test-covered | `tests/test_operator_report.py`, B4 published | read-only path-level evidence report; not automatic RCA or column-level lineage |
 | Runtime Mongo | Backlog / environment-blocked | `mongomock` tests only | model implemented; real runtime verification pending |
-| Runtime Airflow | Wrapper command contract test-covered, runtime unverified | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py` | DAG wrapper command verified; runtime trigger pending |
+| Runtime Airflow | Local runtime wrapper verified | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py`, `requirements-airflow.txt`, Airflow CLI | DAG imports and `airflow dags test` triggers the same JSON CLI task locally; same input rerun returns `skipped`; production scheduler/worker deployment not claimed |
 | Spark/Iceberg | Local walking skeleton implemented, test-covered | `tests/test_spark_iceberg_skeleton.py`, Spark CLI | single gold Iceberg table with `business_date` partition overwrite + snapshot evidence; not full medallion Spark |
 | Kafka / streaming | Backlog | none | not claimed |
 | Robot/session/MCAP | Backlog | none | not claimed |
@@ -71,7 +71,7 @@ flowchart LR
 | B2 | schema drift as warn, not fail | DEV.to draft | schema drift tests, latest verification log |
 | B3 | wide CSV -> EAV -> gold | DEV.to draft | EAV tests, processed/skipped CLI run |
 | B4 | operator debugging with quality/lineage evidence | Published | operator report tests, CLI, DEV.to |
-| B5 | skip -> Iceberg partition overwrite | Ready for draft | Spark/Iceberg walking skeleton test + CLI evidence |
+| B5 | skip -> Iceberg partition overwrite | DEV.to draft | Spark/Iceberg walking skeleton test + CLI evidence |
 
 ## Design Completion Map
 
@@ -83,9 +83,9 @@ flowchart TD
   quality["Quality / schema drift / idempotency\nDONE"]
   eav["EAV modeling\nDONE"]
   rca["Operator debugging path\nDONE"]
-  airflow["Airflow runtime verification\nNEXT"]
+  airflow["Airflow runtime wrapper\nDONE"]
   iceberg["Spark/Iceberg walking skeleton\nDONE"]
-  b5["B5 Iceberg blog\nREADY"]
+  b5["B5 Iceberg blog\nDEV.to draft"]
   streaming["Kafka / streaming\nBACKLOG"]
   robot["Robot/session/MCAP\nBACKLOG"]
 
@@ -99,9 +99,9 @@ flowchart TD
   source --> robot
 ```
 
-## Next Step Recommendation
+## Completed Airflow Slice
 
-Next implementation slice:
+Implementation slice:
 
 ```text
 Airflow runtime verification
@@ -110,10 +110,9 @@ Airflow runtime verification
 Why:
 
 ```text
-The DAG exists and the wrapper command contract is test-covered, but runtime trigger is not verified.
-This is smaller and lower-risk than Spark/Iceberg.
-It closes an explicit caveat in README/resume wording.
-It should not change business logic; it should prove orchestration only.
+The DAG existed and the wrapper command contract was test-covered.
+This slice verified local Airflow runtime import and `dags test` execution.
+It did not change business logic; it proved orchestration only.
 ```
 
 Build thesis:
@@ -126,11 +125,11 @@ with business_date/raw_path parameters, without moving business logic into the D
 Core questions:
 
 ```text
-Can Airflow import the DAG in this environment?
-Can the DAG trigger the same CLI entrypoint used by local verification?
+Can Airflow import the DAG in this environment? -> yes, with Airflow 3.3.0 in an isolated venv.
+Can the DAG trigger the same CLI entrypoint used by local verification? -> yes, via `airflow dags test`.
 How are business_date and raw_path passed?
 Where does output_dir point in local runtime?
-Does retry/idempotency remain safe because the CLI still uses source_hash?
+Does retry/idempotency remain safe because the CLI still uses source_hash? -> yes, a repeated `dags test` returns `status="skipped"`.
 What evidence proves runtime verification: dag import, task command, local trigger or task test?
 ```
 
@@ -145,6 +144,8 @@ Still forbidden:
   multi-task production DAG
   scheduler/worker deployment
 ```
+
+Next implementation choice moves back to blog publication or a new slice.
 
 ## Spark/Iceberg Path
 

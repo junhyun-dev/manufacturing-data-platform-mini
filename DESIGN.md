@@ -128,7 +128,7 @@ A review found four places where the docs claimed more than the code did. These 
 
 **결정 ⑦: idempotency 정책 = skip-on-reuse** — `dataset_id + business_date + source_hash` 에 이미 successful run 이 있으면 **재처리하지 않고 기존 run 을 반환**(`status="skipped"`, `reuse_count` 증가). 왜: retry/backfill 이 같은 날짜+입력에 대해 안전한 no-op 이 되어야 함. (Phase 1 catalog 의 source_hash dedup 과 같은 사고를 lakehouse 층에 적용.) mongo 는 `lakehouse_runs` 조회, json backend 는 `_state/` 포인터 파일로 동일하게 동작.
 
-> 정직 가드: `transform_silver` 의 numeric cast 는 strict — 파싱 불가 숫자는 graceful quality `fail` 이 아니라 transform 시점에 fail-fast 한다. graceful quarantine 은 **backlog**. runtime Mongo/Airflow 미검증 상태도 그대로 유지(문서 명시).
+> 정직 가드: `transform_silver` 의 numeric cast 는 strict — 파싱 불가 숫자는 graceful quality `fail` 이 아니라 transform 시점에 fail-fast 한다. graceful quarantine 은 **backlog**. runtime Mongo는 미검증이며, Airflow는 local `dags test` wrapper까지만 검증됐다.
 
 Airflow reference patterns extracted from private code, without copying code or names:
 - DAGs are thin orchestration files that assemble configured tasks and pass a shared config object.

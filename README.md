@@ -53,7 +53,7 @@ synthetic manufacturing CSV -> bronze -> silver -> gold -> quality -> Mongo cata
 
 The Airflow DAG is an operational wrapper, not the business logic. The pipeline must run from the CLI first; Airflow only schedules, retries, passes dates, and triggers the same CLI entrypoint.
 
-> **Known limitation (honest):** `transform_silver` casts numeric columns strictly, so an unparseable numeric value fails fast at transform time rather than being captured as a graceful quality `fail`. Graceful null/bad-row quarantine is **backlog**. Runtime MongoDB and runtime Airflow trigger are **not yet verified** in this environment (no Docker engine / Airflow not installed); the Mongo path is covered by `mongomock` tests and the offline path by the `--catalog-backend json` CLI.
+> **Known limitation (honest):** `transform_silver` casts numeric columns strictly, so an unparseable numeric value fails fast at transform time rather than being captured as a graceful quality `fail`. Graceful null/bad-row quarantine is **backlog**. Runtime MongoDB is **not yet verified** in this environment (no Docker engine); the Mongo path is covered by `mongomock` tests and the offline path by the `--catalog-backend json` CLI. Airflow is verified only as a local runtime wrapper via `airflow dags test`, not as a deployed scheduler/worker service.
 
 See **[BENCHMARKS.md](BENCHMARKS.md)** for the reference patterns, JD keyword mapping, and what was deliberately excluded.
 
@@ -208,7 +208,21 @@ PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run \
 
 The DAG can receive `business_date`, `raw_path`, `output_dir`, and `catalog_backend` through `dag_run.conf` for manual backfill-style runs. The command contract is built by `manufacturing_data_platform.orchestration.build_lakehouse_cli_command` and covered by `tests/test_orchestration.py`, so the wrapper stays testable without Airflow installed.
 
-Airflow runtime trigger is still unverified in this environment. The next split, if needed, is `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task`, but the logic should stay in `manufacturing_data_platform.pipeline`, not inside the DAG body.
+Local Airflow runtime was verified with Airflow 3.3.0 in an isolated virtualenv:
+
+```bash
+python -m venv /tmp/manufacturing-mini-airflow-venv
+/tmp/manufacturing-mini-airflow-venv/bin/python -m pip install -r requirements-airflow.txt
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags test manufacturing_lakehouse_daily 2026-06-29 \
+  -c '{"business_date":"2026-06-29","raw_path":"data/raw/manufacturing_events.csv","output_dir":"/tmp/manufacturing-mini-airflow-runtime","catalog_backend":"json"}'
+```
+
+That proves the DAG can import and trigger the same CLI task locally. Running the same `dags test` again against the same JSON output state returns pipeline `status="skipped"`, so Airflow retry/backfill safety still comes from the pipeline `source_hash` idempotency gate. It does not prove a production scheduler/worker/webserver deployment. The next split, if needed, is `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task`, but the logic should stay in `manufacturing_data_platform.pipeline`, not inside the DAG body.
 
 ## Test
 

@@ -434,6 +434,95 @@ Notes:
 - This verifies the Airflow wrapper command contract, not Airflow runtime execution.
 - Airflow is not installed in this environment; DAG import/trigger under a real Airflow runtime remains pending.
 
+## 2026-07-12 — Airflow local runtime wrapper verification
+
+Scope:
+
+- Verify the existing one-task Airflow DAG in a real local Airflow runtime.
+- Keep Airflow in an isolated `/tmp` virtualenv so the project `.venv` remains lightweight.
+- Prove local DAG import, task discovery, command rendering, and `dags test` execution.
+- Keep production scheduler/worker/webserver deployment out of scope.
+
+Commands:
+
+```bash
+python -m venv /tmp/manufacturing-mini-airflow-venv
+/tmp/manufacturing-mini-airflow-venv/bin/python -m pip install --upgrade pip
+/tmp/manufacturing-mini-airflow-venv/bin/python -m pip install "apache-airflow==3.3.0" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-3.3.0/constraints-3.10.txt"
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow db migrate
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags list
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow tasks list manufacturing_lakehouse_daily
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow tasks render manufacturing_lakehouse_daily run_pipeline_task 2026-06-29
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags test manufacturing_lakehouse_daily 2026-06-29 \
+  -c '{"business_date":"2026-06-29","raw_path":"data/raw/manufacturing_events.csv","output_dir":"/tmp/manufacturing-mini-airflow-runtime","catalog_backend":"json"}'
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags test manufacturing_lakehouse_daily 2026-06-29 \
+  -c '{"business_date":"2026-06-29","raw_path":"data/raw/manufacturing_events.csv","output_dir":"/tmp/manufacturing-mini-airflow-runtime","catalog_backend":"json"}'
+
+python -m pytest -q
+```
+
+Results:
+
+```text
+airflow version: 3.3.0
+airflow db migrate: passed
+airflow dags list: manufacturing_lakehouse_daily loaded
+airflow tasks list: run_pipeline_task
+airflow tasks render: renders the same lakehouse CLI command
+airflow dags test run 1: DagRun success; BashOperator command exited with return code 0
+pipeline result run 1: status=processed, quality_passed=true, catalog_backend=json
+airflow dags test run 2 with same conf/output state: DagRun success; BashOperator command exited with return code 0
+pipeline result run 2: status=skipped, quality_passed=true, catalog_backend=json
+pytest: 40 passed
+```
+
+Verified:
+
+- [x] Airflow runtime can import the DAG.
+- [x] Airflow runtime sees the expected task.
+- [x] `dag_run.conf` passes `business_date`, `raw_path`, `output_dir`, and `catalog_backend`.
+- [x] The BashOperator executes the same `manufacturing_data_platform.pipeline.run` CLI entrypoint.
+- [x] Re-running the same Airflow DAG test uses the pipeline idempotency gate and returns `status="skipped"`.
+- [x] Business logic remains outside the DAG body.
+
+Notes:
+
+- Airflow was installed with the official 3.3.0 Python 3.10 constraints.
+- `requirements-airflow.txt` records the optional runtime verification dependency.
+- This verifies local Airflow wrapper execution, not production scheduler/worker/webserver deployment.
+- The BashOperator uses the worker shell's `python`; production packaging/worker image dependency management is not verified.
+- Airflow-triggered Spark/Iceberg runtime remains unverified.
+
 ## 2026-07-11 — Spark/Iceberg single-gold-table walking skeleton
 
 Scope:

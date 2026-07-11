@@ -54,7 +54,7 @@ private/company code = 운영 경험 패턴만
 | Idempotency / backfill | prior success 재사용 | implemented |
 | Lineage | run/layer parent links | partial |
 | Catalog | datasets / dataset_versions | implemented |
-| Airflow | CLI wrapper DAG | partial |
+| Airflow | CLI wrapper DAG | partial (local `dags test` runtime 검증; production scheduler/worker 미구현) |
 | Spark / Iceberg | 설계 primitive만 있음 | backlog |
 
 ## Anti-benchmark
@@ -86,4 +86,3 @@ OPTIONAL:
 - RAG/vectorDB/LLM preprocessing
 
 optional은 특정 면접에서 필요할 때만 붙인다.
-

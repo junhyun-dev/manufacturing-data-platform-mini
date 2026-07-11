@@ -10,15 +10,15 @@ This repo is intended to be safe for a public GitHub portfolio.
 - [x] No customer data.
 - [x] No private business logic.
 - [x] No credentials or secrets are required to run tests.
-- [x] Runtime MongoDB and Airflow verification gaps are documented as blockers/backlog.
+- [x] Runtime MongoDB and production Airflow deployment gaps are documented as blockers/backlog.
 
 ## Checked Before Initial Publication
 
 Commands:
 
 ```bash
-rg -n -i "(api[_-]?key|access[_-]?key|secret|token|password|passwd|private[_-]?key|mongodb\\+srv|Bearer |AKIA|BEGIN RSA|BEGIN OPENSSH|client_secret|refresh_token)" --glob '!**/.venv/**' --glob '!**/__pycache__/**' --glob '!**/.pytest_cache/**' --glob '!PUBLICATION_CHECKLIST.md' .
-rg -n -i "(personal path|private email|private company name|customer name|internal path)" --glob '!**/.venv/**' --glob '!**/__pycache__/**' --glob '!**/.pytest_cache/**' --glob '!PUBLICATION_CHECKLIST.md' .
+git ls-files | rg -v "^(PUBLICATION_CHECKLIST.md|VERIFICATION_LOG.md)$" | xargs rg -n -i "(api[_-]?key|access[_-]?key|secret|token|password|passwd|private[_-]?key|mongodb\\+srv|Bearer |AKIA|BEGIN RSA|BEGIN OPENSSH|client_secret|refresh_token)"
+git ls-files | rg -v "^(PUBLICATION_CHECKLIST.md|VERIFICATION_LOG.md)$" | xargs rg -n -i "(personal path|private email|private company name|customer name|internal path)"
 pytest
 PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run --catalog-backend json --output-dir /tmp/manufacturing-mini-publication-cli
 PYTHONPATH=src python -m manufacturing_data_platform.pipeline.operator_report --output-dir /tmp/manufacturing-mini-publication-cli --business-date 2026-06-29
