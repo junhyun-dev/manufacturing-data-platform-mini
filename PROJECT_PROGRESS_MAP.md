@@ -180,6 +180,72 @@ concurrent writers
 Kafka streaming
 ```
 
+## Market / Trend Lens
+
+The current data engineering direction is not one tool. It is a stack pattern:
+
+```text
+managed warehouse/lakehouse:
+  BigQuery, Snowflake, Databricks
+
+processing:
+  Spark for batch/large-scale processing
+  Flink for streaming-heavy systems
+
+open table format:
+  Iceberg / Delta Lake / Hudi
+
+orchestration:
+  Airflow, Dagster, Prefect
+
+quality / governance:
+  dbt tests, Great Expectations, catalog, lineage, observability
+```
+
+The project should therefore prove the operating loop, not collect tool names:
+
+```text
+ingest data
+-> preserve source/schema identity
+-> build bronze/silver/gold states
+-> run quality checks
+-> make retry/backfill/reprocessing safe
+-> expose catalog/lineage evidence
+-> orchestrate with Airflow/Dagster
+-> analyze in a warehouse/lakehouse
+```
+
+This project already covers:
+
+```text
+medallion structure
+source_hash / schema_hash
+quality checks
+catalog/lineage evidence
+idempotent rerun
+EAV / multi-format modeling
+operator debugging
+evidence-based blog/resume claim management
+```
+
+Still to cover:
+
+```text
+Airflow runtime verification
+Spark/Iceberg walking skeleton
+partition overwrite / snapshot evidence
+possibly dbt-style modeling or semantic layer later
+streaming/Kafka remains backlog
+```
+
+Recommended sequence:
+
+```text
+Airflow runtime verification
+-> Spark/Iceberg walking skeleton
+-> B5: skip to partition overwrite
+```
+
 ## Process Rule
 
 For every next slice:

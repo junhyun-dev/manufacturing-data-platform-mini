@@ -183,6 +183,81 @@ concurrent writers
 Kafka streaming
 ```
 
+## 시장/트렌드 관점
+
+2026년 기준 데이터 엔지니어링 방향은 도구 하나로 수렴하지 않는다. 대체로 아래 조합으로 간다.
+
+```text
+managed warehouse/lakehouse:
+  BigQuery, Snowflake, Databricks
+
+processing engine:
+  Spark for batch/large-scale processing
+  Flink for streaming-heavy processing
+
+open table format:
+  Iceberg / Delta Lake / Hudi
+
+orchestration:
+  Airflow, Dagster, Prefect
+
+quality / governance:
+  dbt tests, Great Expectations, data catalog, lineage, observability
+```
+
+중요한 건 "도구를 많이 붙이는 것"이 아니라, 아래 operating loop를 설명하고 증명하는 것이다.
+
+```text
+1. 데이터가 들어온다.
+2. source identity와 schema identity를 남긴다.
+3. bronze/silver/gold로 상태를 나눈다.
+4. quality check를 한다.
+5. retry/backfill/reprocessing이 안전해야 한다.
+6. lineage/catalog로 설명 가능해야 한다.
+7. Airflow/Dagster로 운영한다.
+8. warehouse/lakehouse에서 분석한다.
+```
+
+이 프로젝트가 이미 커버하는 신호:
+
+```text
+medallion 구조
+source_hash / schema_hash
+quality checks
+lineage/catalog evidence
+idempotent rerun
+EAV / multi-format modeling
+operator debugging
+evidence 기반 blog / resume claim 관리
+```
+
+아직 채워야 하는 신호:
+
+```text
+Airflow runtime verification
+Spark/Iceberg walking skeleton
+partition overwrite / snapshot
+possibly dbt-style modeling or semantic layer later
+streaming/Kafka는 backlog
+```
+
+따라서 다음 방향은 Kafka나 대규모 cluster로 바로 가지 않는다.
+
+```text
+Airflow runtime 검증
+-> Spark/Iceberg 작은 skeleton
+-> B5: skip에서 partition overwrite로 가는 글
+```
+
+이 순서가 가장 효율적인 이유:
+
+```text
+Airflow는 현재 wrapper가 있으므로 runtime caveat를 작게 닫을 수 있다.
+Spark/Iceberg는 현재 design-only라 walking skeleton evidence가 필요하다.
+Iceberg는 "도구 추가"가 아니라 business_date 재처리 문제를 해결하는 storage/table layer로 설명해야 한다.
+Kafka/streaming은 지금 thesis의 Core가 아니므로 backlog에 둔다.
+```
+
 ## Process Rule
 
 다음 모든 slice는 아래 순서로 진행한다.
@@ -197,4 +272,3 @@ build thesis
 -> verification log
 -> blog/resume claim boundary
 ```
-
