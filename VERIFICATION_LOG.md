@@ -653,6 +653,8 @@ airflow dags unpause manufacturing_iceberg_skeleton
 airflow dags trigger manufacturing_iceberg_skeleton \
   --run-id standalone_iceberg_20260712_0818 \
   --conf '{"warehouse":"/tmp/manufacturing-mini-airflow-standalone-iceberg-warehouse","output_dir":"/tmp/manufacturing-mini-airflow-standalone-iceberg-evidence","clean":true}'
+
+scripts/verify_airflow_standalone.sh
 ```
 
 Results:
@@ -665,6 +667,7 @@ dag parse: manufacturing_lakehouse_daily and manufacturing_iceberg_skeleton load
 manual scheduler run: standalone_iceberg_20260712_0818
 dag_run state: success
 task state: success
+scripted state transition: queued/None -> running/queued -> running/running -> success/success
 executor: LocalExecutor
 task command exit code: 0
 evidence files: run_snapshot_map.json, current_gold.json, snapshot_comparison.json
@@ -681,6 +684,7 @@ Verified:
 - [x] `manufacturing_iceberg_skeleton` can be manually triggered through the scheduler path.
 - [x] The LocalExecutor worker runs the BashOperator command to completion.
 - [x] The Spark/Iceberg skeleton still produces the same partition-overwrite evidence under scheduler execution.
+- [x] `scripts/verify_airflow_standalone.sh` reproduces startup, trigger, state polling, evidence assertions, and process cleanup.
 
 Notes:
 

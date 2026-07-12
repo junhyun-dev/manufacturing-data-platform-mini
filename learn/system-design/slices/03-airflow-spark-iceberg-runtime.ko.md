@@ -108,6 +108,7 @@ Code / test:
 - [`../../../tests/test_orchestration.py`](../../../tests/test_orchestration.py)
 - [`../../../tests/test_airflow_dags.py`](../../../tests/test_airflow_dags.py)
 - [`../../../src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py`](../../../src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py)
+- [`../../../scripts/verify_airflow_standalone.sh`](../../../scripts/verify_airflow_standalone.sh)
 
 Verification:
 
@@ -123,6 +124,7 @@ Allowed:
 Airflow local dags test triggers the Spark/Iceberg skeleton CLI.
 Airflow local standalone starts api-server, scheduler, dag-processor, triggerer, and LocalExecutor workers.
 Manual airflow dags trigger can run the Spark/Iceberg skeleton to success through LocalExecutor.
+The standalone verification is reproducible through scripts/verify_airflow_standalone.sh.
 The task creates local Iceberg evidence JSON.
 The same Spark/Iceberg partition-overwrite assertions still hold under Airflow.
 Spark/Iceberg logic remains outside the DAG body.

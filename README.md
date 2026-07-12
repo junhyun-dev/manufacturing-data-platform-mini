@@ -265,6 +265,12 @@ export PATH="/tmp/manufacturing-mini-airflow-venv/bin:$PATH"
 airflow standalone
 ```
 
+The reproducible runbook is:
+
+```bash
+scripts/verify_airflow_standalone.sh
+```
+
 In that local standalone run, the API server responded on `127.0.0.1:8080`, the scheduler parsed both project DAGs, and a manual `airflow dags trigger manufacturing_iceberg_skeleton` run finished with `dag=success` and `task=success` through LocalExecutor. This is still development-only Airflow standalone, not a production scheduler/worker/webserver deployment or cluster Spark runtime.
 
 ## Test

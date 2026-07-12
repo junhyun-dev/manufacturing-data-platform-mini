@@ -74,6 +74,7 @@ Goal: prove local Airflow can trigger the existing Spark/Iceberg partition-overw
 - [x] **DAG parse contract** — optional Airflow DagBag tests cover DAG ids, task ids, and BashOperator commands when Airflow is installed.
 - [x] **Local runtime trigger** — `airflow dags test manufacturing_iceberg_skeleton` succeeds.
 - [x] **Local standalone scheduler trigger** — Airflow 3.3.0 `standalone` starts API server/scheduler/dag-processor/triggerer and a manual `airflow dags trigger` run succeeds through LocalExecutor.
+- [x] **Standalone verification runbook** — `scripts/verify_airflow_standalone.sh` reproduces startup, trigger, state polling, evidence assertions, and cleanup.
 - [x] **Worker dependency packaging** — the standalone worker venv must include `requirements-airflow.txt`, `requirements.txt`, and `requirements-spark.txt`.
 - [x] **Iceberg evidence** — generated `run_snapshot_map.json`, `current_gold.json`, and `snapshot_comparison.json`.
 - [x] **Partition overwrite assertions** — `snapshot_increment=1`, `same_source_created_snapshot=false`, target date replaced, other date preserved.

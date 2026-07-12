@@ -74,6 +74,7 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [x] **DAG parse contract** — Airflow가 설치된 환경에서 optional DagBag test가 DAG id, task id, BashOperator command를 검증.
 - [x] **Local runtime trigger** — `airflow dags test manufacturing_iceberg_skeleton` 성공.
 - [x] **Local standalone scheduler trigger** — Airflow 3.3.0 `standalone`이 API server/scheduler/dag-processor/triggerer를 띄우고, manual `airflow dags trigger` run이 LocalExecutor 경로로 성공.
+- [x] **Standalone verification runbook** — `scripts/verify_airflow_standalone.sh`가 startup, trigger, state polling, evidence assertion, cleanup을 재현.
 - [x] **Worker dependency packaging** — standalone worker venv는 `requirements-airflow.txt`, `requirements.txt`, `requirements-spark.txt`를 모두 가져야 함.
 - [x] **Iceberg evidence** — `run_snapshot_map.json`, `current_gold.json`, `snapshot_comparison.json` 생성.
 - [x] **Partition overwrite assertions** — `snapshot_increment=1`, `same_source_created_snapshot=false`, 대상 날짜 교체, 다른 날짜 유지.

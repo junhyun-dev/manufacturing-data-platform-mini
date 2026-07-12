@@ -179,6 +179,12 @@ export PATH="/tmp/manufacturing-mini-airflow-venv/bin:$PATH"
 airflow standalone
 ```
 
+재현용 runbook은 아래 스크립트다.
+
+```bash
+scripts/verify_airflow_standalone.sh
+```
+
 이 local standalone run에서 API server는 `127.0.0.1:8080`에 응답했고, scheduler는 project DAG 2개를 parse했으며, `airflow dags trigger manufacturing_iceberg_skeleton` manual run은 LocalExecutor 경로로 `dag=success`, `task=success`까지 확인했다.
 
 정직한 경계: development-only local standalone 검증이다. production Airflow scheduler/worker deployment, cluster Spark, full Spark medallion pipeline은 아니다.
