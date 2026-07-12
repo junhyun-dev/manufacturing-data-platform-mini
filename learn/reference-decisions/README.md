@@ -47,3 +47,7 @@ status는 decision의 lifecycle만 말한다. 최신 테스트 수와 실행 결
    - 같은 business_date 재처리를 append/overwrite/merge 중 무엇으로 다루는가?
    - Slice1의 skip을 어떻게 partition atomic overwrite로 확장하는가?
    - `run_id`(파이프라인 실행)와 `snapshot_id`(table commit)는 왜 대체가 아니라 참조 관계인가?
+4. [`failure-state-model.md`](failure-state-model.md)
+   - 성공 run evidence만으로 답하지 못하는 실패/partial-state 질문은 무엇인가?
+   - quality_failed, failed_before_commit, committed_unpublished 같은 상태를 어떻게 구분하는가?
+   - 왜 production WAP/rollback/incident workflow는 Backlog로 두는가?
