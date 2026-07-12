@@ -321,7 +321,7 @@ operated production Iceberg lakehouse
 handled concurrent writers
 implemented MERGE/upsert
 implemented production rollback/retention
-verified Airflow-triggered Spark runtime
+verified production Airflow-triggered Spark runtime
 ```
 
 Partition-overwrite wording is allowed only after the D2-preserved test passes.
@@ -352,7 +352,7 @@ and run_id -> snapshot_id lineage, implementation pending.
 
 현재 repo 상태:
 - Python/CSV Slice1, EAV, operator report는 구현+테스트됨.
-- Airflow wrapper는 local `dags test` runtime까지 검증됨. Airflow-triggered Spark/Iceberg는 미검증.
+- Airflow wrapper는 local `dags test` runtime까지 검증됨. Airflow-triggered Spark/Iceberg도 별도 slice에서 local `dags test`로 검증됨.
 - Spark/Iceberg는 local single-gold-table walking skeleton이 구현됨.
 - 목표는 full Spark rewrite가 아니라 gold_daily_metrics table 하나로 partition overwrite + snapshot evidence를 확인하는 walking skeleton.
 ```

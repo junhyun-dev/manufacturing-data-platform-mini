@@ -227,11 +227,11 @@ Airflow wording:
 
 ```text
 허용:
-  Airflow DAG wrapper command contract is test-covered.
+  Airflow local dags test runtime wrapper is verified.
 
 금지:
-  Airflow runtime verified.
-  operated Airflow pipelines in this repo.
+  operated production Airflow pipelines in this repo.
+  production scheduler/worker deployment verified.
 ```
 
 ### 놓치기 쉬운 질문

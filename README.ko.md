@@ -116,7 +116,7 @@ PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skel
 - same `source_hash` rerun 시 새 snapshot 없음
 - `run_id -> snapshot_id` evidence JSON
 
-정직한 경계: full Spark medallion pipeline, production lakehouse, rollback system, Airflow-triggered Spark runtime은 아니다.
+정직한 경계: full Spark medallion pipeline, production lakehouse, rollback system은 아니다.
 
 ## Airflow runtime wrapper
 
@@ -134,7 +134,35 @@ Airflow는 business logic을 갖지 않고, 이미 검증된 lakehouse CLI를 �
 
 즉 Airflow retry/backfill 안전성은 Airflow가 아니라 pipeline의 `source_hash` idempotency gate가 보장한다.
 
-정직한 경계: production scheduler/worker/webserver deployment를 운영한 것은 아니다. Airflow-triggered Spark/Iceberg runtime도 아직 미검증이다.
+정직한 경계: production scheduler/worker/webserver deployment를 운영한 것은 아니다.
+
+## Airflow-triggered Spark/Iceberg skeleton
+
+`dags/manufacturing_iceberg_skeleton.py`는 `manufacturing_iceberg_skeleton` DAG를 정의한다.
+
+이 DAG의 단일 task는 Spark/Iceberg skeleton CLI를 호출한다.
+
+```bash
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skeleton \
+  --warehouse <path> \
+  --output-dir <path> \
+  --clean
+```
+
+local runtime 검증:
+
+```bash
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags test manufacturing_iceberg_skeleton 2026-06-29 \
+  -c '{"warehouse":"/tmp/manufacturing-mini-airflow-iceberg-warehouse","output_dir":"/tmp/manufacturing-mini-airflow-iceberg-evidence"}'
+```
+
+검증된 것은 local Airflow가 Spark/Iceberg walking skeleton을 trigger할 수 있다는 점이다. 이 task는 local Iceberg table을 만들고, `run_id -> snapshot_id` evidence를 남기며, 정정된 `business_date` partition만 overwrite하고 다른 partition은 유지한다.
+
+정직한 경계: production Airflow scheduler/worker deployment, cluster Spark, full Spark medallion pipeline은 아니다.
 
 ## 정직한 한계
 

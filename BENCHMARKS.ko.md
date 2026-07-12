@@ -54,15 +54,15 @@ private/company code = 운영 경험 패턴만
 | Idempotency / backfill | prior success 재사용 | implemented |
 | Lineage | run/layer parent links | partial |
 | Catalog | datasets / dataset_versions | implemented |
-| Airflow | CLI wrapper DAG | partial (local `dags test` runtime 검증; production scheduler/worker 미구현) |
-| Spark / Iceberg | 설계 primitive만 있음 | backlog |
+| Airflow | CLI wrapper DAG | partial (lakehouse CLI와 Spark/Iceberg skeleton 모두 local `dags test` runtime 검증; production scheduler/worker 미구현) |
+| Spark / Iceberg | 단일 gold Iceberg table, `business_date` partition overwrite, snapshot evidence | partial (full Spark medallion pipeline 아님) |
 
 ## Anti-benchmark
 
 의도적으로 제외한 것:
 
 - full Databricks clone
-- real Spark/Iceberg runtime
+- full Spark/Iceberg medallion runtime
 - streaming Kafka pipeline
 - governance/RBAC
 - lineage graph backend

@@ -1,6 +1,9 @@
 import pytest
 
-from manufacturing_data_platform.orchestration import build_lakehouse_cli_command
+from manufacturing_data_platform.orchestration import (
+    build_lakehouse_cli_command,
+    build_spark_iceberg_cli_command,
+)
 
 
 def test_airflow_wrapper_command_uses_lakehouse_cli_entrypoint():
@@ -40,3 +43,31 @@ def test_airflow_wrapper_command_rejects_unknown_catalog_backend():
             raw_path="data/raw/manufacturing_events.csv",
             catalog_backend="sqlite",
         )
+
+
+def test_airflow_spark_iceberg_wrapper_command_uses_skeleton_entrypoint():
+    command = build_spark_iceberg_cli_command(
+        warehouse="/tmp/manufacturing-airflow-iceberg-warehouse",
+        output_dir="/tmp/manufacturing-airflow-iceberg-evidence",
+        clean=True,
+    )
+
+    assert command.startswith(
+        "PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skeleton"
+    )
+    assert "--warehouse /tmp/manufacturing-airflow-iceberg-warehouse" in command
+    assert "--output-dir /tmp/manufacturing-airflow-iceberg-evidence" in command
+    assert command.endswith("--clean")
+
+
+def test_airflow_spark_iceberg_wrapper_command_supports_jinja_runtime_parameters():
+    command = build_spark_iceberg_cli_command(
+        warehouse='{{ dag_run.conf.get("warehouse", "/tmp/warehouse") }}',
+        output_dir='{{ dag_run.conf.get("output_dir", "/tmp/evidence") }}',
+        clean=True,
+    )
+
+    assert "dag_run.conf.get" in command
+    assert "warehouse" in command
+    assert "output_dir" in command
+    assert "--clean" in command

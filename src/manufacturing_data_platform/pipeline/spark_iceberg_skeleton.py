@@ -179,7 +179,7 @@ def run_spark_iceberg_skeleton(
                     "full medallion Spark rewrite",
                     "Iceberg rollback system",
                     "concurrent writer handling",
-                    "Airflow runtime orchestration of Spark",
+                    "production Airflow scheduler/worker orchestration of Spark",
                     "Spark-based quality suite",
                 ],
             },

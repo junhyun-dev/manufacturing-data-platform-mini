@@ -35,3 +35,25 @@ def build_lakehouse_cli_command(
         catalog_backend,
     ]
     return " ".join(shlex.quote(part) for part in parts)
+
+
+def build_spark_iceberg_cli_command(
+    *,
+    warehouse: str,
+    output_dir: str,
+    clean: bool = False,
+) -> str:
+    """Build the Airflow BashOperator command for the Spark/Iceberg skeleton."""
+    parts = [
+        "PYTHONPATH=src",
+        "python",
+        "-m",
+        "manufacturing_data_platform.pipeline.spark_iceberg_skeleton",
+        "--warehouse",
+        warehouse,
+        "--output-dir",
+        output_dir,
+    ]
+    if clean:
+        parts.append("--clean")
+    return " ".join(shlex.quote(part) for part in parts)

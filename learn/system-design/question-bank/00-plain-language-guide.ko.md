@@ -699,11 +699,12 @@ claim boundary는 무엇인가?
 ```text
 허용:
   local Spark/Iceberg single-gold-table walking skeleton을 구현했다.
+  local Airflow dags test로 Spark/Iceberg skeleton을 trigger했다.
 
 금지:
   production lakehouse를 구축했다.
   full Spark pipeline을 구현했다.
-  Airflow-triggered Spark runtime을 검증했다.
+  production Airflow scheduler/worker에서 Spark runtime을 운영했다.
 ```
 
 ## 3.21 Scenario Trigger Index
@@ -775,7 +776,7 @@ full Spark medallion rewrite
 quality-on-Spark
 MERGE/upsert
 concurrent writer handling
-Airflow-triggered Spark runtime
+production Airflow-triggered Spark runtime
 production rollback
 ```
 

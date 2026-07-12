@@ -20,7 +20,7 @@ production manufacturing platform
 full Spark/Iceberg medallion pipeline implemented
 Kafka streaming implemented
 real Mongo runtime verified
-Airflow runtime verified
+production Airflow scheduler/worker deployment verified
 column-level lineage / OpenLineage backend
 real company/customer schema usage
 ```
@@ -60,6 +60,7 @@ flowchart LR
 | Runtime Mongo | Backlog / environment-blocked | `mongomock` tests only | model implemented; real runtime verification pending |
 | Runtime Airflow | Local runtime wrapper verified | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py`, `requirements-airflow.txt`, Airflow CLI | DAG imports and `airflow dags test` triggers the same JSON CLI task locally; same input rerun returns `skipped`; production scheduler/worker deployment not claimed |
 | Spark/Iceberg | Local walking skeleton implemented, test-covered | `tests/test_spark_iceberg_skeleton.py`, Spark CLI | single gold Iceberg table with `business_date` partition overwrite + snapshot evidence; not full medallion Spark |
+| Airflow-triggered Spark/Iceberg | Local runtime wrapper verified | `dags/manufacturing_iceberg_skeleton.py`, `tests/test_orchestration.py`, Airflow CLI, Spark/Iceberg evidence JSON | local Airflow `dags test` triggers the Spark/Iceberg skeleton; production scheduler/worker and cluster Spark not claimed |
 | Kafka / streaming | Backlog | none | not claimed |
 | Robot/session/MCAP | Backlog | none | not claimed |
 
@@ -85,6 +86,7 @@ flowchart TD
   rca["Operator debugging path\nDONE"]
   airflow["Airflow runtime wrapper\nDONE"]
   iceberg["Spark/Iceberg walking skeleton\nDONE"]
+  airflow_iceberg["Airflow -> Spark/Iceberg\nDONE"]
   b5["B5 Iceberg blog\nDEV.to draft"]
   streaming["Kafka / streaming\nBACKLOG"]
   robot["Robot/session/MCAP\nBACKLOG"]
@@ -94,6 +96,8 @@ flowchart TD
   quality --> rca
   rca --> airflow
   rca --> iceberg
+  airflow --> airflow_iceberg
+  iceberg --> airflow_iceberg
   iceberg --> b5
   iceberg --> streaming
   source --> robot

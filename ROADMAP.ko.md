@@ -55,7 +55,7 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [x] **안전성 assertion** — 대상 날짜는 중복 없이 교체되고, 다른 날짜 partition은 유지됨.
 - [x] **Snapshot evidence** — `run_id -> snapshot_id` evidence JSON; 같은 `source_hash` rerun은 새 snapshot을 만들지 않음.
 - [ ] **Full medallion Spark rewrite** — 의도적으로 미구현.
-- [ ] **Airflow-triggered Spark runtime** — 미검증.
+- [x] **Airflow-triggered Spark runtime** — local `airflow dags test`가 Spark/Iceberg skeleton을 trigger.
 
 ### Airflow runtime wrapper — CORE-lite (구현 완료)
 목표: business logic을 DAG 안으로 옮기지 않고, Airflow가 같은 lakehouse CLI task를 local runtime에서 trigger할 수 있음을 증명한다.
@@ -66,7 +66,16 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [x] **Retry/idempotency boundary** — 같은 `dags test` 재실행 시 pipeline `status="skipped"` 확인.
 - [x] **Runtime conf** — `dag_run.conf`로 `business_date`, `raw_path`, `output_dir`, `catalog_backend` 전달.
 - [ ] **Scheduler/worker/webserver deployment** — 의도적으로 미구현.
-- [ ] **Airflow-triggered Spark runtime** — 미검증.
+
+### Airflow-triggered Spark/Iceberg skeleton — CORE-lite (구현 완료)
+목표: Spark logic을 DAG 안으로 옮기지 않고, local Airflow가 기존 Spark/Iceberg partition-overwrite skeleton을 trigger할 수 있음을 증명한다.
+- [x] **DAG wrapper** — `dags/manufacturing_iceberg_skeleton.py`가 Spark/Iceberg CLI 호출.
+- [x] **Command contract** — `build_spark_iceberg_cli_command` test-covered.
+- [x] **Local runtime trigger** — `airflow dags test manufacturing_iceberg_skeleton` 성공.
+- [x] **Iceberg evidence** — `run_snapshot_map.json`, `current_gold.json`, `snapshot_comparison.json` 생성.
+- [x] **Partition overwrite assertions** — `snapshot_increment=1`, `same_source_created_snapshot=false`, 대상 날짜 교체, 다른 날짜 유지.
+- [ ] **Production Airflow scheduler/worker deployment** — 의도적으로 미구현.
+- [ ] **Cluster Spark / full Spark medallion pipeline** — 의도적으로 미구현.
 
 ## 범위: CORE vs OPTIONAL
 

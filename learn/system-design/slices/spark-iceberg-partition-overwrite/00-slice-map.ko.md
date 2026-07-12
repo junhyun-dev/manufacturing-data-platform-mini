@@ -145,7 +145,7 @@ full Spark/Iceberg medallion pipeline
 production lakehouse
 Iceberg rollback system
 concurrent writer handling
-Airflow-triggered Spark runtime
+production Airflow-triggered Spark runtime
 Spark-based quality suite
 performance/scale claim
 ```

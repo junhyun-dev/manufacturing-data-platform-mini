@@ -192,7 +192,7 @@ PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skel
 
 It creates one local Iceberg table, `local.db.gold_daily_metrics`, partitioned by `business_date`. It writes initial rows, skips a same-`source_hash` rerun without creating a new snapshot, then overwrites the corrected `business_date` partition with `DataFrameWriterV2.overwritePartitions()`. Evidence is written as JSON under the output directory.
 
-Honest boundary: this proves a single-gold-table Spark/Iceberg partition-overwrite contract. It is not a full Spark medallion rewrite, production lakehouse, rollback system, or Airflow-triggered Spark runtime.
+Honest boundary: this proves a single-gold-table Spark/Iceberg partition-overwrite contract. It is not a full Spark medallion rewrite, production lakehouse, or rollback system.
 
 ## Airflow Wrapper
 
@@ -223,6 +223,30 @@ PYTHONPATH=src \
 ```
 
 That proves the DAG can import and trigger the same CLI task locally. Running the same `dags test` again against the same JSON output state returns pipeline `status="skipped"`, so Airflow retry/backfill safety still comes from the pipeline `source_hash` idempotency gate. It does not prove a production scheduler/worker/webserver deployment. The next split, if needed, is `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task`, but the logic should stay in `manufacturing_data_platform.pipeline`, not inside the DAG body.
+
+## Airflow-triggered Spark/Iceberg Skeleton
+
+`dags/manufacturing_iceberg_skeleton.py` defines `manufacturing_iceberg_skeleton` with a single `run_spark_iceberg_skeleton_task`. It calls the Spark/Iceberg skeleton CLI:
+
+```bash
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skeleton \
+  --warehouse <path> \
+  --output-dir <path> \
+  --clean
+```
+
+Local runtime verification:
+
+```bash
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags test manufacturing_iceberg_skeleton 2026-06-29 \
+  -c '{"warehouse":"/tmp/manufacturing-mini-airflow-iceberg-warehouse","output_dir":"/tmp/manufacturing-mini-airflow-iceberg-evidence"}'
+```
+
+This verifies local Airflow orchestration of the Spark/Iceberg walking skeleton: the task creates the local Iceberg table, records `run_id -> snapshot_id` evidence, overwrites the corrected `business_date` partition, and leaves the other partition unchanged. It still does not prove production Airflow scheduler/worker deployment, cluster Spark, or a full Spark medallion pipeline.
 
 ## Test
 

@@ -46,7 +46,7 @@ Backlog:
 ```text
 full bronze/silver/gold Spark medallion rewrite
 Spark-based quality suite
-Airflow-triggered Spark runtime
+production Airflow-triggered Spark runtime
 concurrent writer handling
 retention/rollback operation
 ```

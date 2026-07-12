@@ -75,3 +75,5 @@ Current slices:
    - same `business_date` correction을 Iceberg partition overwrite + snapshot evidence로 표현한 slice.
 2. [`02-airflow-wrapper-command-contract.ko.md`](02-airflow-wrapper-command-contract.ko.md)
    - Airflow가 business logic을 갖지 않고 같은 lakehouse CLI를 호출한다는 wrapper contract slice.
+3. [`03-airflow-spark-iceberg-runtime.ko.md`](03-airflow-spark-iceberg-runtime.ko.md)
+   - local Airflow가 Spark/Iceberg skeleton CLI를 trigger한다는 runtime wrapper slice.

@@ -521,7 +521,95 @@ Notes:
 - `requirements-airflow.txt` records the optional runtime verification dependency.
 - This verifies local Airflow wrapper execution, not production scheduler/worker/webserver deployment.
 - The BashOperator uses the worker shell's `python`; production packaging/worker image dependency management is not verified.
-- Airflow-triggered Spark/Iceberg runtime remains unverified.
+- At this point, Airflow-triggered Spark/Iceberg runtime was still unverified; it is closed by the next section.
+
+## 2026-07-12 — Airflow-triggered Spark/Iceberg skeleton
+
+Scope:
+
+- Add a local Airflow DAG that triggers the existing Spark/Iceberg skeleton CLI.
+- Keep SparkSession/Iceberg write logic outside the DAG body.
+- Verify local Airflow runtime execution with `airflow dags test`.
+- Prove the same Iceberg evidence still holds when launched through Airflow.
+- Keep production scheduler/worker/webserver deployment and cluster Spark out of scope.
+
+New files:
+
+- `dags/manufacturing_iceberg_skeleton.py`
+- `learn/system-design/slices/03-airflow-spark-iceberg-runtime.ko.md`
+
+Changed files:
+
+- `src/manufacturing_data_platform/orchestration.py`
+- `tests/test_orchestration.py`
+- `src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py`
+
+Commands:
+
+```bash
+python -m pytest tests/test_orchestration.py -q
+python -m pytest -q
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags list
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow tasks list manufacturing_iceberg_skeleton
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow tasks render manufacturing_iceberg_skeleton run_spark_iceberg_skeleton_task 2026-06-29
+
+rm -rf /tmp/manufacturing-mini-airflow-iceberg-warehouse /tmp/manufacturing-mini-airflow-iceberg-evidence
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags test manufacturing_iceberg_skeleton 2026-06-29 \
+  -c '{"warehouse":"/tmp/manufacturing-mini-airflow-iceberg-warehouse","output_dir":"/tmp/manufacturing-mini-airflow-iceberg-evidence"}'
+```
+
+Results:
+
+```text
+orchestration tests: 5 passed
+pytest: 42 passed
+airflow tasks render: renders Spark/Iceberg skeleton CLI command
+airflow dags list: manufacturing_iceberg_skeleton loaded
+airflow tasks list: run_spark_iceberg_skeleton_task
+airflow dags test: DagRun success; BashOperator command exited with return code 0
+Iceberg runtime coordinate: org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.11.0
+run statuses inside evidence: processed -> skipped -> processed
+snapshot_increment: 1
+same_source_created_snapshot: false
+evidence files: run_snapshot_map.json, current_gold.json, snapshot_comparison.json
+```
+
+Verified:
+
+- [x] Airflow runtime can import the Spark/Iceberg DAG.
+- [x] Airflow runtime sees `run_spark_iceberg_skeleton_task`.
+- [x] The BashOperator executes `manufacturing_data_platform.pipeline.spark_iceberg_skeleton`.
+- [x] Spark/Iceberg creates a local Iceberg table through the Airflow-triggered task.
+- [x] Same-source retry still creates no new snapshot.
+- [x] Corrected same-`business_date` input creates a new snapshot and overwrites only the target partition.
+- [x] Other `business_date` partition remains unchanged.
+
+Notes:
+
+- This verifies local Airflow `dags test` orchestration of the Spark/Iceberg skeleton.
+- It does not verify production scheduler/worker/webserver deployment.
+- It does not verify cluster Spark or a full Spark medallion pipeline.
+- The BashOperator still uses the worker shell's `python`; production dependency packaging remains out of scope.
 
 ## 2026-07-11 — Spark/Iceberg single-gold-table walking skeleton
 

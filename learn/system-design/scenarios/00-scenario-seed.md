@@ -228,7 +228,7 @@ v0에서 작게 잡은 것:
 
 v0에서 피한 것:
 
-- real Spark/Iceberg runtime
+- full Spark/Iceberg platform runtime
 - Kafka/Flink streaming
 - full schema registry
 - governance/RBAC

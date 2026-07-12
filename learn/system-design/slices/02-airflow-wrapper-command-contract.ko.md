@@ -143,7 +143,7 @@ Forbidden:
 operated production Airflow pipeline
 scheduler/worker deployment verified
 multi-task production DAG
-Airflow-triggered Spark runtime verified
+Airflow-triggered Spark runtime verified by this wrapper slice
 ```
 
 ## 7. Next Questions
@@ -152,5 +152,5 @@ Airflow-triggered Spark runtime verified
 Should execution_date and business_date be explicitly separated in docs/tests?
 Should failed Airflow attempts be linked to pipeline run evidence?
 Should a future task split produce better observability, or just extra complexity?
-Should Airflow-triggered Spark/Iceberg be a separate slice after runtime Airflow works?
+Should Airflow-triggered Spark/Iceberg stay a separate slice instead of expanding this wrapper?
 ```
