@@ -77,3 +77,5 @@ Current slices:
    - Airflow가 business logic을 갖지 않고 같은 lakehouse CLI를 호출한다는 wrapper contract slice.
 3. [`03-airflow-spark-iceberg-runtime.ko.md`](03-airflow-spark-iceberg-runtime.ko.md)
    - local Airflow가 Spark/Iceberg skeleton CLI를 trigger한다는 runtime wrapper slice.
+4. [`04-lakehouse-to-iceberg-publish.ko.md`](04-lakehouse-to-iceberg-publish.ko.md)
+   - 기존 JSON lakehouse run의 successful gold CSV를 local Iceberg current table로 publish하는 slice.

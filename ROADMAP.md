@@ -81,6 +81,18 @@ Goal: prove local Airflow can trigger the existing Spark/Iceberg partition-overw
 - [ ] **Production Airflow scheduler/worker deployment** — intentionally not implemented.
 - [ ] **Cluster Spark / full Spark medallion pipeline** — intentionally not implemented.
 
+### Lakehouse gold -> Iceberg publish DAG — CORE-lite (implemented)
+Goal: connect the implemented JSON-backed lakehouse pipeline to a local Iceberg current table without doing a full Spark rewrite.
+- [x] **Publish CLI** — `publish_gold_to_iceberg` reads the latest successful JSON catalog state for a `business_date`.
+- [x] **Gold CSV publish** — the selected run's gold CSV is written to `local.db.gold_daily_metrics`.
+- [x] **Partition overwrite** — publish uses `DataFrameWriterV2.overwritePartitions()`.
+- [x] **Publish idempotency** — re-publishing the same `pipeline_run_id + source_hash` is skipped without creating a new snapshot.
+- [x] **Airflow DAG** — `manufacturing_lakehouse_to_iceberg_daily` chains `run_lakehouse_task -> publish_gold_to_iceberg_task`.
+- [x] **Command contract + DAG parse tests** — orchestration and optional Airflow DagBag tests cover the new DAG.
+- [x] **Local runtime trigger** — `airflow dags test manufacturing_lakehouse_to_iceberg_daily` succeeds.
+- [ ] **Mongo-backed publish lookup** — intentionally not implemented until runtime Mongo is verified.
+- [ ] **Full Spark medallion pipeline / Spark quality suite** — intentionally not implemented.
+
 ## Scope: CORE vs OPTIONAL
 
 - **CORE** (the thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · Spark/Iceberg.

@@ -747,3 +747,92 @@ Claim boundary:
 
 - Allowed: local Spark/Iceberg single-gold-table walking skeleton with `business_date` partition overwrite and snapshot evidence.
 - Not allowed: full Spark medallion pipeline, production lakehouse, Iceberg rollback system, concurrent writer handling, production Airflow-triggered Spark runtime.
+
+## 2026-07-12 — Lakehouse gold -> Iceberg publish DAG
+
+Scope:
+
+- Connect the implemented JSON-backed lakehouse pipeline to local Iceberg without doing a full Spark rewrite.
+- Add a publish CLI that reads the latest successful JSON catalog state for a `business_date`, loads that run's gold CSV, and publishes it to `local.db.gold_daily_metrics`.
+- Add a two-task Airflow DAG: `run_lakehouse_task -> publish_gold_to_iceberg_task`.
+- Keep Mongo-backed publish lookup, Spark quality checks, production Airflow, and cluster Spark out of scope.
+
+New files:
+
+- `src/manufacturing_data_platform/pipeline/publish_gold_to_iceberg.py`
+- `dags/manufacturing_lakehouse_to_iceberg_daily.py`
+- `tests/test_publish_gold_to_iceberg.py`
+- `learn/system-design/slices/04-lakehouse-to-iceberg-publish.ko.md`
+
+Commands:
+
+```bash
+python -m pytest tests/test_orchestration.py tests/test_publish_gold_to_iceberg.py -q
+python -m pytest -q
+
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run \
+  --business-date 2026-06-29 \
+  --raw-path data/raw/manufacturing_events.csv \
+  --output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg-cli/lakehouse \
+  --catalog-backend json
+
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.publish_gold_to_iceberg \
+  --lakehouse-output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg-cli/lakehouse \
+  --business-date 2026-06-29 \
+  --warehouse /tmp/manufacturing-mini-lakehouse-to-iceberg-cli/warehouse \
+  --output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg-cli/evidence \
+  --clean
+
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.publish_gold_to_iceberg \
+  --lakehouse-output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg-cli/lakehouse \
+  --business-date 2026-06-29 \
+  --warehouse /tmp/manufacturing-mini-lakehouse-to-iceberg-cli/warehouse \
+  --output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg-cli/evidence
+
+PYTHONPATH=src /tmp/manufacturing-mini-airflow-venv/bin/python -m pytest tests/test_airflow_dags.py -q
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-lakehouse-to-iceberg-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+PATH="/tmp/manufacturing-mini-airflow-venv/bin:$PATH" \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow db migrate
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-lakehouse-to-iceberg-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+PATH="/tmp/manufacturing-mini-airflow-venv/bin:$PATH" \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags test manufacturing_lakehouse_to_iceberg_daily 2026-06-29 \
+  -c '{"business_date":"2026-06-29","raw_path":"data/raw/manufacturing_events.csv","lakehouse_output_dir":"/tmp/manufacturing-mini-airflow-lakehouse-to-iceberg-run/lakehouse","warehouse":"/tmp/manufacturing-mini-airflow-lakehouse-to-iceberg-run/warehouse","iceberg_output_dir":"/tmp/manufacturing-mini-airflow-lakehouse-to-iceberg-run/evidence"}'
+```
+
+Results:
+
+```text
+orchestration + publish tests: 11 passed
+pytest: 48 passed, 4 skipped
+lakehouse JSON CLI: passed, status=processed, quality_passed=true
+publish CLI run 1: status=published, snapshot_count=1, operation=overwrite
+publish CLI run 2: status=skipped, same gold_snapshot_id, skipped_reason=same lakehouse run already published
+optional Airflow DagBag tests: 4 passed
+airflow db migrate: passed for fresh local AIRFLOW_HOME
+airflow dags test manufacturing_lakehouse_to_iceberg_daily: DagRun success
+Airflow task order: run_lakehouse_task -> publish_gold_to_iceberg_task
+Airflow publish output: status=published, snapshot_count=1
+```
+
+Verified:
+
+- [x] JSON catalog state is the publish source; raw CSV is not re-read by the publish step.
+- [x] Only a successful lakehouse run is publishable.
+- [x] Gold CSV rows are written to a local Iceberg table with `overwritePartitions()`.
+- [x] Same lakehouse run publish retry is skipped without creating a new snapshot.
+- [x] Spark optional test covers corrected target partition replacement and other partition preservation.
+- [x] Airflow can parse the new two-task DAG when Airflow is installed.
+- [x] Local `airflow dags test` runs the lakehouse CLI task and then the Iceberg publish CLI task to success.
+
+Claim boundary:
+
+- Allowed: local JSON-backed lakehouse gold -> local Iceberg publish, two-task local Airflow DAG, `pipeline_run_id -> snapshot_id` evidence, retry publish skip.
+- Not allowed: Mongo-backed publish lookup, full Spark/Iceberg medallion pipeline, Spark-based quality suite, production Airflow deployment, cluster Spark, concurrent writer handling, exactly-once catalog/table transaction.

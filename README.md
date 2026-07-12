@@ -85,6 +85,7 @@ In prior **professional** work I **operated and improved** an EAV-based structur
   - Quality checks, catalog/lineage — cross-cutting (done)
   - Operator debugging walkthrough — gold metric -> run/source/quality/lineage evidence (done)
   - Spark/Iceberg single-gold-table walking skeleton — partition overwrite + snapshot evidence (done)
+  - Lakehouse gold -> Iceberg publish DAG — successful JSON gold run -> local Iceberg current table (done)
   - Full medallion Spark rewrite (backlog)
 - **Optional** (only pursued if a specific interview, e.g. Labrador-style, makes it relevant):
   - AI Dataset QA slice
@@ -194,6 +195,29 @@ It creates one local Iceberg table, `local.db.gold_daily_metrics`, partitioned b
 
 Honest boundary: this proves a single-gold-table Spark/Iceberg partition-overwrite contract. It is not a full Spark medallion rewrite, production lakehouse, or rollback system.
 
+## Publish Lakehouse Gold to Iceberg
+
+The bridge from the real lakehouse CLI to Iceberg is a separate publish step:
+
+```bash
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run \
+  --business-date 2026-06-29 \
+  --raw-path data/raw/manufacturing_events.csv \
+  --output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg/lakehouse \
+  --catalog-backend json
+
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.publish_gold_to_iceberg \
+  --lakehouse-output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg/lakehouse \
+  --business-date 2026-06-29 \
+  --warehouse /tmp/manufacturing-mini-lakehouse-to-iceberg/warehouse \
+  --output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg/evidence \
+  --clean
+```
+
+This reads the latest successful JSON catalog state for the target `business_date`, loads that run's gold CSV, and publishes it to `local.db.gold_daily_metrics` with Iceberg `overwritePartitions()`. Re-publishing the same `pipeline_run_id + source_hash` is skipped without creating a new snapshot.
+
+Honest boundary: this is a JSON-catalog-backed local publish slice. It does not implement Mongo-backed publish lookup, Spark-based quality checks, a full Spark medallion rewrite, production Airflow deployment, or cluster Spark.
+
 ## Airflow Wrapper
 
 `dags/manufacturing_lakehouse_daily.py` defines `manufacturing_lakehouse_daily` with a single `run_pipeline_task`. It calls:
@@ -272,6 +296,18 @@ scripts/verify_airflow_standalone.sh
 ```
 
 In that local standalone run, the API server responded on `127.0.0.1:8080`, the scheduler parsed both project DAGs, and a manual `airflow dags trigger manufacturing_iceberg_skeleton` run finished with `dag=success` and `task=success` through LocalExecutor. This is still development-only Airflow standalone, not a production scheduler/worker/webserver deployment or cluster Spark runtime.
+
+## Lakehouse to Iceberg DAG
+
+`dags/manufacturing_lakehouse_to_iceberg_daily.py` defines `manufacturing_lakehouse_to_iceberg_daily` with two tasks:
+
+```text
+run_lakehouse_task -> publish_gold_to_iceberg_task
+```
+
+The first task runs the JSON-backed lakehouse CLI. The second task reads the latest successful JSON catalog state for the same `business_date` and publishes that gold CSV to the local Iceberg table. This keeps quality/catalog ownership in the existing pipeline and keeps Spark/Iceberg publish logic outside the DAG body.
+
+Local `airflow dags test` verification passed for this two-task DAG. It proves local DAG import, task ordering, command rendering, and command execution. It still does not prove a production scheduler/worker/webserver deployment or cluster Spark runtime.
 
 ## Test
 

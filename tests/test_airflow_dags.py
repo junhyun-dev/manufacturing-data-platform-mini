@@ -33,6 +33,7 @@ def test_airflow_dagbag_parses_project_dags():
     assert dagbag.import_errors == {}
     assert "manufacturing_lakehouse_daily" in dagbag.dags
     assert "manufacturing_iceberg_skeleton" in dagbag.dags
+    assert "manufacturing_lakehouse_to_iceberg_daily" in dagbag.dags
 
 
 def test_airflow_lakehouse_dag_calls_lakehouse_cli():
@@ -54,3 +55,16 @@ def test_airflow_iceberg_dag_calls_spark_iceberg_cli():
     assert "warehouse" in task.bash_command
     assert "output_dir" in task.bash_command
     assert "--clean" in task.bash_command
+
+
+def test_airflow_lakehouse_to_iceberg_dag_chains_pipeline_then_publish():
+    dag = _dagbag().dags["manufacturing_lakehouse_to_iceberg_daily"]
+    run_task = dag.get_task("run_lakehouse_task")
+    publish_task = dag.get_task("publish_gold_to_iceberg_task")
+
+    assert "manufacturing_data_platform.pipeline.run" in run_task.bash_command
+    assert "manufacturing_data_platform.pipeline.publish_gold_to_iceberg" in publish_task.bash_command
+    assert "--catalog-backend json" in run_task.bash_command
+    assert "--lakehouse-output-dir" in publish_task.bash_command
+    assert "--warehouse" in publish_task.bash_command
+    assert publish_task.task_id in run_task.downstream_task_ids

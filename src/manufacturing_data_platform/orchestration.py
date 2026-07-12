@@ -57,3 +57,34 @@ def build_spark_iceberg_cli_command(
     if clean:
         parts.append("--clean")
     return " ".join(shlex.quote(part) for part in parts)
+
+
+def build_gold_iceberg_publish_cli_command(
+    *,
+    lakehouse_output_dir: str,
+    business_date: str,
+    warehouse: str,
+    output_dir: str,
+    table: str = "local.db.gold_daily_metrics",
+    clean: bool = False,
+) -> str:
+    """Build the command that publishes a successful lakehouse gold run to Iceberg."""
+    parts = [
+        "PYTHONPATH=src",
+        "python",
+        "-m",
+        "manufacturing_data_platform.pipeline.publish_gold_to_iceberg",
+        "--lakehouse-output-dir",
+        lakehouse_output_dir,
+        "--business-date",
+        business_date,
+        "--warehouse",
+        warehouse,
+        "--output-dir",
+        output_dir,
+        "--table",
+        table,
+    ]
+    if clean:
+        parts.append("--clean")
+    return " ".join(shlex.quote(part) for part in parts)

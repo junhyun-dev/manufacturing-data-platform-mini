@@ -118,6 +118,29 @@ PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skel
 
 정직한 경계: full Spark medallion pipeline, production lakehouse, rollback system은 아니다.
 
+## Lakehouse gold -> Iceberg publish
+
+기존 lakehouse CLI가 만든 successful gold CSV를 Iceberg current table로 발행하는 연결 slice다.
+
+```bash
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.run \
+  --business-date 2026-06-29 \
+  --raw-path data/raw/manufacturing_events.csv \
+  --output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg/lakehouse \
+  --catalog-backend json
+
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.publish_gold_to_iceberg \
+  --lakehouse-output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg/lakehouse \
+  --business-date 2026-06-29 \
+  --warehouse /tmp/manufacturing-mini-lakehouse-to-iceberg/warehouse \
+  --output-dir /tmp/manufacturing-mini-lakehouse-to-iceberg/evidence \
+  --clean
+```
+
+이 publish step은 JSON catalog의 latest successful run을 읽고, 그 run의 gold CSV만 `local.db.gold_daily_metrics`에 Iceberg `overwritePartitions()`로 반영한다. 같은 `pipeline_run_id + source_hash`를 다시 publish하면 새 snapshot을 만들지 않고 skip한다.
+
+정직한 경계: JSON catalog 기반 local publish다. Mongo-backed publish lookup, Spark-based quality suite, full Spark medallion rewrite, production Airflow deployment, cluster Spark는 아니다.
+
 ## Airflow runtime wrapper
 
 Airflow는 business logic을 갖지 않고, 이미 검증된 lakehouse CLI를 호출하는 얇은 wrapper다.
@@ -188,6 +211,18 @@ scripts/verify_airflow_standalone.sh
 이 local standalone run에서 API server는 `127.0.0.1:8080`에 응답했고, scheduler는 project DAG 2개를 parse했으며, `airflow dags trigger manufacturing_iceberg_skeleton` manual run은 LocalExecutor 경로로 `dag=success`, `task=success`까지 확인했다.
 
 정직한 경계: development-only local standalone 검증이다. production Airflow scheduler/worker deployment, cluster Spark, full Spark medallion pipeline은 아니다.
+
+## Lakehouse to Iceberg DAG
+
+`dags/manufacturing_lakehouse_to_iceberg_daily.py`는 두 task를 순서대로 실행한다.
+
+```text
+run_lakehouse_task -> publish_gold_to_iceberg_task
+```
+
+첫 task는 JSON-backed lakehouse CLI를 실행한다. 두 번째 task는 같은 `business_date`의 latest successful JSON catalog state를 읽고, 그 gold CSV를 local Iceberg table로 publish한다.
+
+검증된 범위는 local `airflow dags test`다. DAG import, task ordering, command rendering, command execution은 확인했지만 production scheduler/worker/webserver deployment나 cluster Spark runtime은 아니다.
 
 ## 정직한 한계
 

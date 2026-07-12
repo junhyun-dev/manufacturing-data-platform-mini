@@ -81,6 +81,18 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [ ] **Production Airflow scheduler/worker deployment** — 의도적으로 미구현.
 - [ ] **Cluster Spark / full Spark medallion pipeline** — 의도적으로 미구현.
 
+### Lakehouse gold -> Iceberg publish DAG — CORE-lite (구현 완료)
+목표: full Spark rewrite 없이, 구현된 JSON-backed lakehouse pipeline을 local Iceberg current table에 연결한다.
+- [x] **Publish CLI** — `publish_gold_to_iceberg`가 특정 `business_date`의 latest successful JSON catalog state를 읽음.
+- [x] **Gold CSV publish** — 선택된 run의 gold CSV를 `local.db.gold_daily_metrics`에 기록.
+- [x] **Partition overwrite** — publish는 `DataFrameWriterV2.overwritePartitions()` 사용.
+- [x] **Publish idempotency** — 같은 `pipeline_run_id + source_hash` 재발행은 새 snapshot 없이 skip.
+- [x] **Airflow DAG** — `manufacturing_lakehouse_to_iceberg_daily`가 `run_lakehouse_task -> publish_gold_to_iceberg_task` 순서로 실행.
+- [x] **Command contract + DAG parse tests** — 새 DAG의 orchestration과 optional Airflow DagBag test 추가.
+- [x] **Local runtime trigger** — `airflow dags test manufacturing_lakehouse_to_iceberg_daily` 성공.
+- [ ] **Mongo-backed publish lookup** — runtime Mongo 검증 전까지 의도적으로 미구현.
+- [ ] **Full Spark medallion pipeline / Spark quality suite** — 의도적으로 미구현.
+
 ## 범위: CORE vs OPTIONAL
 
 - **CORE** (thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · Spark/Iceberg.

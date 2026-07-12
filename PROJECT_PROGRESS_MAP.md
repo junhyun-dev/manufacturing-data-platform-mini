@@ -36,12 +36,15 @@ flowchart LR
   quality["Quality checks\npass / warn / fail"]
   catalog["Catalog / run state\nsource_hash, schema_hash, run_id"]
   lineage["Lineage evidence\nparent layer links"]
+  iceberg_current["Iceberg current gold table\npartition overwrite + snapshot"]
   report["Operator report\nread-only evidence view"]
 
   raw --> bronze --> silver --> gold
   silver --> quality
   gold --> quality
   quality --> catalog
+  gold --> iceberg_current
+  catalog --> iceberg_current
   bronze --> lineage
   silver --> lineage
   gold --> lineage
@@ -61,6 +64,7 @@ flowchart LR
 | Runtime Airflow | Local runtime wrapper verified | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py`, `requirements-airflow.txt`, Airflow CLI | DAG imports and `airflow dags test` triggers the same JSON CLI task locally; same input rerun returns `skipped`; production scheduler/worker deployment not claimed |
 | Spark/Iceberg | Local walking skeleton implemented, test-covered | `tests/test_spark_iceberg_skeleton.py`, Spark CLI | single gold Iceberg table with `business_date` partition overwrite + snapshot evidence; not full medallion Spark |
 | Airflow-triggered Spark/Iceberg | Local scheduler path verified | `dags/manufacturing_iceberg_skeleton.py`, `tests/test_orchestration.py`, Airflow CLI/standalone, Spark/Iceberg evidence JSON | local Airflow `dags test` and development `standalone` scheduler/LocalExecutor trigger the Spark/Iceberg skeleton; production deployment and cluster Spark not claimed |
+| Lakehouse -> Iceberg publish DAG | Local 2-task DAG verified | `dags/manufacturing_lakehouse_to_iceberg_daily.py`, `tests/test_publish_gold_to_iceberg.py`, Airflow `dags test` | local Airflow DAG runs JSON lakehouse CLI, then publishes the successful gold CSV to a local Iceberg table; Mongo-backed publish and full Spark rewrite not claimed |
 | Kafka / streaming | Backlog | none | not claimed |
 | Robot/session/MCAP | Backlog | none | not claimed |
 
@@ -72,7 +76,7 @@ flowchart LR
 | B2 | schema drift as warn, not fail | DEV.to draft | schema drift tests, latest verification log |
 | B3 | wide CSV -> EAV -> gold | DEV.to draft | EAV tests, processed/skipped CLI run |
 | B4 | operator debugging with quality/lineage evidence | Published | operator report tests, CLI, DEV.to |
-| B5 | skip -> Iceberg partition overwrite | DEV.to draft | Spark/Iceberg walking skeleton test + CLI evidence |
+| B5 | Lakehouse gold -> Iceberg publish | DEV.to draft | publish CLI tests, Spark/Iceberg evidence, Airflow `dags test` |
 
 ## Design Completion Map
 
@@ -87,6 +91,7 @@ flowchart TD
   airflow["Airflow runtime wrapper\nDONE"]
   iceberg["Spark/Iceberg walking skeleton\nDONE"]
   airflow_iceberg["Airflow -> Spark/Iceberg\nDONE"]
+  publish["Lakehouse -> Iceberg publish\nDONE"]
   b5["B5 Iceberg blog\nDEV.to draft"]
   streaming["Kafka / streaming\nBACKLOG"]
   robot["Robot/session/MCAP\nBACKLOG"]
@@ -98,7 +103,9 @@ flowchart TD
   rca --> iceberg
   airflow --> airflow_iceberg
   iceberg --> airflow_iceberg
-  iceberg --> b5
+  airflow --> publish
+  iceberg --> publish
+  publish --> b5
   iceberg --> streaming
   source --> robot
 ```

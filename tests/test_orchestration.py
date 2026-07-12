@@ -1,6 +1,7 @@
 import pytest
 
 from manufacturing_data_platform.orchestration import (
+    build_gold_iceberg_publish_cli_command,
     build_lakehouse_cli_command,
     build_spark_iceberg_cli_command,
 )
@@ -71,3 +72,38 @@ def test_airflow_spark_iceberg_wrapper_command_supports_jinja_runtime_parameters
     assert "warehouse" in command
     assert "output_dir" in command
     assert "--clean" in command
+
+
+def test_gold_iceberg_publish_command_uses_publish_entrypoint():
+    command = build_gold_iceberg_publish_cli_command(
+        lakehouse_output_dir="/tmp/lakehouse",
+        business_date="2026-06-29",
+        warehouse="/tmp/warehouse",
+        output_dir="/tmp/evidence",
+    )
+
+    assert command.startswith(
+        "PYTHONPATH=src python -m manufacturing_data_platform.pipeline.publish_gold_to_iceberg"
+    )
+    assert "--lakehouse-output-dir /tmp/lakehouse" in command
+    assert "--business-date 2026-06-29" in command
+    assert "--warehouse /tmp/warehouse" in command
+    assert "--output-dir /tmp/evidence" in command
+    assert "--table local.db.gold_daily_metrics" in command
+
+
+def test_gold_iceberg_publish_command_supports_jinja_runtime_parameters():
+    command = build_gold_iceberg_publish_cli_command(
+        lakehouse_output_dir='{{ dag_run.conf.get("lakehouse_output_dir", "/tmp/lh") }}',
+        business_date='{{ dag_run.conf.get("business_date", ds) }}',
+        warehouse='{{ dag_run.conf.get("warehouse", "/tmp/warehouse") }}',
+        output_dir='{{ dag_run.conf.get("iceberg_output_dir", "/tmp/evidence") }}',
+        table='{{ dag_run.conf.get("table", "local.db.gold_daily_metrics") }}',
+    )
+
+    assert "dag_run.conf.get" in command
+    assert "lakehouse_output_dir" in command
+    assert "business_date" in command
+    assert "warehouse" in command
+    assert "iceberg_output_dir" in command
+    assert "local.db.gold_daily_metrics" in command
