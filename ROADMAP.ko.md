@@ -55,7 +55,7 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [x] **안전성 assertion** — 대상 날짜는 중복 없이 교체되고, 다른 날짜 partition은 유지됨.
 - [x] **Snapshot evidence** — `run_id -> snapshot_id` evidence JSON; 같은 `source_hash` rerun은 새 snapshot을 만들지 않음.
 - [ ] **Full medallion Spark rewrite** — 의도적으로 미구현.
-- [x] **Airflow-triggered Spark runtime (local `dags test`)** — local `airflow dags test`가 Spark/Iceberg skeleton을 trigger.
+- [x] **Airflow-triggered Spark runtime (local `dags test` + standalone)** — local Airflow가 `dags test`와 development `standalone` scheduler/LocalExecutor run 두 경로로 Spark/Iceberg skeleton을 trigger.
 
 ### Airflow runtime wrapper — CORE-lite (구현 완료)
 목표: business logic을 DAG 안으로 옮기지 않고, Airflow가 같은 lakehouse CLI task를 local runtime에서 trigger할 수 있음을 증명한다.
@@ -73,6 +73,8 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [x] **Command contract** — `build_spark_iceberg_cli_command` test-covered.
 - [x] **DAG parse contract** — Airflow가 설치된 환경에서 optional DagBag test가 DAG id, task id, BashOperator command를 검증.
 - [x] **Local runtime trigger** — `airflow dags test manufacturing_iceberg_skeleton` 성공.
+- [x] **Local standalone scheduler trigger** — Airflow 3.3.0 `standalone`이 API server/scheduler/dag-processor/triggerer를 띄우고, manual `airflow dags trigger` run이 LocalExecutor 경로로 성공.
+- [x] **Worker dependency packaging** — standalone worker venv는 `requirements-airflow.txt`, `requirements.txt`, `requirements-spark.txt`를 모두 가져야 함.
 - [x] **Iceberg evidence** — `run_snapshot_map.json`, `current_gold.json`, `snapshot_comparison.json` 생성.
 - [x] **Partition overwrite assertions** — `snapshot_increment=1`, `same_source_created_snapshot=false`, 대상 날짜 교체, 다른 날짜 유지.
 - [ ] **Production Airflow scheduler/worker deployment** — 의도적으로 미구현.
@@ -87,7 +89,7 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 CORE-backlog:
 - [ ] **Full Spark/Iceberg 번역** — optional future work: 전체 `transform_*` engine을 Spark로 교체하고 더 많은 layer를 Iceberg/Delta로 저장. 현재 evidence는 단일 gold table walking skeleton이다.
 - [ ] **Runtime Mongo verification** — 여기선 보류(Docker 엔진 없음). Mongo 경로는 `mongomock`으로 커버.
-- [x] **Runtime Airflow trigger verification** — local Airflow 3.3.0 `dags test`로 CLI wrapper 검증.
+- [x] **Runtime Airflow trigger verification** — local Airflow 3.3.0 `dags test`로 CLI wrapper 검증; local `standalone` scheduler/LocalExecutor로 Spark/Iceberg wrapper 검증.
 - [ ] **Production Airflow scheduler/worker/webserver deployment** — 미구현.
 - [ ] **Task split** — one-task wrapper 안정화 후 `bronze_task → silver_task → gold_task → quality_task → catalog_task`로 분리.
 - [ ] **Graceful null/bad-row quarantine** — manufacturing `transform_silver`의 strict cast는 아직 fail-fast (EAV는 이미 graceful 처리).

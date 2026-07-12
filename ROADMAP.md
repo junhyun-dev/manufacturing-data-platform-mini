@@ -55,7 +55,7 @@ Goal: prove the storage/table contract for a corrected `business_date` without d
 - [x] **Safety assertion** — target date is replaced without duplicates while another date partition remains unchanged.
 - [x] **Snapshot evidence** — `run_id -> snapshot_id` evidence JSON; same `source_hash` rerun creates no new snapshot.
 - [ ] **Full medallion Spark rewrite** — intentionally not implemented.
-- [x] **Airflow-triggered Spark runtime (local `dags test`)** — local `airflow dags test` triggers the Spark/Iceberg skeleton.
+- [x] **Airflow-triggered Spark runtime (local `dags test` + standalone)** — local Airflow triggers the Spark/Iceberg skeleton through both `dags test` and a development `standalone` scheduler/LocalExecutor run.
 
 ### Airflow runtime wrapper — CORE-lite (implemented)
 Goal: prove Airflow can import the DAG and trigger the same lakehouse CLI task locally, without moving business logic into the DAG.
@@ -73,6 +73,8 @@ Goal: prove local Airflow can trigger the existing Spark/Iceberg partition-overw
 - [x] **Command contract** — `build_spark_iceberg_cli_command` is test-covered.
 - [x] **DAG parse contract** — optional Airflow DagBag tests cover DAG ids, task ids, and BashOperator commands when Airflow is installed.
 - [x] **Local runtime trigger** — `airflow dags test manufacturing_iceberg_skeleton` succeeds.
+- [x] **Local standalone scheduler trigger** — Airflow 3.3.0 `standalone` starts API server/scheduler/dag-processor/triggerer and a manual `airflow dags trigger` run succeeds through LocalExecutor.
+- [x] **Worker dependency packaging** — the standalone worker venv must include `requirements-airflow.txt`, `requirements.txt`, and `requirements-spark.txt`.
 - [x] **Iceberg evidence** — generated `run_snapshot_map.json`, `current_gold.json`, and `snapshot_comparison.json`.
 - [x] **Partition overwrite assertions** — `snapshot_increment=1`, `same_source_created_snapshot=false`, target date replaced, other date preserved.
 - [ ] **Production Airflow scheduler/worker deployment** — intentionally not implemented.
@@ -111,7 +113,7 @@ CORE-backlog:
 - [ ] **Deep design: streaming + batch platform** — design source events/files, Kafka topic shape, bronze/silver/gold boundary, idempotency keys, late data/backfill, quality gates, mart grain, monitoring, and recovery before implementing a Kafka slice.
 - [ ] **Full Spark/Iceberg translation** — optional future work: swap the full `transform_*` engine to Spark and store more layers as Iceberg/Delta. The current evidence is only a single-gold-table walking skeleton.
 - [ ] **Runtime Mongo verification** — blocked here (no Docker engine). Mongo path covered by `mongomock`.
-- [x] **Runtime Airflow trigger verification** — local Airflow 3.3.0 `dags test` verified the CLI wrapper.
+- [x] **Runtime Airflow trigger verification** — local Airflow 3.3.0 `dags test` verified the CLI wrapper; local `standalone` scheduler/LocalExecutor verified the Spark/Iceberg wrapper.
 - [ ] **Production Airflow scheduler/worker/webserver deployment** — not implemented.
 - [ ] **Task split** — `bronze_task -> silver_task -> gold_task -> quality_task -> catalog_task` after the one-task wrapper is stable.
 - [ ] **Graceful null/bad-row quarantine** — manufacturing `transform_silver` strict cast still fails fast (EAV already handles this gracefully).

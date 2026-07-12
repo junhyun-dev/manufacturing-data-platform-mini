@@ -228,6 +228,7 @@ Airflow wording:
 ```text
 허용:
   Airflow local dags test runtime wrapper is verified.
+  Airflow local standalone scheduler/LocalExecutor run is verified for the Spark/Iceberg skeleton.
 
 금지:
   operated production Airflow pipelines in this repo.

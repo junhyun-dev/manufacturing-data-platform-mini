@@ -61,7 +61,7 @@ flowchart LR
 | Runtime Mongo | Backlog / environment-blocked | `mongomock` tests only | model은 구현됨; real runtime verification pending |
 | Runtime Airflow | local runtime wrapper 검증 완료 | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py`, `requirements-airflow.txt`, Airflow CLI | DAG import와 `airflow dags test`로 같은 JSON CLI task 실행 확인; 같은 입력 재실행은 `skipped`; production scheduler/worker deployment는 claim하지 않음 |
 | Spark/Iceberg | local walking skeleton 구현 완료, test-covered | `tests/test_spark_iceberg_skeleton.py`, Spark CLI | 단일 gold Iceberg table에서 `business_date` partition overwrite + snapshot evidence; full medallion Spark 아님 |
-| Airflow-triggered Spark/Iceberg | local runtime wrapper 검증 완료 | `dags/manufacturing_iceberg_skeleton.py`, `tests/test_orchestration.py`, Airflow CLI, Spark/Iceberg evidence JSON | local Airflow `dags test`가 Spark/Iceberg skeleton trigger; production scheduler/worker와 cluster Spark는 claim하지 않음 |
+| Airflow-triggered Spark/Iceberg | local scheduler path 검증 완료 | `dags/manufacturing_iceberg_skeleton.py`, `tests/test_orchestration.py`, Airflow CLI/standalone, Spark/Iceberg evidence JSON | local Airflow `dags test`와 development `standalone` scheduler/LocalExecutor가 Spark/Iceberg skeleton trigger; production deployment와 cluster Spark는 claim하지 않음 |
 | Kafka / streaming | Backlog | 없음 | claim하지 않음 |
 | Robot/session/MCAP | Backlog | 없음 | claim하지 않음 |
 
@@ -116,7 +116,8 @@ Airflow runtime verification
 
 ```text
 DAG는 있고 wrapper command contract는 test-covered였다.
-이번 slice에서 local Airflow runtime import와 `dags test` 실행을 검증했다.
+이번 slice에서 local Airflow runtime import, `dags test` 실행,
+그리고 Spark/Iceberg wrapper에 대한 development `standalone` scheduler/LocalExecutor run을 검증했다.
 business logic을 DAG로 옮기지 않고 orchestration만 증명했다.
 ```
 
@@ -133,6 +134,8 @@ Core questions:
 ```text
 이 환경에서 Airflow가 DAG를 import할 수 있는가? -> Airflow 3.3.0 별도 venv에서 가능.
 DAG가 local verification에서 쓰는 같은 CLI entrypoint를 trigger하는가? -> `airflow dags test`로 가능.
+scheduler/LocalExecutor가 Spark/Iceberg wrapper를 실행할 수 있는가? -> local Airflow `standalone` + manual `dags trigger`로 가능.
+worker runtime dependency는 맞는가? -> 같은 venv에 `requirements-airflow.txt`, `requirements.txt`, `requirements-spark.txt`를 모두 설치해야 가능.
 business_date와 raw_path는 어떻게 전달되는가?
 local runtime에서 output_dir은 어디를 가리키는가?
 retry/idempotency는 CLI의 source_hash 로직 덕분에 여전히 안전한가? -> 같은 `dags test` 재실행 시 `status="skipped"`.
@@ -148,7 +151,7 @@ Allowed:
 Still forbidden:
   operated production Airflow pipelines
   multi-task production DAG
-  scheduler/worker deployment
+  production scheduler/worker deployment
 ```
 
 다음 구현 선택은 다시 블로그 발행 또는 새 slice로 넘어간다.

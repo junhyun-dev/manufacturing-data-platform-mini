@@ -60,7 +60,7 @@ flowchart LR
 | Runtime Mongo | Backlog / environment-blocked | `mongomock` tests only | model implemented; real runtime verification pending |
 | Runtime Airflow | Local runtime wrapper verified | `dags/manufacturing_lakehouse_daily.py`, `tests/test_orchestration.py`, `requirements-airflow.txt`, Airflow CLI | DAG imports and `airflow dags test` triggers the same JSON CLI task locally; same input rerun returns `skipped`; production scheduler/worker deployment not claimed |
 | Spark/Iceberg | Local walking skeleton implemented, test-covered | `tests/test_spark_iceberg_skeleton.py`, Spark CLI | single gold Iceberg table with `business_date` partition overwrite + snapshot evidence; not full medallion Spark |
-| Airflow-triggered Spark/Iceberg | Local runtime wrapper verified | `dags/manufacturing_iceberg_skeleton.py`, `tests/test_orchestration.py`, Airflow CLI, Spark/Iceberg evidence JSON | local Airflow `dags test` triggers the Spark/Iceberg skeleton; production scheduler/worker and cluster Spark not claimed |
+| Airflow-triggered Spark/Iceberg | Local scheduler path verified | `dags/manufacturing_iceberg_skeleton.py`, `tests/test_orchestration.py`, Airflow CLI/standalone, Spark/Iceberg evidence JSON | local Airflow `dags test` and development `standalone` scheduler/LocalExecutor trigger the Spark/Iceberg skeleton; production deployment and cluster Spark not claimed |
 | Kafka / streaming | Backlog | none | not claimed |
 | Robot/session/MCAP | Backlog | none | not claimed |
 
@@ -115,7 +115,8 @@ Why:
 
 ```text
 The DAG existed and the wrapper command contract was test-covered.
-This slice verified local Airflow runtime import and `dags test` execution.
+This slice verified local Airflow runtime import, `dags test` execution,
+and a development `standalone` scheduler/LocalExecutor run for the Spark/Iceberg wrapper.
 It did not change business logic; it proved orchestration only.
 ```
 
@@ -131,6 +132,8 @@ Core questions:
 ```text
 Can Airflow import the DAG in this environment? -> yes, with Airflow 3.3.0 in an isolated venv.
 Can the DAG trigger the same CLI entrypoint used by local verification? -> yes, via `airflow dags test`.
+Can scheduler/LocalExecutor run the Spark/Iceberg wrapper? -> yes, via local Airflow `standalone` + manual `dags trigger`.
+Does the worker runtime have the right dependencies? -> only after installing `requirements-airflow.txt`, `requirements.txt`, and `requirements-spark.txt` into the same venv.
 How are business_date and raw_path passed?
 Where does output_dir point in local runtime?
 Does retry/idempotency remain safe because the CLI still uses source_hash? -> yes, a repeated `dags test` returns `status="skipped"`.
@@ -146,7 +149,7 @@ Allowed:
 Still forbidden:
   operated production Airflow pipelines
   multi-task production DAG
-  scheduler/worker deployment
+  production scheduler/worker deployment
 ```
 
 Next implementation choice moves back to blog publication or a new slice.

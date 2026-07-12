@@ -53,7 +53,7 @@ synthetic manufacturing CSV -> bronze -> silver -> gold -> quality -> Mongo cata
 
 The Airflow DAG is an operational wrapper, not the business logic. The pipeline must run from the CLI first; Airflow only schedules, retries, passes dates, and triggers the same CLI entrypoint.
 
-> **Known limitation (honest):** `transform_silver` casts numeric columns strictly, so an unparseable numeric value fails fast at transform time rather than being captured as a graceful quality `fail`. Graceful null/bad-row quarantine is **backlog**. Runtime MongoDB is **not yet verified** in this environment (no Docker engine); the Mongo path is covered by `mongomock` tests and the offline path by the `--catalog-backend json` CLI. Airflow is verified only as a local runtime wrapper via `airflow dags test`, not as a deployed scheduler/worker service.
+> **Known limitation (honest):** `transform_silver` casts numeric columns strictly, so an unparseable numeric value fails fast at transform time rather than being captured as a graceful quality `fail`. Graceful null/bad-row quarantine is **backlog**. Runtime MongoDB is **not yet verified** in this environment (no Docker engine); the Mongo path is covered by `mongomock` tests and the offline path by the `--catalog-backend json` CLI. Airflow is verified locally via `airflow dags test` and an Airflow 3.3.0 `standalone` scheduler/LocalExecutor run, not as a production deployment.
 
 See **[BENCHMARKS.md](BENCHMARKS.md)** for the reference patterns, JD keyword mapping, and what was deliberately excluded.
 
@@ -249,6 +249,23 @@ PYTHONPATH=src \
 This verifies local Airflow orchestration of the Spark/Iceberg walking skeleton: the task creates the local Iceberg table, records `run_id -> snapshot_id` evidence, overwrites the corrected `business_date` partition, and leaves the other partition unchanged. It still does not prove production Airflow scheduler/worker deployment, cluster Spark, or a full Spark medallion pipeline.
 
 `airflow dags test` runs a single DagRun locally. It verifies DAG import, task wiring, templated command rendering, and command execution, but it does not verify scheduler, queue, executor, worker, or webserver behavior.
+
+Local Airflow standalone was also verified for the Spark/Iceberg skeleton. The worker environment must include Airflow, the project runtime deps, and Spark deps in the same venv:
+
+```bash
+/tmp/manufacturing-mini-airflow-venv/bin/python -m pip install -r requirements-airflow.txt
+/tmp/manufacturing-mini-airflow-venv/bin/python -m pip install -r requirements.txt -r requirements-spark.txt
+
+export AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-standalone-home
+export AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags"
+export AIRFLOW__CORE__LOAD_EXAMPLES=False
+export PYTHONPATH=src
+export PATH="/tmp/manufacturing-mini-airflow-venv/bin:$PATH"
+
+airflow standalone
+```
+
+In that local standalone run, the API server responded on `127.0.0.1:8080`, the scheduler parsed both project DAGs, and a manual `airflow dags trigger manufacturing_iceberg_skeleton` run finished with `dag=success` and `task=success` through LocalExecutor. This is still development-only Airflow standalone, not a production scheduler/worker/webserver deployment or cluster Spark runtime.
 
 ## Test
 

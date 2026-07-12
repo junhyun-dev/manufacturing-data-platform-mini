@@ -700,6 +700,7 @@ claim boundary는 무엇인가?
 허용:
   local Spark/Iceberg single-gold-table walking skeleton을 구현했다.
   local Airflow dags test로 Spark/Iceberg skeleton을 trigger했다.
+  local Airflow standalone scheduler/LocalExecutor로 Spark/Iceberg skeleton manual run을 검증했다.
 
 금지:
   production lakehouse를 구축했다.
@@ -777,6 +778,7 @@ quality-on-Spark
 MERGE/upsert
 concurrent writer handling
 production Airflow-triggered Spark runtime
+production Airflow deployment
 production rollback
 ```
 

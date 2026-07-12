@@ -618,6 +618,77 @@ Notes:
 - It does not verify cluster Spark or a full Spark medallion pipeline.
 - The BashOperator still uses the worker shell's `python`; production dependency packaging remains out of scope.
 
+## 2026-07-12 — Airflow standalone scheduler run for Spark/Iceberg skeleton
+
+Scope:
+
+- Verify that Airflow can be started locally as `airflow standalone`.
+- Move beyond `dags test` by triggering `manufacturing_iceberg_skeleton` through the scheduler/LocalExecutor path.
+- Keep the claim bounded to development-only local standalone, not production deployment.
+
+Commands:
+
+```bash
+/tmp/manufacturing-mini-airflow-venv/bin/python -m pip install -r requirements-airflow.txt
+/tmp/manufacturing-mini-airflow-venv/bin/python -m pip install -r requirements.txt -r requirements-spark.txt
+
+rm -rf /tmp/manufacturing-mini-airflow-standalone-home \
+  /tmp/manufacturing-mini-airflow-standalone-iceberg-warehouse \
+  /tmp/manufacturing-mini-airflow-standalone-iceberg-evidence
+
+export AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-standalone-home
+export AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags"
+export AIRFLOW__CORE__LOAD_EXAMPLES=False
+export PYTHONPATH=src
+export PATH="/tmp/manufacturing-mini-airflow-venv/bin:$PATH"
+
+airflow standalone
+
+curl -s -o /tmp/manufacturing-mini-airflow-http-check.txt \
+  -w "%{http_code}\n" http://127.0.0.1:8080/
+
+airflow dags list
+airflow dags list-import-errors
+airflow dags unpause manufacturing_iceberg_skeleton
+airflow dags trigger manufacturing_iceberg_skeleton \
+  --run-id standalone_iceberg_20260712_0818 \
+  --conf '{"warehouse":"/tmp/manufacturing-mini-airflow-standalone-iceberg-warehouse","output_dir":"/tmp/manufacturing-mini-airflow-standalone-iceberg-evidence","clean":true}'
+```
+
+Results:
+
+```text
+airflow standalone: started api-server on 0.0.0.0:8080
+curl 127.0.0.1:8080: 200
+standalone components observed: api-server, scheduler, dag-processor, triggerer, LocalExecutor workers
+dag parse: manufacturing_lakehouse_daily and manufacturing_iceberg_skeleton loaded, no import errors
+manual scheduler run: standalone_iceberg_20260712_0818
+dag_run state: success
+task state: success
+executor: LocalExecutor
+task command exit code: 0
+evidence files: run_snapshot_map.json, current_gold.json, snapshot_comparison.json
+snapshot_increment: 1
+same_source_created_snapshot: false
+target business_date row count: 1
+current gold rows: 2026-06-29 corrected row + 2026-06-30 preserved row
+```
+
+Verified:
+
+- [x] Airflow 3.3.0 local `standalone` can start the API server, scheduler, dag processor, triggerer, and LocalExecutor workers.
+- [x] The project DAGs are parsed by the standalone dag processor.
+- [x] `manufacturing_iceberg_skeleton` can be manually triggered through the scheduler path.
+- [x] The LocalExecutor worker runs the BashOperator command to completion.
+- [x] The Spark/Iceberg skeleton still produces the same partition-overwrite evidence under scheduler execution.
+
+Notes:
+
+- First standalone attempt failed because the venv `bin` directory was not on `PATH`; `standalone` subprocesses invoke `airflow` by name.
+- First scheduler-triggered task failed with `ModuleNotFoundError: No module named 'pymongo'` until the Airflow worker venv also installed `requirements.txt`.
+- Scheduler-triggered Spark also requires `requirements-spark.txt` in the same worker venv.
+- This is a development-only local standalone check. It does not verify production Airflow deployment, HA scheduling, a distributed executor, queue/worker fleet behavior, auth hardening, or cluster Spark.
+
 ## 2026-07-11 — Spark/Iceberg single-gold-table walking skeleton
 
 Scope:

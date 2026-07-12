@@ -164,12 +164,29 @@ PYTHONPATH=src \
 
 `airflow dags test`는 단일 DagRun을 local에서 실행한다. DAG import, task wiring, templated command rendering, command execution은 검증하지만 scheduler, queue, executor, worker, webserver 동작은 검증하지 않는다.
 
-정직한 경계: production Airflow scheduler/worker deployment, cluster Spark, full Spark medallion pipeline은 아니다.
+추가로 Airflow 3.3.0 `standalone`도 local에서 검증했다. 이 경로에서는 worker가 실제 shell에서 CLI를 실행하므로, Airflow venv 하나에 Airflow dependency뿐 아니라 project runtime dependency와 Spark dependency도 같이 설치돼 있어야 한다.
+
+```bash
+/tmp/manufacturing-mini-airflow-venv/bin/python -m pip install -r requirements-airflow.txt
+/tmp/manufacturing-mini-airflow-venv/bin/python -m pip install -r requirements.txt -r requirements-spark.txt
+
+export AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-standalone-home
+export AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags"
+export AIRFLOW__CORE__LOAD_EXAMPLES=False
+export PYTHONPATH=src
+export PATH="/tmp/manufacturing-mini-airflow-venv/bin:$PATH"
+
+airflow standalone
+```
+
+이 local standalone run에서 API server는 `127.0.0.1:8080`에 응답했고, scheduler는 project DAG 2개를 parse했으며, `airflow dags trigger manufacturing_iceberg_skeleton` manual run은 LocalExecutor 경로로 `dag=success`, `task=success`까지 확인했다.
+
+정직한 경계: development-only local standalone 검증이다. production Airflow scheduler/worker deployment, cluster Spark, full Spark medallion pipeline은 아니다.
 
 ## 정직한 한계
 
 - Spark/Iceberg는 단일 gold table walking skeleton까지만 구현됐다. full Spark medallion rewrite는 backlog다.
-- runtime Mongo는 현재 환경에서 완전 검증되지 않았다. Airflow는 local `dags test` runtime wrapper까지만 검증했다.
+- runtime Mongo는 현재 환경에서 완전 검증되지 않았다. Airflow는 local `dags test`와 local `standalone` scheduler/LocalExecutor run까지만 검증했다.
 - manufacturing strict numeric cast는 일부 bad row를 graceful quarantine하지 못하고 fail-fast한다.
 - EAV 쪽은 unparseable value를 graceful quality failure로 잡는다.
 

@@ -35,6 +35,7 @@ Airflow는 같은 CLI entrypoint를 parameter와 함께 호출한다.
 | retry는 안전한가? | 중복 방지 | Airflow retry only / pipeline idempotency / both | scheduler를 붙일 때 |
 | task split 기준은? | 운영 가시성 | one task / bronze-silver-gold split / quality separate | failure isolation이 필요할 때 |
 | runtime 검증은 했는가? | claim boundary | import only / command contract / real trigger | 이력서/README에 Airflow를 말할 때 |
+| worker runtime dependency는 맞는가? | scheduler 실행 실패 방지 | Airflow-only venv / project deps 포함 / packaged image | scheduler/worker 경로를 붙일 때 |
 
 ### 선택지 예시
 
@@ -62,6 +63,10 @@ Airflow runtime import verified:
 
 Airflow trigger verified:
   실제 Airflow task run까지 확인.
+
+Airflow standalone scheduler verified:
+  local standalone에서 scheduler/LocalExecutor가 task를 성공 처리.
+  단, production deployment와는 별개.
 ```
 
 ### 놓치기 쉬운 질문
@@ -70,6 +75,7 @@ Airflow trigger verified:
 Airflow retry와 source_hash skip이 같이 있을 때 의도한 run status가 무엇인가?
 Airflow execution date와 business_date는 같은가 다른가?
 Spark/Iceberg skeleton을 Airflow가 trigger하면 jar/package resolution은 어디서 보장하는가?
+Airflow worker의 `python`은 project dependency와 Spark dependency를 모두 갖고 있는가?
 ```
 
 ## 2. Observability / Operator Evidence

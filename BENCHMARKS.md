@@ -63,7 +63,7 @@ rewrite.
 | Idempotency / backfill | skip re-run on `dataset_id + business_date + source_hash` | implemented (Airflow backfill = partial) |
 | Lineage | `lakehouse_runs` / `lineage_events` with `layers[].parents` | partial (path-level, not column-level) |
 | Catalog | Mongo `datasets` / `dataset_versions` (Phase 1) + run/lineage docs | implemented |
-| Orchestration | Airflow DAGs as local wrappers around the lakehouse CLI and Spark/Iceberg skeleton CLI | partial (local `dags test` runtime verified; production scheduler/worker not deployed) |
+| Orchestration | Airflow DAGs as local wrappers around the lakehouse CLI and Spark/Iceberg skeleton CLI | partial (local `dags test` runtime verified; Spark/Iceberg wrapper also verified through development `standalone` scheduler/LocalExecutor; production deployment not claimed) |
 | Spark / Iceberg | single gold Iceberg table, `business_date` partition overwrite, snapshot evidence, Airflow-triggered local skeleton | partial (not a full Spark medallion pipeline) |
 
 ### Labrador Labs-style (AI training-data QA / governance / LLM preprocessing) — OPTIONAL
