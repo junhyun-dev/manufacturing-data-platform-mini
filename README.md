@@ -248,6 +248,8 @@ PYTHONPATH=src \
 
 This verifies local Airflow orchestration of the Spark/Iceberg walking skeleton: the task creates the local Iceberg table, records `run_id -> snapshot_id` evidence, overwrites the corrected `business_date` partition, and leaves the other partition unchanged. It still does not prove production Airflow scheduler/worker deployment, cluster Spark, or a full Spark medallion pipeline.
 
+`airflow dags test` runs a single DagRun locally. It verifies DAG import, task wiring, templated command rendering, and command execution, but it does not verify scheduler, queue, executor, worker, or webserver behavior.
+
 ## Test
 
 ```bash

@@ -55,11 +55,11 @@ Goal: prove the storage/table contract for a corrected `business_date` without d
 - [x] **Safety assertion** — target date is replaced without duplicates while another date partition remains unchanged.
 - [x] **Snapshot evidence** — `run_id -> snapshot_id` evidence JSON; same `source_hash` rerun creates no new snapshot.
 - [ ] **Full medallion Spark rewrite** — intentionally not implemented.
-- [x] **Airflow-triggered Spark runtime** — local `airflow dags test` triggers the Spark/Iceberg skeleton.
+- [x] **Airflow-triggered Spark runtime (local `dags test`)** — local `airflow dags test` triggers the Spark/Iceberg skeleton.
 
 ### Airflow runtime wrapper — CORE-lite (implemented)
 Goal: prove Airflow can import the DAG and trigger the same lakehouse CLI task locally, without moving business logic into the DAG.
-- [x] **Optional Airflow dependency pin** — `requirements-airflow.txt` pins `apache-airflow==3.3.0` with official Python 3.10 constraints.
+- [x] **Optional Airflow dependency pin** — `requirements-airflow.txt` pins `apache-airflow==3.3.0` and `apache-airflow-providers-standard==1.15.0` with official Python 3.10 constraints.
 - [x] **DAG import** — `airflow dags list` loads `manufacturing_lakehouse_daily`.
 - [x] **Task discovery** — `airflow tasks list manufacturing_lakehouse_daily` shows `run_pipeline_task`.
 - [x] **Local runtime trigger** — `airflow dags test` runs the BashOperator and the JSON catalog CLI succeeds.
@@ -71,6 +71,7 @@ Goal: prove Airflow can import the DAG and trigger the same lakehouse CLI task l
 Goal: prove local Airflow can trigger the existing Spark/Iceberg partition-overwrite skeleton without moving Spark logic into the DAG.
 - [x] **DAG wrapper** — `dags/manufacturing_iceberg_skeleton.py` calls the Spark/Iceberg CLI.
 - [x] **Command contract** — `build_spark_iceberg_cli_command` is test-covered.
+- [x] **DAG parse contract** — optional Airflow DagBag tests cover DAG ids, task ids, and BashOperator commands when Airflow is installed.
 - [x] **Local runtime trigger** — `airflow dags test manufacturing_iceberg_skeleton` succeeds.
 - [x] **Iceberg evidence** — generated `run_snapshot_map.json`, `current_gold.json`, and `snapshot_comparison.json`.
 - [x] **Partition overwrite assertions** — `snapshot_increment=1`, `same_source_created_snapshot=false`, target date replaced, other date preserved.

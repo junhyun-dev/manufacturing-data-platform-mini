@@ -550,6 +550,10 @@ Commands:
 python -m pytest tests/test_orchestration.py -q
 python -m pytest -q
 
+PYTHONPATH=src /tmp/manufacturing-mini-airflow-venv/bin/python -m pip install -r requirements-airflow.txt
+PYTHONPATH=src /tmp/manufacturing-mini-airflow-venv/bin/python -m pip install pytest
+PYTHONPATH=src /tmp/manufacturing-mini-airflow-venv/bin/python -m pytest tests/test_airflow_dags.py -q
+
 AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-home \
 AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
 AIRFLOW__CORE__LOAD_EXAMPLES=False \
@@ -582,7 +586,8 @@ Results:
 
 ```text
 orchestration tests: 5 passed
-pytest: 42 passed
+pytest: 42 passed, 3 skipped without Airflow in the base environment
+optional Airflow DagBag tests: 3 passed
 airflow tasks render: renders Spark/Iceberg skeleton CLI command
 airflow dags list: manufacturing_iceberg_skeleton loaded
 airflow tasks list: run_spark_iceberg_skeleton_task
@@ -598,6 +603,7 @@ Verified:
 
 - [x] Airflow runtime can import the Spark/Iceberg DAG.
 - [x] Airflow runtime sees `run_spark_iceberg_skeleton_task`.
+- [x] Optional Airflow DagBag tests cover both project DAGs when Airflow is installed.
 - [x] The BashOperator executes `manufacturing_data_platform.pipeline.spark_iceberg_skeleton`.
 - [x] Spark/Iceberg creates a local Iceberg table through the Airflow-triggered task.
 - [x] Same-source retry still creates no new snapshot.
@@ -607,6 +613,7 @@ Verified:
 Notes:
 
 - This verifies local Airflow `dags test` orchestration of the Spark/Iceberg skeleton.
+- `airflow dags test` verifies local DAG import/task wiring/command execution, not scheduler, queue, executor, worker, or webserver behavior.
 - It does not verify production scheduler/worker/webserver deployment.
 - It does not verify cluster Spark or a full Spark medallion pipeline.
 - The BashOperator still uses the worker shell's `python`; production dependency packaging remains out of scope.
@@ -664,4 +671,4 @@ Verified:
 Claim boundary:
 
 - Allowed: local Spark/Iceberg single-gold-table walking skeleton with `business_date` partition overwrite and snapshot evidence.
-- Not allowed: full Spark medallion pipeline, production lakehouse, Iceberg rollback system, concurrent writer handling, Airflow-triggered Spark runtime.
+- Not allowed: full Spark medallion pipeline, production lakehouse, Iceberg rollback system, concurrent writer handling, production Airflow-triggered Spark runtime.

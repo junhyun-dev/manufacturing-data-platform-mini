@@ -162,6 +162,8 @@ PYTHONPATH=src \
 
 검증된 것은 local Airflow가 Spark/Iceberg walking skeleton을 trigger할 수 있다는 점이다. 이 task는 local Iceberg table을 만들고, `run_id -> snapshot_id` evidence를 남기며, 정정된 `business_date` partition만 overwrite하고 다른 partition은 유지한다.
 
+`airflow dags test`는 단일 DagRun을 local에서 실행한다. DAG import, task wiring, templated command rendering, command execution은 검증하지만 scheduler, queue, executor, worker, webserver 동작은 검증하지 않는다.
+
 정직한 경계: production Airflow scheduler/worker deployment, cluster Spark, full Spark medallion pipeline은 아니다.
 
 ## 정직한 한계

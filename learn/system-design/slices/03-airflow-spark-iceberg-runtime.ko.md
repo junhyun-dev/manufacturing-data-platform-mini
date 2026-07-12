@@ -58,6 +58,7 @@ SparkSession/Iceberg table/write logic은 DAG 안에 들어가면 안 된다.
 | Airflow task가 어떤 Python/Spark runtime을 쓰는가? | worker shell의 dependency가 맞지 않으면 runtime에서 깨진다. |
 | `warehouse`, `output_dir`는 어떻게 전달되는가? | Airflow 실행 evidence 위치를 통제해야 한다. |
 | Spark/Iceberg evidence는 무엇으로 판단하는가? | DAG success만으로 partition overwrite를 증명할 수 없다. |
+| `dags test`는 scheduler/executor 검증인가? | local command execution과 production orchestration claim을 분리한다. |
 | 이걸 production Airflow 운영으로 말할 수 있는가? | public claim boundary를 결정한다. |
 
 ### Demo Questions
@@ -102,6 +103,7 @@ Code / test:
 - [`../../../dags/manufacturing_iceberg_skeleton.py`](../../../dags/manufacturing_iceberg_skeleton.py)
 - [`../../../src/manufacturing_data_platform/orchestration.py`](../../../src/manufacturing_data_platform/orchestration.py)
 - [`../../../tests/test_orchestration.py`](../../../tests/test_orchestration.py)
+- [`../../../tests/test_airflow_dags.py`](../../../tests/test_airflow_dags.py)
 - [`../../../src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py`](../../../src/manufacturing_data_platform/pipeline/spark_iceberg_skeleton.py)
 
 Verification:
@@ -118,12 +120,14 @@ Airflow local dags test triggers the Spark/Iceberg skeleton CLI.
 The task creates local Iceberg evidence JSON.
 The same Spark/Iceberg partition-overwrite assertions still hold under Airflow.
 Spark/Iceberg logic remains outside the DAG body.
+Optional DagBag tests parse the DAGs when Airflow is installed.
 ```
 
 Forbidden:
 
 ```text
 production Airflow scheduler/worker deployment
+Airflow queue/executor/worker behavior
 cluster Spark
 full Spark medallion pipeline
 Airflow-operated production lakehouse
