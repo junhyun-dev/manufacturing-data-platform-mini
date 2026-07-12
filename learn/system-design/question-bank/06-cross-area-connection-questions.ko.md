@@ -262,7 +262,7 @@ both:
 
 ```text
 synthetic data임을 반복해서 명시했는가?
-secret/private path/customer hint가 없는가?
+credential/local path/non-public hint가 없는가?
 실무 경험과 개인 프로젝트 구현 범위를 구분했는가?
 ```
 

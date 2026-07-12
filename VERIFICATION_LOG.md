@@ -836,3 +836,53 @@ Claim boundary:
 
 - Allowed: local JSON-backed lakehouse gold -> local Iceberg publish, two-task local Airflow DAG, `pipeline_run_id -> snapshot_id` evidence, retry publish skip.
 - Not allowed: Mongo-backed publish lookup, full Spark/Iceberg medallion pipeline, Spark-based quality suite, production Airflow deployment, cluster Spark, concurrent writer handling, exactly-once catalog/table transaction.
+
+## 2026-07-12 — Spark/Iceberg local setup recheck
+
+Scope:
+
+- Reconfirm today's local Spark/Iceberg setup from the public repo commands.
+- Keep the claim bounded to local SparkSession + local Iceberg hadoop catalog.
+
+Commands:
+
+```bash
+python -m pip install -r requirements-spark.txt
+python -c "import pyspark; print(pyspark.__version__)"
+
+rm -rf /tmp/manufacturing-mini-today-iceberg-warehouse \
+  /tmp/manufacturing-mini-today-iceberg-evidence
+
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_iceberg_skeleton \
+  --warehouse /tmp/manufacturing-mini-today-iceberg-warehouse \
+  --output-dir /tmp/manufacturing-mini-today-iceberg-evidence \
+  --clean
+```
+
+Results:
+
+```text
+pip install requirements-spark.txt: already satisfied
+pyspark: 3.5.8
+Iceberg runtime coordinate: org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.11.0
+spark skeleton CLI: passed
+target_partition_row_count: 1
+corrected_row_count: 1
+snapshot_count: 1 -> 2 after correction
+snapshot_increment: 1
+same_source_created_snapshot: false
+other business_date partition preserved: true
+```
+
+Verified:
+
+- [x] PySpark is installed in the current Python environment.
+- [x] Spark can resolve the Iceberg runtime jar from the configured coordinate.
+- [x] Local Iceberg table creation works.
+- [x] Business-date partition overwrite works.
+- [x] Same-source retry does not create a new snapshot.
+
+Claim boundary:
+
+- Allowed: local Spark/Iceberg setup and single-gold-table partition overwrite.
+- Not allowed: cluster Spark, production lakehouse, full Spark medallion rewrite, Spark-based quality suite.

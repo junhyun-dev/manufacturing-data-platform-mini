@@ -452,7 +452,7 @@ logs/metrics/alerts는 있는가?
 질문:
 
 ```text
-repo에 secret/API key/path/non-public contact가 들어가지 않았나?
+repo에 credential/path/non-public contact가 들어가지 않았나?
 synthetic data임이 명확한가?
 회사/고객/내부 schema가 섞이지 않았나?
 PII column이 있다면 어떻게 분류하나?
@@ -466,7 +466,7 @@ blog/resume에 private detail을 넣지 않았나?
 | 항목 | 현재 답 | 상태 |
 |---|---|---|
 | synthetic data | README/blog에서 synthetic임을 명시 | 명시됨 |
-| public secret scan | publication checklist로 수행 | 필요 시 재실행 |
+| public credential scan | publication checklist로 수행 | 필요 시 재실행 |
 | PII governance | synthetic data라 PII tagging/RBAC 없음 | 구현하지 않음 |
 | retention policy | snapshot/data retention 자동화 없음 | 구현하지 않음 |
 

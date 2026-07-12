@@ -29,7 +29,7 @@ synthetic data임을 명확히 했는가?
 
 | 질문 | 의도 | 선택지 | Core가 되는 경우 |
 |---|---|---|---|
-| secret이 repo에 없는가? | 공개 안전성 | rg scan / git history scan / secret scanner | public push 전 항상 |
+| credential이 repo에 없는가? | 공개 안전성 | rg scan / git history scan / credential scanner | public push 전 항상 |
 | private/company data가 없는가? | IP/윤리 | synthetic only / anonymized / real data 금지 | portfolio repo 항상 |
 | PII column이 있는가? | governance | none / tag only / access control | PII claim이 있을 때 |
 | retention은 필요한가? | storage/privacy | no policy / manual cleanup / expire snapshots | snapshot/history를 오래 남길 때 |

@@ -722,7 +722,7 @@ claim boundary는 무엇인가?
 | Spark를 붙이고 싶다 | distributed processing / storage / claim boundary |
 | Iceberg snapshot을 남겼다 | table format / snapshot / run_id mapping / retention |
 | README나 이력서에 쓰고 싶다 | testing / verification / claim boundary |
-| public repo로 올리고 싶다 | security / privacy / synthetic data / secret scan |
+| public repo로 올리고 싶다 | security / privacy / synthetic data / credential scan |
 | 나중에 Kafka를 하고 싶다 | streaming / CDC named Backlog |
 
 이 표는 "어느 문서부터 봐야 할지"를 정하기 위한 입구다.
