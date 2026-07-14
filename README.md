@@ -309,6 +309,23 @@ The first task runs the JSON-backed lakehouse CLI. The second task reads the lat
 
 Local `airflow dags test` verification passed for this two-task DAG. It proves local DAG import, task ordering, command rendering, and command execution. It still does not prove a production scheduler/worker/webserver deployment or cluster Spark runtime.
 
+## Kafka Test 0
+
+The Kafka slice has passed its environment gate, but K1 raw ingestion is not implemented yet.
+The runbook downloads the pinned Apache Kafka 4.3.1 binary, verifies its SHA-512,
+starts one local KRaft broker, installs `confluent-kafka==2.15.0` in an isolated
+virtualenv, and verifies one produce/consume/manual-offset-commit round-trip:
+
+```bash
+./scripts/verify_kafka_test0.sh
+```
+
+Runtime state and evidence are written under `/tmp/manufacturing-mini-kafka-test0`
+and the broker is stopped automatically. This verifies only local broker/client
+compatibility with one topic and one partition. It does not verify raw landing,
+restart/replay behavior, multi-broker availability, end-to-end exactly-once, or
+production Kafka operations.
+
 ## Test
 
 ```bash

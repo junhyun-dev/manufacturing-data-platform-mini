@@ -1003,3 +1003,49 @@ Claim boundary:
 
 - Allowed: Kafka raw-ingestion scenario/question/slice design reviewed against official references.
 - Not allowed: Kafka broker/client runtime verified, Kafka ingestion implemented, continuous streaming pipeline, multi-broker/HA, or end-to-end exactly-once.
+
+## 2026-07-14 — Kafka Test 0 local KRaft round-trip
+
+Scope:
+
+- Close the Kafka broker/client environment gate before implementing K1 raw landing.
+- Pin the runtime and client rather than relying on globally installed packages.
+- Verify only one local broker/topic/partition/event and a manual consumer offset commit.
+
+Command:
+
+```bash
+./scripts/verify_kafka_test0.sh
+```
+
+Results:
+
+```text
+Java: OpenJDK 17
+Kafka archive: kafka_2.13-4.3.1.tgz
+archive SHA-512: verified
+broker mode: single-node KRaft, standalone storage format
+broker address: 127.0.0.1:19092
+client: confluent-kafka 2.15.0 (librdkafka 2.15.0)
+topic: manufacturing.machine-events.v1.test0
+partition count: 1
+produced coordinate: partition=0, offset=0
+consumed coordinate: partition=0, offset=0
+consumer group committed next offset: 1
+producer config: enable.idempotence=true, acks=all
+broker shutdown: clean; no Kafka process left running
+```
+
+Verified:
+
+- [x] Kafka 4.3.1 can be downloaded, checksum-verified, formatted, and started without Docker.
+- [x] The pinned CPython 3.10 `confluent-kafka` wheel installs in an isolated venv.
+- [x] One keyed JSON event is acknowledged by the broker and read back unchanged.
+- [x] Produced and consumed Kafka coordinates match.
+- [x] The consumer commits the next offset manually after reading the event.
+- [x] The runbook writes machine-readable evidence and stops the broker.
+
+Claim boundary:
+
+- Allowed: pinned local Kafka 4.3.1 KRaft broker/client Test 0; one-topic/one-partition produce-consume-manual-commit proof.
+- Not allowed: K1 raw landing implemented, restart/replay or crash-window dedup verified, continuous streaming pipeline, multi-broker/HA, secure production Kafka, or end-to-end exactly-once.

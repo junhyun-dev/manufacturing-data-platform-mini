@@ -1,6 +1,6 @@
 # 08. Kafka / Streaming Ingestion 상세 질문 은행
 
-상태: audited / design-only / Kafka Test 0 before implementation
+상태: audited / Kafka Test 0 verified / K1 implementation pending
 
 상위 문서:
 
@@ -243,17 +243,20 @@ watermark와 window aggregate는 Spark Structured Streaming slice로 미룬다.
 | runtime proof는 무엇인가? | import 성공이 아니라 실제 send/read/replay를 했는가? | Kafka skill claim의 최소 evidence다. | broker start + topic + produce + consume + assertions | Core |
 | clean rerun은 가능한가? | 이전 topic/offset/data가 결과를 오염시키지 않는가? | deterministic verification을 만든다. | unique topic/group / cleanup script | Core |
 
-현재 환경 확인 (`2026-07-13` discovery snapshot; 구현 직전 재검증):
+현재 환경 확인 (`2026-07-14`; 상세 결과는 [`../../../VERIFICATION_LOG.md`](../../../VERIFICATION_LOG.md)):
 
 ```text
 Java 17: available
 usable Docker runtime: unavailable in this environment
-Kafka binary: not installed
+Kafka runtime: Apache Kafka 4.3.1 downloaded binary, SHA-512 verified
+Python client: confluent-kafka 2.15.0, isolated venv
+Test 0: one broker/topic/partition/event round-trip + manual offset commit passed
 ```
 
-따라서 첫 Unknown은 local KRaft binary 설치/실행과 Python client 호환성이다.
+따라서 local KRaft binary 실행과 Python client 호환성 Unknown은 닫혔다.
+K1의 raw landing, crash-window dedup, restart/replay는 아직 미구현이다.
 
-### Test 0 (구현 전 닫아야 할 runtime gate)
+### Test 0 (2026-07-14 검증 완료)
 
 ```text
 1. Kafka 4.x는 KRaft-only(ZooKeeper 제거)다. 단일 노드 절차:
@@ -268,9 +271,15 @@ Kafka binary: not installed
 broker가 없으면 integration test는 명시적 skip 사유로 남기고 false green을 만들지 않는다.
 ```
 
-### Python client 비교 (아직 Unknown — 유지)
+재현 명령:
 
-셋 다 2026 기준 유지되고 있으므로 "유지보수" 하나로 고르지 않는다. 아래 기준으로 비교 후 ADR로 확정한다.
+```bash
+./scripts/verify_kafka_test0.sh
+```
+
+### Python client 비교와 Test 0 선택
+
+셋 다 2026 기준 유지되고 있으므로 "유지보수" 하나로 고르지 않는다. 아래 기준으로 비교했다.
 
 | client | runtime dependency | idempotence 기본값 | 특징 | 확인할 점 |
 |---|---|---|---|---|
@@ -279,6 +288,10 @@ broker가 없으면 integration test는 명시적 skip 사유로 남기고 false
 | aiokafka | asyncio 기반 | 선택 client에서 확인 | async I/O에 적합 | 현재 sync 코드베이스와의 정합성 |
 
 비교 기준: sync API 적합성 / runtime dependency / wheel availability / protocol support / testability.
+
+Test 0과 K1의 선택은 `confluent-kafka==2.15.0`이다. 현재 sync 코드베이스에 맞고,
+CPython 3.10 wheel 설치와 Kafka 4.3.1 연결이 실제로 통과했기 때문이다.
+`enable.idempotence=true`와 `acks=all`은 기본값에 기대지 않고 명시한다.
 
 ## 15. Airflow / Spark / Iceberg Integration Boundary
 

@@ -130,7 +130,8 @@ decision        = 특정 선택의 tradeoff
 - [`slices/02-airflow-wrapper-command-contract.ko.md`](slices/02-airflow-wrapper-command-contract.ko.md)
   - Airflow wrapper command contract slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
 - [`slices/05-kafka-raw-ingestion.ko.md`](slices/05-kafka-raw-ingestion.ko.md)
-  - Kafka ingestion 시나리오의 질문을 넓게 펼친 뒤 첫 raw-landing build 범위를 자르는 design-only 지도.
+  - Kafka ingestion 질문을 넓게 펼친 뒤 첫 raw-landing build 범위를 자른 지도.
+  - Kafka 4.3.1 + confluent-kafka 2.15.0 Test 0은 검증됐고, K1 raw landing은 다음 구현 단계다.
 
 ## Scenario Walkthroughs
 

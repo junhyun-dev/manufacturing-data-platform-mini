@@ -224,10 +224,28 @@ run_lakehouse_task -> publish_gold_to_iceberg_task
 
 검증된 범위는 local `airflow dags test`다. DAG import, task ordering, command rendering, command execution은 확인했지만 production scheduler/worker/webserver deployment나 cluster Spark runtime은 아니다.
 
+## Kafka Test 0
+
+Kafka slice의 환경 관문은 통과했지만 K1 raw ingestion은 아직 구현하지 않았다.
+아래 runbook은 Apache Kafka 4.3.1 binary를 내려받아 SHA-512를 확인하고,
+local KRaft broker 1개를 띄운다. 별도 virtualenv에
+`confluent-kafka==2.15.0`을 설치한 뒤 1건 produce/consume/manual offset
+commit을 검증한다.
+
+```bash
+./scripts/verify_kafka_test0.sh
+```
+
+runtime state와 evidence는 `/tmp/manufacturing-mini-kafka-test0`에 남고,
+broker는 검증 후 자동 종료된다. 이 단계는 topic 1개·partition 1개의 local
+broker/client 호환성만 증명한다. raw landing, restart/replay, multi-broker,
+end-to-end exactly-once, production Kafka 운영은 아직 증명하지 않는다.
+
 ## 정직한 한계
 
 - Spark/Iceberg는 단일 gold table walking skeleton까지만 구현됐다. full Spark medallion rewrite는 backlog다.
 - runtime Mongo는 현재 환경에서 완전 검증되지 않았다. Airflow는 local `dags test`와 local `standalone` scheduler/LocalExecutor run까지만 검증했다.
+- Kafka는 local KRaft broker/client Test 0까지만 검증됐다. K1 raw landing과 복구/replay는 다음 구현 단계다.
 - manufacturing strict numeric cast는 일부 bad row를 graceful quarantine하지 못하고 fail-fast한다.
 - EAV 쪽은 unparseable value를 graceful quality failure로 잡는다.
 

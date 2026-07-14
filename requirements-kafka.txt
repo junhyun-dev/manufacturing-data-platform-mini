@@ -1,0 +1,3 @@
+# Optional Kafka Test 0 / K1 client dependency.
+# Keep the client isolated from the base project environment.
+confluent-kafka==2.15.0
