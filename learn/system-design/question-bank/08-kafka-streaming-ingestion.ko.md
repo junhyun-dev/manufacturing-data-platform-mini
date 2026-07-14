@@ -1,6 +1,6 @@
 # 08. Kafka / Streaming Ingestion 상세 질문 은행
 
-상태: audited / Kafka Test 0 verified / K1 implementation pending
+상태: audited / local K1 implemented and broker-verified
 
 상위 문서:
 
@@ -254,7 +254,8 @@ Test 0: one broker/topic/partition/event round-trip + manual offset commit passe
 ```
 
 따라서 local KRaft binary 실행과 Python client 호환성 Unknown은 닫혔다.
-K1의 raw landing, crash-window dedup, restart/replay는 아직 미구현이다.
+K1 raw landing, landing-after-rename/before-commit crash recovery, bounded replay,
+invalid-event quarantine도 broker-backed verification으로 닫혔다.
 
 ### Test 0 (2026-07-14 검증 완료)
 

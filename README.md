@@ -86,6 +86,7 @@ In prior **professional** work I **operated and improved** an EAV-based structur
   - Operator debugging walkthrough — gold metric -> run/source/quality/lineage evidence (done)
   - Spark/Iceberg single-gold-table walking skeleton — partition overwrite + snapshot evidence (done)
   - Lakehouse gold -> Iceberg publish DAG — successful JSON gold run -> local Iceberg current table (done)
+  - Kafka K1 bounded raw ingestion — immutable JSONL landing + offset/recovery/replay evidence (done)
   - Full medallion Spark rewrite (backlog)
 - **Optional** (only pursued if a specific interview, e.g. Labrador-style, makes it relevant):
   - AI Dataset QA slice
@@ -309,22 +310,36 @@ The first task runs the JSON-backed lakehouse CLI. The second task reads the lat
 
 Local `airflow dags test` verification passed for this two-task DAG. It proves local DAG import, task ordering, command rendering, and command execution. It still does not prove a production scheduler/worker/webserver deployment or cluster Spark runtime.
 
-## Kafka Test 0
+## Kafka K1 Bounded Raw Ingestion
 
-The Kafka slice has passed its environment gate, but K1 raw ingestion is not implemented yet.
-The runbook downloads the pinned Apache Kafka 4.3.1 binary, verifies its SHA-512,
-starts one local KRaft broker, installs `confluent-kafka==2.15.0` in an isolated
-virtualenv, and verifies one produce/consume/manual-offset-commit round-trip:
+Kafka K1 is implemented as a bounded local raw-ingestion proof. The shared runbook
+downloads the pinned Apache Kafka 4.3.1 binary, verifies its SHA-512, starts one
+local KRaft broker, and installs `confluent-kafka==2.15.0` in an isolated virtualenv.
+
+Environment-only Test 0:
 
 ```bash
 ./scripts/verify_kafka_test0.sh
 ```
 
-Runtime state and evidence are written under `/tmp/manufacturing-mini-kafka-test0`
-and the broker is stopped automatically. This verifies only local broker/client
-compatibility with one topic and one partition. It does not verify raw landing,
-restart/replay behavior, multi-broker availability, end-to-end exactly-once, or
-production Kafka operations.
+Full K1 verification:
+
+```bash
+./scripts/verify_kafka_k1.sh
+```
+
+K1 publishes strict versioned JSON machine events keyed by `machine_id`. A bounded
+consumer writes immutable JSONL batches containing the payload and
+`topic/partition/offset` evidence, then commits the next offset only after fsync and
+atomic directory rename. A failure-injection run crashes after landing but before
+commit; the same consumer group receives the record again, reuses the persisted
+coordinate, and commits without increasing the accepted set. The runbook also
+verifies bounded offset replay and invalid-event quarantine.
+
+Runtime evidence is written under `/tmp/manufacturing-mini-kafka-k1-evidence` and
+the broker is stopped automatically. This does not verify a continuous streaming
+service, multi-partition routing/rebalance, multi-broker availability, end-to-end
+exactly-once, Spark Structured Streaming, or production Kafka operations.
 
 ## Test
 

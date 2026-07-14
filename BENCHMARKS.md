@@ -77,7 +77,7 @@ rewrite.
 | Labeling / label quality | label distribution + train/validation split manifest | backlog (optional) |
 | Sensitive data | PII **mock** detection (rule-based on synthetic data, clearly labelled mock) | backlog (optional) |
 | Dataset versioning | dataset version manifest (same hash/manifest discipline as here) | backlog (optional) |
-| Spark / Flink / Kafka / Iceberg | streaming + engine items | backlog (Spark/Iceberg = core; streaming = Phase 3) |
+| Spark / Iceberg / Kafka / Flink | local engine and log-ingestion evidence | local Spark/Iceberg + bounded Kafka K1 implemented; continuous Kafka/Flink remains backlog |
 | RAG / vectorDB / LLM preprocessing | framed as "manage dataset quality/version/PII/distribution **before** it enters training/RAG", not as building a vector store | backlog (optional, scope-limited by design) |
 
 The thesis: **one project, multiple job languages.** The reusable spine is
@@ -126,10 +126,10 @@ Real platforms have these; this slice does not. Listing them is the scope discip
 |---|---|
 | Graph lineage **UI** | lineage is stored as run/parent records; a browsable graph is presentation, not the loop. (DataHub/Marquez territory.) |
 | Full **governance UI** (ownership, tags, glossary, RBAC) | governance metadata model is acknowledged but a console is a separate product. |
-| **Streaming** (Kafka / Flink) | the slice is a daily batch; streaming is Phase 3, not Slice 1. |
+| **Continuous streaming** (Kafka / Flink) | bounded Kafka K1 is implemented, but no long-running consumer, window/watermark job, or streaming sink is claimed. |
 | **Branching / atomic commits** (lakeFS) | idempotency here is "skip re-run of the same content"; data-as-git is a heavier model than the slice needs. |
 | **Full OpenLineage backend** (Marquez) | we borrow the run/job/dataset *vocabulary*; running a lineage server is backlog. |
-| **Distributed compute** (Spark cluster, Iceberg engine) | partitioning/schema-evolution/idempotency are in place so the swap is mechanical; the engine itself is Slice 2. |
+| **Distributed compute** (Spark cluster) | local Spark/Iceberg single-table evidence exists; cluster execution and a full Spark medallion rewrite remain excluded. |
 | Quality libs as **dependencies** (Great Expectations, Soda) | we implement the expectation *model* so the checks stay inspectable in ~40 lines; adopting the lib is backlog if the suite grows. |
 | Generic **mapping DSL / rules engine** (EAV) | mapping is plain JSON (columns → standard + named conversions); a DSL/UI is over-engineering for a mini. |
 | **AI Dataset QA / RAG / vectorDB** | OPTIONAL — documented, intentionally **not** implemented; pursued only if a Labrador-style interview happens. |
@@ -138,20 +138,19 @@ Real platforms have these; this slice does not. Listing them is the scope discip
 
 ## CORE vs OPTIONAL · NOW vs BACKLOG (current freeze)
 
-**CORE** = medallion · EAV mini · quality · catalog/lineage · Spark/Iceberg.
+**CORE** = medallion · EAV mini · quality · catalog/lineage · local Spark/Iceberg · bounded Kafka K1.
 **OPTIONAL** = AI Dataset QA · RAG/vectorDB (only if an interview makes it relevant).
 
-**NOW (implemented):** Slice 1 medallion + hardening (transform/IO split · dbt-style quality
-+ reconciliation · schema-drift warn · idempotent re-run) · **EAV mini (multi-format →
-mapping config → EAV → gold pivot + EAV quality suite + file_id idempotency)** · this
-BENCHMARKS.md.
+**NOW (implemented):** Slice 1 medallion + hardening · EAV mini · operator evidence ·
+local Airflow wrappers · local Spark/Iceberg single-gold-table publish · bounded Kafka K1
+(immutable raw JSONL + landing-before-commit recovery/replay/quarantine).
 
-**BACKLOG — core (frozen):** Spark engine swap · Iceberg/Delta gold · Airflow task split +
-runtime trigger verification · runtime Mongo verification (Docker) · graceful null quarantine
-(manufacturing slice) · full OpenLineage/Marquez.
+**BACKLOG — core (frozen):** full Spark engine/medallion rewrite · Kafka K1.5 batch adapter
+decision · continuous streaming pressure decision · Airflow task split · runtime Mongo
+verification (Docker) · graceful null quarantine (manufacturing slice) · full OpenLineage/Marquez.
 
 **BACKLOG — optional (do NOT implement until an interview requires it):** AI Dataset QA
-slice · RAG/vectorDB/LLM-preprocessing · streaming (Kafka/Flink).
+slice · RAG/vectorDB/LLM-preprocessing.
 
 ---
 

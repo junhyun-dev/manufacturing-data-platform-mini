@@ -93,21 +93,22 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [ ] **Mongo-backed publish lookup** — runtime Mongo 검증 전까지 의도적으로 미구현.
 - [ ] **Full Spark medallion pipeline / Spark quality suite** — 의도적으로 미구현.
 
-### Kafka raw ingestion — K1 (환경 검증 완료, 구현 대기)
+### Kafka raw ingestion — K1 (구현 및 local broker 검증 완료)
 목표: Spark Structured Streaming을 검토하기 전에 bounded log-based raw ingestion을 증명한다.
 - [x] **Kafka Test 0 runtime pin** — Apache Kafka 4.3.1 KRaft binary + SHA-512 검증.
 - [x] **Python client pin** — 별도 환경에 `confluent-kafka==2.15.0` 고정.
 - [x] **Broker/client round-trip** — local broker 1개, topic 1개, partition 1개, event 1건, manual offset commit.
 - [x] **재현 runbook** — `scripts/verify_kafka_test0.sh`가 broker 기동, 검증, 종료를 재현.
-- [ ] **K1 event/source contract** — event identity, key, versioned JSON schema 확정.
-- [ ] **K1 immutable raw landing** — bounded consumer가 payload + Kafka coordinates를 atomic write.
-- [ ] **K1 recovery evidence** — durable landing 뒤 commit 전 crash, restart, dedup, bounded replay.
+- [x] **K1 event/source contract** — strict JSON v1, `event_id`, `machine_id` key, Kafka coordinate evidence.
+- [x] **K1 immutable raw landing** — bounded consumer가 payload + Kafka coordinates를 fsync + atomic rename으로 기록.
+- [x] **K1 recovery evidence** — durable landing 뒤 commit 전 crash, redelivery reuse, offset 복구, bounded replay.
+- [x] **K1 quarantine evidence** — invalid event를 durable quarantine하고 single partition 진행 유지.
 - [ ] **K1.5 batch adapter 판단** — K1 뒤 landed JSONL -> 기존 batch/Iceberg 경로 연결 검토.
 - [ ] **Spark Structured Streaming** — window/watermark/latency pressure가 생길 때까지 Backlog.
 
 ## 범위: CORE vs OPTIONAL
 
-- **CORE** (thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · Spark/Iceberg.
+- **CORE** (thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · local Spark/Iceberg · bounded Kafka K1.
 - **OPTIONAL** (특정 면접이 실제로 관련될 때만 — 예: 래브라도랩스류): AI Dataset QA · RAG/vectorDB/LLM-preprocessing.
 
 ### BACKLOG (freeze — 앞으로 당겨오지 말 것)

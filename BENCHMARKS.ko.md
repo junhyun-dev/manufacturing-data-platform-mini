@@ -56,6 +56,7 @@ private/company code = 운영 경험 패턴만
 | Catalog | datasets / dataset_versions | implemented |
 | Airflow | CLI wrapper DAG | partial (lakehouse CLI와 Spark/Iceberg skeleton은 local `dags test` runtime 검증; Spark/Iceberg wrapper는 development `standalone` scheduler/LocalExecutor도 검증; production deployment는 claim하지 않음) |
 | Spark / Iceberg | 단일 gold Iceberg table, `business_date` partition overwrite, snapshot evidence | partial (full Spark medallion pipeline 아님) |
+| Kafka K1 | bounded producer/consumer, immutable JSONL+manifest, offset/recovery/replay/quarantine | partial (local broker 1개/partition 1개; continuous streaming 아님) |
 
 ## Anti-benchmark
 
@@ -63,7 +64,7 @@ private/company code = 운영 경험 패턴만
 
 - full Databricks clone
 - full Spark/Iceberg medallion runtime
-- streaming Kafka pipeline
+- continuous Kafka/Flink streaming pipeline (bounded local Kafka K1만 구현)
 - governance/RBAC
 - lineage graph backend
 - vector DB/RAG demo
@@ -76,6 +77,7 @@ CORE:
 
 - medallion
 - EAV
+- bounded Kafka K1
 - quality
 - catalog/lineage
 - Spark/Iceberg translation backlog

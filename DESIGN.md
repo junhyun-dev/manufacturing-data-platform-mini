@@ -172,6 +172,39 @@ This lets the same implementation translate into different job languages:
 - SK/CJ/KakaoBank-style explanation: lakehouse, data mart, ETL/ELT, Spark/Iceberg, data quality, lineage.
 - Labrador Labs-style explanation: AI training dataset quality, QA automation, governance, LLM preprocessing readiness, RAG/vectorDB-adjacent metadata discipline.
 
+## 9. Kafka K1 Bounded Raw Ingestion
+
+Kafka K1 is a separate source path, not a replacement for the CSV pipeline and not
+a continuous streaming service.
+
+```text
+strict synthetic event v1
+-> local Kafka topic (one partition, key=machine_id)
+-> bounded consumer
+-> accepted / duplicate / quarantine JSONL + manifest
+-> fsync + atomic rename
+-> manual next-offset commit
+```
+
+Identity and progress are deliberately separate:
+
+```text
+event_id                           business-event identity
+(topic, partition, offset)         transport evidence
+(consumer group, committed offset) consumer progress
+```
+
+K1 uses at-least-once delivery. The consumer lands immutable evidence before
+committing the offset. A crash after landing and before commit causes redelivery;
+the manifest's coordinate+fingerprint lets the retry reuse the durable record and
+commit without increasing the accepted set. Invalid events are quarantined and do
+not block the single partition.
+
+Claim boundary: local one-broker/one-partition bounded ingestion, recovery, replay,
+and quarantine are verified. Continuous operation, multi-partition rebalance,
+multi-broker HA, end-to-end exactly-once, Spark Structured Streaming, and direct
+Iceberg streaming writes are not implemented.
+
 ## 7. ★ Done 기준 (이게 있어야 "작게 만들기"가 끝남 — v0 안 늘어나게)
 - [ ] `docker compose up`으로 Mongo 실행
 - [ ] 샘플 CSV ingest 성공

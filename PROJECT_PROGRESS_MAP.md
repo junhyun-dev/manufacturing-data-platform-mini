@@ -8,7 +8,7 @@ Use it before opening the deeper design notes.
 ## Current Thesis
 
 ```text
-Build a synthetic manufacturing-style/tabular data platform that turns raw files
+Build a synthetic manufacturing-style/tabular data platform that turns raw inputs
 into cataloged, versioned, quality-checked datasets/marts, and leaves enough
 evidence for operators and reviewers to explain where a number came from.
 ```
@@ -18,7 +18,7 @@ Not claimed:
 ```text
 production manufacturing platform
 full Spark/Iceberg medallion pipeline implemented
-Kafka streaming implemented
+continuous / production Kafka streaming implemented
 real Mongo runtime verified
 production Airflow scheduler/worker deployment verified
 column-level lineage / OpenLineage backend
@@ -38,6 +38,8 @@ flowchart LR
   lineage["Lineage evidence\nparent layer links"]
   iceberg_current["Iceberg current gold table\npartition overwrite + snapshot"]
   report["Operator report\nread-only evidence view"]
+  kafka_source["Synthetic Kafka events"]
+  kafka_raw["Bounded Kafka raw landing\nJSONL + coordinate manifest"]
 
   raw --> bronze --> silver --> gold
   silver --> quality
@@ -50,6 +52,7 @@ flowchart LR
   gold --> lineage
   catalog --> report
   lineage --> report
+  kafka_source --> kafka_raw
 ```
 
 ## Workstream Status
@@ -65,7 +68,7 @@ flowchart LR
 | Spark/Iceberg | Local walking skeleton implemented, test-covered | `tests/test_spark_iceberg_skeleton.py`, Spark CLI | single gold Iceberg table with `business_date` partition overwrite + snapshot evidence; not full medallion Spark |
 | Airflow-triggered Spark/Iceberg | Local scheduler path verified | `dags/manufacturing_iceberg_skeleton.py`, `tests/test_orchestration.py`, Airflow CLI/standalone, Spark/Iceberg evidence JSON | local Airflow `dags test` and development `standalone` scheduler/LocalExecutor trigger the Spark/Iceberg skeleton; production deployment and cluster Spark not claimed |
 | Lakehouse -> Iceberg publish DAG | Local 2-task DAG verified | `dags/manufacturing_lakehouse_to_iceberg_daily.py`, `tests/test_publish_gold_to_iceberg.py`, Airflow `dags test` | local Airflow DAG runs JSON lakehouse CLI, then publishes the successful gold CSV to a local Iceberg table; Mongo-backed publish and full Spark rewrite not claimed |
-| Kafka / streaming | Backlog | none | not claimed |
+| Kafka K1 raw ingestion | Bounded local slice implemented, broker-verified | `tests/test_kafka_ingestion.py`, `scripts/verify_kafka_k1.sh`, immutable JSONL/manifest evidence | one-broker/one-partition bounded raw landing, landing-before-commit crash recovery, replay, quarantine; not continuous/production streaming |
 | Robot/session/MCAP | Backlog | none | not claimed |
 
 ## Portfolio Artifacts
@@ -93,7 +96,8 @@ flowchart TD
   airflow_iceberg["Airflow -> Spark/Iceberg\nDONE"]
   publish["Lakehouse -> Iceberg publish\nDONE"]
   b5["B5 Iceberg blog\nDEV.to draft"]
-  streaming["Kafka / streaming\nBACKLOG"]
+  kafka_k1["Kafka bounded raw landing\nDONE"]
+  streaming["Continuous Kafka / Spark streaming\nBACKLOG"]
   robot["Robot/session/MCAP\nBACKLOG"]
 
   purpose --> source --> grain --> quality
@@ -106,7 +110,8 @@ flowchart TD
   airflow --> publish
   iceberg --> publish
   publish --> b5
-  iceberg --> streaming
+  source --> kafka_k1
+  kafka_k1 --> streaming
   source --> robot
 ```
 
@@ -240,6 +245,7 @@ catalog/lineage evidence
 idempotent rerun
 EAV / multi-format modeling
 operator debugging
+bounded Kafka raw landing with offset/replay evidence
 evidence-based blog/resume claim management
 ```
 
@@ -250,15 +256,16 @@ Airflow runtime verification
 full Spark medallion rewrite remains out of scope
 Spark/Iceberg blog/resume packaging
 possibly dbt-style modeling or semantic layer later
-streaming/Kafka remains backlog
+Kafka K1.5 batch adapter remains undecided
+continuous Kafka/Spark streaming remains backlog
 ```
 
 Recommended sequence:
 
 ```text
-Airflow runtime verification
--> B5: skip to partition overwrite
--> optional later: full Spark medallion rewrite decision
+Kafka K1.5 adapter decision
+-> reuse existing quality/gold/Iceberg path if the adapter stays small
+-> add Spark Structured Streaming only when window/watermark/latency pressure exists
 ```
 
 ## Process Rule

@@ -93,21 +93,22 @@ Goal: connect the implemented JSON-backed lakehouse pipeline to a local Iceberg 
 - [ ] **Mongo-backed publish lookup** — intentionally not implemented until runtime Mongo is verified.
 - [ ] **Full Spark medallion pipeline / Spark quality suite** — intentionally not implemented.
 
-### Kafka raw ingestion — K1 (environment verified, implementation pending)
+### Kafka raw ingestion — K1 (implemented and local broker-verified)
 Goal: prove bounded log-based raw ingestion before considering Spark Structured Streaming.
 - [x] **Kafka Test 0 runtime pin** — Apache Kafka 4.3.1 KRaft binary + SHA-512 verification.
 - [x] **Python client pin** — isolated `confluent-kafka==2.15.0` environment.
 - [x] **Broker/client round-trip** — one local broker, one topic, one partition, one event, manual offset commit.
 - [x] **Reproducible runbook** — `scripts/verify_kafka_test0.sh` starts, verifies, and stops the broker.
-- [ ] **K1 event/source contract** — finalize event identity, key, and versioned JSON schema.
-- [ ] **K1 immutable raw landing** — bounded consumer writes payload + Kafka coordinates atomically.
-- [ ] **K1 recovery evidence** — crash after durable landing/before commit, restart, dedup, and bounded replay.
+- [x] **K1 event/source contract** — strict JSON v1, `event_id`, `machine_id` key, Kafka coordinate evidence.
+- [x] **K1 immutable raw landing** — bounded consumer writes payload + Kafka coordinates through fsync + atomic rename.
+- [x] **K1 recovery evidence** — crash after durable landing/before commit, redelivery reuse, offset recovery, bounded replay.
+- [x] **K1 quarantine evidence** — invalid event is durably quarantined and does not block the single partition.
 - [ ] **K1.5 batch adapter decision** — evaluate landed JSONL -> existing batch/Iceberg path after K1.
 - [ ] **Spark Structured Streaming** — backlog until a real window/watermark/latency pressure exists.
 
 ## Scope: CORE vs OPTIONAL
 
-- **CORE** (the thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · Spark/Iceberg.
+- **CORE** (the thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · local Spark/Iceberg · bounded Kafka K1.
 - **OPTIONAL** (only if a specific interview makes it relevant — e.g. Labrador-style): AI Dataset QA · RAG/vectorDB/LLM-preprocessing.
 
 ## Design Strategy

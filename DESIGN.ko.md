@@ -143,3 +143,25 @@ entity_id + business_date + attribute + source_file_id
 - README/DESIGN/ROADMAP claim이 code와 맞음
 - 구현하지 않은 production 기능은 backlog로 명시
 
+## 8. Kafka K1 bounded raw ingestion
+
+Kafka K1은 CSV pipeline을 대체하지 않는 별도 source path이며 continuous streaming
+service가 아니다.
+
+```text
+strict synthetic event v1
+-> local Kafka topic (partition 1개, key=machine_id)
+-> bounded consumer
+-> accepted / duplicate / quarantine JSONL + manifest
+-> fsync + atomic rename
+-> manual next-offset commit
+```
+
+`event_id`는 business identity, `(topic, partition, offset)`은 transport evidence,
+consumer-group committed offset은 progress다. K1은 at-least-once를 선택한다.
+landing 뒤 commit 전 crash가 나면 같은 coordinate가 다시 오고, immutable manifest를
+재사용해 accepted set을 늘리지 않은 채 commit한다.
+
+검증 범위는 local broker 1개/partition 1개의 bounded ingestion, recovery, replay,
+quarantine이다. continuous operation, multi-partition rebalance, multi-broker HA,
+end-to-end exactly-once, Spark Structured Streaming, direct Iceberg streaming write는 미구현이다.

@@ -9,6 +9,9 @@
 1. [`01-manufacturing-csv.md`](01-manufacturing-csv.md)
    - v0 manufacturing-style batch CSV file의 입력 계약.
    - source row grain, required columns, natural key, `source_hash`, `schema_hash`를 정리한다.
+2. [`02-kafka-machine-event-v1.md`](02-kafka-machine-event-v1.md)
+   - K1 synthetic Kafka record의 strict JSON v1 입력 계약.
+   - `event_id`, Kafka coordinate, `machine_id` message key, raw landing envelope를 정리한다.
 
 ## Boundary
 

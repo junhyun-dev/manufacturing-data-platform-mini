@@ -1,6 +1,6 @@
 # 03. Scenario Walkthrough - 제조 설비 이벤트를 Kafka로 받아 raw에 보존한다
 
-상태: design-reviewed / Kafka Test 0 verified / K1 implementation pending
+상태: local K1 implemented and broker-verified
 
 목적: 현재의 일 단위 CSV batch 앞에 Kafka ingestion이 정말 필요한 상황을 만들고, 구현 전에 풀어야 할 질문을 구체적인 운영 흐름에서 도출한다.
 
@@ -273,13 +273,13 @@ public claim boundary
 
 상세 질문은 [`../question-bank/08-kafka-streaming-ingestion.ko.md`](../question-bank/08-kafka-streaming-ingestion.ko.md)에 둔다.
 
-## 9. Candidate First Slice Success
+## 9. First Slice Success
 
-아직 구현 전이며, 아래는 audit에서 자를 후보다.
+아래 K1 범위는 구현 및 local broker 검증을 마쳤다.
 
 환경 전제는 2026-07-14 Test 0으로 닫았다: Kafka 4.3.1 local KRaft broker와
 confluent-kafka 2.15.0 client의 1건 produce/consume/manual-commit이 통과했다.
-이는 아래 raw landing 시나리오 구현 완료를 뜻하지 않는다.
+이후 K1에서 raw landing과 recovery/replay까지 별도로 검증했다.
 
 ```text
 local single-broker Kafka starts

@@ -1049,3 +1049,104 @@ Claim boundary:
 
 - Allowed: pinned local Kafka 4.3.1 KRaft broker/client Test 0; one-topic/one-partition produce-consume-manual-commit proof.
 - Not allowed: K1 raw landing implemented, restart/replay or crash-window dedup verified, continuous streaming pipeline, multi-broker/HA, secure production Kafka, or end-to-end exactly-once.
+
+## 2026-07-14 — Kafka K1 bounded raw ingestion
+
+Scope:
+
+- Implement the reviewed K1 event identity, message key, landing, offset-commit, recovery, replay, and quarantine contracts.
+- Keep Kafka optional: pure contract/landing tests run without a broker or Kafka client dependency.
+- Verify the runtime path with one local KRaft broker, one topic, and one partition.
+- Keep Spark Structured Streaming, direct Iceberg sink, Airflow continuous ownership, and production Kafka outside K1.
+
+Commands:
+
+```bash
+.venv/bin/python -m pytest -q
+./scripts/verify_kafka_test0.sh
+./scripts/verify_kafka_k1.sh
+```
+
+Initial runtime finding:
+
+```text
+first K1 run failed before broker use:
+  kafka event contract imported pipeline.lakehouse.ACCEPTED_OPERATIONS
+  pipeline.lakehouse imported pymongo
+  isolated Kafka venv intentionally did not contain pymongo
+
+fix:
+  moved ACCEPTED_OPERATIONS to dependency-free manufacturing_data_platform.domain
+  CSV lakehouse and Kafka contract now share the domain constant without runtime coupling
+```
+
+Results:
+
+```text
+base pytest: 56 passed, 7 skipped
+Kafka Test 0 after shared-runner refactor: passed
+Kafka K1 broker verification: passed
+Kafka: 4.3.1 single-node KRaft
+client: confluent-kafka 2.15.0
+topic: manufacturing.machine-events.v1
+partition count: 1
+
+initial valid records: offsets 0..2
+initial landing accepted_count: 3
+initial committed next offset: 3
+
+failure injection record: offset 3
+failure point: after immutable landing rename, before offset commit
+same-group retry coordinate: offset 3
+retry landing status: reused
+retry accepted_count: 0
+retry reused_coordinate_count: 1
+retry committed next offset: 4
+
+bounded replay: offsets 0..3
+replay reused_coordinate_count: 4
+replay mutated normal group offset: false
+
+invalid record: offset 4
+quarantine_count: 1
+committed next offset after quarantine: 5
+
+reconciliation:
+  produced_record_count: 5
+  persisted_coordinate_count: 5
+  accepted_event_count: 4
+  quarantined_event_count: 1
+  immutable_batch_count: 3
+```
+
+Verified:
+
+- [x] Strict JSON event v1 validates required fields, types, time/date, operation, and metric ranges.
+- [x] `event_id`, Kafka coordinate, consumer-group progress, and `machine_id` message key are separate contracts.
+- [x] Accepted JSONL stores the normalized payload plus topic/partition/offset/key/timestamp evidence.
+- [x] JSONL and manifest files are fsynced in staging and atomically renamed as an immutable batch.
+- [x] Offset commit occurs only after `land_records` returns from durable landing.
+- [x] Crash after landing/before commit causes redelivery without accepted-set duplication.
+- [x] Same coordinate with changed key/payload is rejected as a consistency violation.
+- [x] Same `event_id` at a new coordinate is recorded as duplicate evidence by pure tests.
+- [x] Bounded replay reuses persisted coordinates and does not commit replay progress.
+- [x] Invalid event is quarantined and does not block the partition.
+- [x] The shared local-Kafka runner still reproduces Test 0 and stops the broker.
+
+Evidence:
+
+```text
+source contract: learn/system-design/source-contracts/02-kafka-machine-event-v1.md
+decision notes:
+  learn/reference-decisions/kafka-event-identity-and-key.md
+  learn/reference-decisions/kafka-offset-and-landing-commit.md
+code: src/manufacturing_data_platform/kafka_ingestion/
+unit tests: tests/test_kafka_ingestion.py
+runtime runbook: scripts/verify_kafka_k1.sh
+runtime evidence: /tmp/manufacturing-mini-kafka-k1-evidence/kafka_k1_verification.json
+```
+
+Claim boundary:
+
+- Allowed: bounded local one-broker/one-partition Kafka raw ingestion; strict synthetic event contract; payload+coordinate immutable JSONL evidence; manual landing-before-commit offset handling; injected crash recovery; bounded replay; invalid-event quarantine.
+- Not allowed: continuous streaming service, production Kafka operation, multi-partition ordering/rebalance, multi-broker HA, end-to-end exactly-once, Schema Registry, TLS/SASL/ACL, Spark Structured Streaming, direct Iceberg streaming sink, or Airflow-owned continuous consumer.

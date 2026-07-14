@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from pymongo.database import Database
 
+from manufacturing_data_platform.domain import ACCEPTED_OPERATIONS
 from manufacturing_data_platform.ingest import hash_file, hash_schema, infer_schema
 from manufacturing_data_platform.pipeline.models import PipelinePaths, PipelineResult
 from manufacturing_data_platform.pipeline.sample_data import ensure_sample_manufacturing_csv
@@ -34,16 +35,6 @@ REQUIRED_COLUMNS = [
 
 # The grain of a silver event. Used for dedup and for the uniqueness check.
 NATURAL_KEY_COLUMNS = ("work_order_id", "machine_id", "event_time")
-
-# accepted_values domain for the `operation` column (dbt accepted_values test).
-ACCEPTED_OPERATIONS = {
-    "assembly",
-    "inspection",
-    "packaging",
-    "welding",
-    "machining",
-    "calibration",
-}
 
 # Schema-drift policy. "warn" surfaces drift in the quality report without
 # failing the run, so legitimate schema evolution is not blocked (Iceberg-style

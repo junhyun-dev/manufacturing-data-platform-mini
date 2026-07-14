@@ -8,7 +8,7 @@
 ## 현재 Thesis
 
 ```text
-synthetic manufacturing-style/tabular raw file을
+synthetic manufacturing-style/tabular raw input을
 cataloged, versioned, quality-checked dataset/mart로 바꾸고,
 운영자와 reviewer가 "이 숫자가 어디서 왔는지" 설명할 수 있는 evidence를 남기는
 작은 데이터 플랫폼을 만든다.
@@ -19,7 +19,7 @@ cataloged, versioned, quality-checked dataset/mart로 바꾸고,
 ```text
 production manufacturing platform
 full Spark/Iceberg medallion pipeline implemented
-Kafka streaming implemented
+continuous / production Kafka streaming implemented
 real Mongo runtime verified
 production Airflow scheduler/worker deployment verified
 column-level lineage / OpenLineage backend
@@ -39,6 +39,8 @@ flowchart LR
   lineage["Lineage evidence\nparent layer links"]
   iceberg_current["Iceberg current gold table\npartition overwrite + snapshot"]
   report["Operator report\nread-only evidence view"]
+  kafka_source["Synthetic Kafka events"]
+  kafka_raw["Bounded Kafka raw landing\nJSONL + coordinate manifest"]
 
   raw --> bronze --> silver --> gold
   silver --> quality
@@ -51,6 +53,7 @@ flowchart LR
   gold --> lineage
   catalog --> report
   lineage --> report
+  kafka_source --> kafka_raw
 ```
 
 ## Workstream 상태
@@ -66,7 +69,7 @@ flowchart LR
 | Spark/Iceberg | local walking skeleton 구현 완료, test-covered | `tests/test_spark_iceberg_skeleton.py`, Spark CLI | 단일 gold Iceberg table에서 `business_date` partition overwrite + snapshot evidence; full medallion Spark 아님 |
 | Airflow-triggered Spark/Iceberg | local scheduler path 검증 완료 | `dags/manufacturing_iceberg_skeleton.py`, `tests/test_orchestration.py`, Airflow CLI/standalone, Spark/Iceberg evidence JSON | local Airflow `dags test`와 development `standalone` scheduler/LocalExecutor가 Spark/Iceberg skeleton trigger; production deployment와 cluster Spark는 claim하지 않음 |
 | Lakehouse -> Iceberg publish DAG | local 2-task DAG 검증 완료 | `dags/manufacturing_lakehouse_to_iceberg_daily.py`, `tests/test_publish_gold_to_iceberg.py`, Airflow `dags test` | local Airflow DAG가 JSON lakehouse CLI를 실행한 뒤 successful gold CSV를 local Iceberg table에 publish; Mongo-backed publish와 full Spark rewrite는 claim하지 않음 |
-| Kafka / streaming | Backlog | 없음 | claim하지 않음 |
+| Kafka K1 raw ingestion | bounded local slice 구현 및 broker 검증 완료 | `tests/test_kafka_ingestion.py`, `scripts/verify_kafka_k1.sh`, immutable JSONL/manifest evidence | one-broker/one-partition bounded raw landing, landing-before-commit crash 복구, replay, quarantine; continuous/production streaming 아님 |
 | Robot/session/MCAP | Backlog | 없음 | claim하지 않음 |
 
 ## Portfolio Artifacts
@@ -94,7 +97,8 @@ flowchart TD
   airflow_iceberg["Airflow -> Spark/Iceberg\nDONE"]
   publish["Lakehouse -> Iceberg publish\nDONE"]
   b5["B5 Iceberg blog\nDEV.to draft"]
-  streaming["Kafka / streaming\nBACKLOG"]
+  kafka_k1["Kafka bounded raw landing\nDONE"]
+  streaming["Continuous Kafka / Spark streaming\nBACKLOG"]
   robot["Robot/session/MCAP\nBACKLOG"]
 
   purpose --> source --> grain --> quality
@@ -107,7 +111,8 @@ flowchart TD
   airflow --> publish
   iceberg --> publish
   publish --> b5
-  iceberg --> streaming
+  source --> kafka_k1
+  kafka_k1 --> streaming
   source --> robot
 ```
 
@@ -243,6 +248,7 @@ lineage/catalog evidence
 idempotent rerun
 EAV / multi-format modeling
 operator debugging
+bounded Kafka raw landing + offset/replay evidence
 evidence 기반 blog / resume claim 관리
 ```
 
@@ -253,15 +259,16 @@ Airflow runtime verification
 full Spark medallion rewrite는 여전히 out of scope
 Spark/Iceberg blog/resume packaging
 possibly dbt-style modeling or semantic layer later
-streaming/Kafka는 backlog
+Kafka K1.5 batch adapter는 아직 결정 전
+continuous Kafka/Spark streaming은 backlog
 ```
 
-따라서 다음 방향은 Kafka나 대규모 cluster로 바로 가지 않는다.
+따라서 다음 방향은 continuous streaming이나 대규모 cluster로 바로 가지 않는다.
 
 ```text
-Airflow runtime 검증
--> B5: skip에서 partition overwrite로 가는 글
--> optional later: full Spark medallion rewrite 결정
+Kafka K1.5 adapter 결정
+-> 작게 연결 가능하면 기존 quality/gold/Iceberg 경로 재사용
+-> window/watermark/latency pressure가 생길 때만 Spark Structured Streaming 검토
 ```
 
 이 순서가 가장 효율적인 이유:
@@ -270,7 +277,7 @@ Airflow runtime 검증
 Airflow는 현재 wrapper command contract까지 검증됐으므로, 남은 runtime caveat를 작게 닫을 수 있다.
 Spark/Iceberg는 local walking skeleton evidence가 생겼으므로, 이제 B5 글과 claim 반영으로 이어갈 수 있다.
 Iceberg는 "도구 추가"가 아니라 business_date 재처리 문제를 해결하는 storage/table layer로 설명해야 한다.
-Kafka/streaming은 지금 thesis의 Core가 아니므로 backlog에 둔다.
+bounded Kafka K1은 구현됐지만 continuous streaming은 여전히 Backlog다.
 ```
 
 ## Process Rule
