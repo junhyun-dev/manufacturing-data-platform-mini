@@ -69,6 +69,7 @@ Iceberg는 무엇을 해결하는가?
 | [`question-bank/05-security-performance-testing-claim.ko.md`](question-bank/05-security-performance-testing-claim.ko.md) | security, performance, testing, public claim |
 | [`question-bank/06-cross-area-connection-questions.ko.md`](question-bank/06-cross-area-connection-questions.ko.md) | 영역 사이에서 생기는 연결 질문 |
 | [`question-bank/07-external-benchmark-backlog-areas.ko.md`](question-bank/07-external-benchmark-backlog-areas.ko.md) | 외부 benchmark 기준으로 named backlog에 둬야 할 영역 |
+| [`question-bank/08-kafka-streaming-ingestion.ko.md`](question-bank/08-kafka-streaming-ingestion.ko.md) | Kafka/streaming ingestion 시나리오에서 producer, partition, offset, replay, raw landing을 묻는 상세 질문 |
 
 상세 문서는 아래 형식을 따른다.
 

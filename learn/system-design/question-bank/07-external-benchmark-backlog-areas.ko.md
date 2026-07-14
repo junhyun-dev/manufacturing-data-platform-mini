@@ -160,9 +160,16 @@ Kafka/Flink/Spark Structured Streaming 중 무엇이 문제에 맞는가?
 분류:
 
 ```text
-Named Backlog only.
-Kafka/Flink/CDC 구현 금지. 필요할 때 별도 scenario로 시작한다.
+Kafka ingestion은 별도 scenario/question map/slice로 discovery를 시작했다.
+아직 design-only이며 Kafka code/runtime evidence는 없다.
+Flink/CDC와 Spark Structured Streaming 구현은 계속 named Backlog다.
 ```
+
+활성화된 설계 문서:
+
+- [`../scenarios/03-kafka-machine-event-ingestion.md`](../scenarios/03-kafka-machine-event-ingestion.md)
+- [`08-kafka-streaming-ingestion.ko.md`](08-kafka-streaming-ingestion.ko.md)
+- [`../slices/05-kafka-raw-ingestion.ko.md`](../slices/05-kafka-raw-ingestion.ko.md)
 
 ## 6. Metric / Semantic Definition
 
@@ -195,7 +202,8 @@ Backlog.
 아래는 이름은 붙여두되 지금 구현하지 않는다.
 
 ```text
-streaming / CDC / Kafka / Flink
+streaming / CDC / Flink
+Kafka runtime/code before the Kafka slice audit and Core cut
 PII/RBAC/governance stack
 column-level lineage system
 dbt exposures / semantic layer tool

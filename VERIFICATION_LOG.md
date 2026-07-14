@@ -886,3 +886,120 @@ Claim boundary:
 
 - Allowed: local Spark/Iceberg setup and single-gold-table partition overwrite.
 - Not allowed: cluster Spark, production lakehouse, full Spark medallion rewrite, Spark-based quality suite.
+
+## 2026-07-13 — Airflow two-task lakehouse -> Iceberg DAG recheck
+
+Scope:
+
+- Recheck the implemented Airflow DAG after adding the Kafka design-only documents.
+- Verify the existing path, not Kafka: JSON lakehouse task -> local Spark/Iceberg publish task.
+- Use a fresh local `AIRFLOW_HOME` and isolated `/tmp` output paths.
+
+Commands:
+
+```bash
+.venv/bin/python -m pytest -q
+
+PYTHONPATH=src /tmp/manufacturing-mini-airflow-venv/bin/python -m pytest \
+  tests/test_airflow_dags.py \
+  tests/test_publish_gold_to_iceberg.py \
+  tests/test_orchestration.py -q
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-kafka-design-check-20260713/airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+PATH="/tmp/manufacturing-mini-airflow-venv/bin:$PATH" \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow db migrate
+
+AIRFLOW_HOME=/tmp/manufacturing-mini-airflow-kafka-design-check-20260713/airflow-home \
+AIRFLOW__CORE__DAGS_FOLDER="$PWD/dags" \
+AIRFLOW__CORE__LOAD_EXAMPLES=False \
+PYTHONPATH=src \
+PATH="/tmp/manufacturing-mini-airflow-venv/bin:$PATH" \
+/tmp/manufacturing-mini-airflow-venv/bin/airflow dags test \
+  manufacturing_lakehouse_to_iceberg_daily 2026-06-29 \
+  -c '{"business_date":"2026-06-29","raw_path":"data/raw/manufacturing_events.csv","lakehouse_output_dir":"/tmp/manufacturing-mini-airflow-kafka-design-check-20260713/lakehouse","warehouse":"/tmp/manufacturing-mini-airflow-kafka-design-check-20260713/warehouse","iceberg_output_dir":"/tmp/manufacturing-mini-airflow-kafka-design-check-20260713/evidence"}'
+```
+
+Results:
+
+```text
+base pytest: 45 passed, 7 skipped
+Airflow/Spark optional test set: 15 passed
+Airflow metadata migration: passed with fresh SQLite metadata DB
+DAG: manufacturing_lakehouse_to_iceberg_daily
+task order: run_lakehouse_task -> publish_gold_to_iceberg_task
+lakehouse task: quality_passed=true
+publish task: status=published
+Iceberg table: local.db.gold_daily_metrics
+Iceberg runtime: org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.11.0
+published_row_count: 2
+target_partition_row_count: 2
+snapshot_count: 1
+snapshot operation: overwrite
+DagRun state: success
+```
+
+Verified:
+
+- [x] Airflow parses all three project DAGs in the optional runtime environment.
+- [x] The first task creates a quality-passed JSON-backed lakehouse run.
+- [x] The second task reads that successful run and publishes its gold CSV through local Spark/Iceberg.
+- [x] The Iceberg publish evidence records `pipeline_run_id`, `source_hash`, `schema_hash`, and `gold_snapshot_id`.
+- [x] The Kafka documents remain design-only; this run does not add Kafka implementation evidence.
+
+Claim boundary:
+
+- Allowed: local Airflow `dags test` for the two-task JSON lakehouse -> local Spark/Iceberg publish path.
+- Not allowed: production Airflow deployment, scheduler/HA proof for this two-task DAG, cluster Spark, full Spark medallion rewrite, Kafka runtime, or end-to-end streaming.
+
+## 2026-07-14 — Kafka design audit and pre-implementation gate
+
+Scope:
+
+- Review the Kafka scenario, question bank, and K1 slice after external-reference supplement.
+- Recheck version-sensitive claims against Apache Kafka and librdkafka documentation.
+- Keep Kafka code, broker installation, and runtime claims out of this step.
+
+Commands:
+
+```bash
+.venv/bin/python -m pytest -q
+
+PYTHONPATH=src /tmp/manufacturing-mini-airflow-venv/bin/python -m pytest \
+  tests/test_airflow_dags.py \
+  tests/test_publish_gold_to_iceberg.py \
+  tests/test_orchestration.py -q
+
+java -version
+command -v kafka-server-start.sh
+command -v kafka-storage.sh
+python -c "from importlib.metadata import version; print(version('confluent-kafka')); print(version('kafka-python'))"
+```
+
+Results:
+
+```text
+base project environment: 45 passed, 7 skipped
+Airflow/Spark optional test set: 15 passed
+Java: OpenJDK 17 available
+Kafka binary: not installed
+usable Docker runtime: unavailable in this WSL session
+globally visible but not repo-pinned clients: confluent-kafka 2.3.0, kafka-python 2.0.2
+Kafka produce/consume round-trip: not run
+```
+
+Design review decisions:
+
+- [x] Keep K1 bounded to one local broker, one topic, one partition, and raw landing.
+- [x] Keep Spark Structured Streaming, direct Iceberg sink, and continuous Airflow ownership out of K1.
+- [x] Demote K1.5 from current Core to a candidate after K1 proves the landing contract.
+- [x] Make the `durable landing -> offset commit` crash window an explicit failure-injection test.
+- [x] Distinguish Java producer idempotence defaults from librdkafka defaults.
+- [x] Record the official KRaft standalone storage-format sequence.
+
+Claim boundary:
+
+- Allowed: Kafka raw-ingestion scenario/question/slice design reviewed against official references.
+- Not allowed: Kafka broker/client runtime verified, Kafka ingestion implemented, continuous streaming pipeline, multi-broker/HA, or end-to-end exactly-once.

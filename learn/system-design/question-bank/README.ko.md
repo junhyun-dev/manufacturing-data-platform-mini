@@ -56,6 +56,11 @@
    - downstream impact / ownership / exposures
    - streaming / CDC named backlog
    - metric / semantic definition
+8. [`08-kafka-streaming-ingestion.ko.md`](08-kafka-streaming-ingestion.ko.md)
+   - Kafka가 필요한 service pressure
+   - event identity / topic / key / partition / ordering
+   - producer retry / consumer offset / replay / raw landing
+   - Airflow / Spark Structured Streaming / Iceberg 연결 경계
 
 ## 사용법
 

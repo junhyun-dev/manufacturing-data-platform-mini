@@ -111,15 +111,16 @@ source_hash idempotency
 EAV multi-format mapping
 JSON CLI smoke runs
 local Spark/Iceberg single-gold-table walking skeleton
+local Airflow `dags test` + standalone/LocalExecutor runtime verification
+local Airflow two-task JSON lakehouse -> Iceberg publish DAG
 ```
 
 Backlog / design-only:
 
 ```text
 real Mongo runtime verification
-Airflow runtime trigger verification
 full Spark/Iceberg medallion pipeline
-Kafka streaming
+Kafka raw-ingestion scenario/question map (design-only; code/runtime not started)
 ROS2/MCAP ingest
 column-level lineage
 production governance UI
@@ -132,7 +133,7 @@ production manufacturing data platform
 full Spark/Iceberg pipeline implemented
 Kafka streaming implemented
 real Mongo runtime verified
-Airflow runtime operated
+production Airflow deployment operated
 real company/customer schema usage
 ```
 

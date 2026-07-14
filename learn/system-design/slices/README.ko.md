@@ -79,3 +79,5 @@ Current slices:
    - local Airflow가 Spark/Iceberg skeleton CLI를 trigger한다는 runtime wrapper slice.
 4. [`04-lakehouse-to-iceberg-publish.ko.md`](04-lakehouse-to-iceberg-publish.ko.md)
    - 기존 JSON lakehouse run의 successful gold CSV를 local Iceberg current table로 publish하는 slice.
+5. [`05-kafka-raw-ingestion.ko.md`](05-kafka-raw-ingestion.ko.md)
+   - Kafka가 필요한 시나리오에서 producer/consumer/offset/raw landing 질문을 Core로 자르기 위한 design-only slice.

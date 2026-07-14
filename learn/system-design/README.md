@@ -129,6 +129,8 @@ decision        = 특정 선택의 tradeoff
   - Spark/Iceberg partition overwrite slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
 - [`slices/02-airflow-wrapper-command-contract.ko.md`](slices/02-airflow-wrapper-command-contract.ko.md)
   - Airflow wrapper command contract slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
+- [`slices/05-kafka-raw-ingestion.ko.md`](slices/05-kafka-raw-ingestion.ko.md)
+  - Kafka ingestion 시나리오의 질문을 넓게 펼친 뒤 첫 raw-landing build 범위를 자르는 design-only 지도.
 
 ## Scenario Walkthroughs
 
@@ -141,6 +143,9 @@ decision        = 특정 선택의 tradeoff
 - [`scenarios/02-operator-debugging-wrong-gold.md`](scenarios/02-operator-debugging-wrong-gold.md)
   - gold 숫자가 이상할 때 operator가 source/run/quality/lineage evidence를 어떤 순서로 확인하는가?
   - 기존 catalog/lineage claim을 실제 RCA walkthrough로 exercise한다.
+- [`scenarios/03-kafka-machine-event-ingestion.md`](scenarios/03-kafka-machine-event-ingestion.md)
+  - 제조 설비 event를 파일 마감 전에 받아 replay 가능한 raw landing으로 넘기려면 Kafka가 필요한가?
+  - event identity, partition ordering, offset commit, failure/replay 질문을 여는 design-only 시나리오다.
 
 ## Large Slice Supporting Docs
 
