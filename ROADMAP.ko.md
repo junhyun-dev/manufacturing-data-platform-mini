@@ -103,12 +103,12 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [x] **K1 immutable raw landing** — bounded consumer가 payload + Kafka coordinates를 fsync + atomic rename으로 기록.
 - [x] **K1 recovery evidence** — durable landing 뒤 commit 전 crash, redelivery reuse, offset 복구, bounded replay.
 - [x] **K1 quarantine evidence** — invalid event를 durable quarantine하고 single partition 진행 유지.
-- [ ] **K1.5 batch adapter 판단** — K1 뒤 landed JSONL -> 기존 batch/Iceberg 경로 연결 검토.
+- [x] **K1.5 landing -> batch bridge** — provenance를 보존하는 결정적 CSV로 기존 quality/gold/Iceberg 경로를 재사용하고 같은 입력은 skip.
 - [ ] **Spark Structured Streaming** — window/watermark/latency pressure가 생길 때까지 Backlog.
 
 ## 범위: CORE vs OPTIONAL
 
-- **CORE** (thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · local Spark/Iceberg · bounded Kafka K1.
+- **CORE** (thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · local Spark/Iceberg · bounded Kafka K1/K1.5.
 - **OPTIONAL** (특정 면접이 실제로 관련될 때만 — 예: 래브라도랩스류): AI Dataset QA · RAG/vectorDB/LLM-preprocessing.
 
 ### BACKLOG (freeze — 앞으로 당겨오지 말 것)

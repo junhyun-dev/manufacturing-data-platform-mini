@@ -87,6 +87,7 @@ In prior **professional** work I **operated and improved** an EAV-based structur
   - Spark/Iceberg single-gold-table walking skeleton — partition overwrite + snapshot evidence (done)
   - Lakehouse gold -> Iceberg publish DAG — successful JSON gold run -> local Iceberg current table (done)
   - Kafka K1 bounded raw ingestion — immutable JSONL landing + offset/recovery/replay evidence (done)
+  - Kafka K1.5 landing -> batch bridge — deterministic provenance-preserving CSV -> existing quality/gold/Iceberg path (done)
   - Full medallion Spark rewrite (backlog)
 - **Optional** (only pursued if a specific interview, e.g. Labrador-style, makes it relevant):
   - AI Dataset QA slice
@@ -340,6 +341,35 @@ Runtime evidence is written under `/tmp/manufacturing-mini-kafka-k1-evidence` an
 the broker is stopped automatically. This does not verify a continuous streaming
 service, multi-partition routing/rebalance, multi-broker availability, end-to-end
 exactly-once, Spark Structured Streaming, or production Kafka operations.
+
+## Kafka K1.5 Landing To Batch Bridge
+
+K1.5 closes the bounded path from accepted Kafka landing to the existing batch
+quality/gold/Iceberg flow without adding Spark Structured Streaming:
+
+```text
+accepted JSONL + Kafka manifest
+-> deterministic content-addressed CSV + provenance
+-> existing JSON-backed bronze/silver/gold + quality
+-> existing local Spark/Iceberg publish
+```
+
+Reproduce K1 and then the bridge:
+
+```bash
+./scripts/verify_kafka_k1.sh
+./scripts/verify_kafka_k1_5.sh
+```
+
+The adapter requires one explicit `business_date`, includes `event_id` and Kafka
+coordinates in the canonical source identity, and rejects empty, inconsistent, or
+multi-partition input before the lakehouse current state can advance. Re-running the
+same accepted set reuses the adapter version and returns the existing lakehouse run as
+`status="skipped"`.
+
+This is a bounded local bridge. It is not a continuous streaming pipeline, a direct
+Kafka-to-Iceberg sink, end-to-end exactly-once, column-level lineage, or production
+Kafka/Spark operation.
 
 ## Test
 

@@ -51,3 +51,13 @@ status는 decision의 lifecycle만 말한다. 최신 테스트 수와 실행 결
    - 성공 run evidence만으로 답하지 못하는 실패/partial-state 질문은 무엇인가?
    - quality_failed, failed_before_commit, committed_unpublished 같은 상태를 어떻게 구분하는가?
    - 왜 production WAP/rollback/incident workflow는 Backlog로 두는가?
+5. [`kafka-event-identity-and-key.md`](kafka-event-identity-and-key.md) (K1)
+   - business `event_id`와 Kafka transport coordinate를 왜 분리하는가?
+   - 왜 K1의 message key는 `machine_id`이고 partition은 하나인가?
+6. [`kafka-offset-and-landing-commit.md`](kafka-offset-and-landing-commit.md) (K1)
+   - durable landing과 offset commit의 순서를 왜 분리하는가?
+   - landing 뒤 commit 전 실패를 어떻게 재전달·reuse로 복구하는가?
+7. [`kafka-landing-to-batch-adapter.md`](kafka-landing-to-batch-adapter.md) (K1.5)
+   - accepted Kafka landing을 한 business_date의 결정적 batch input으로 어떻게 바꾸는가?
+   - 왜 source identity가 Kafka provenance를 포함한 canonical CSV의 SHA-256인가?
+   - 왜 invalid/tampered input은 lakehouse pipeline 호출 전에 실패해야 하는가?

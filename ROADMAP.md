@@ -103,12 +103,12 @@ Goal: prove bounded log-based raw ingestion before considering Spark Structured 
 - [x] **K1 immutable raw landing** — bounded consumer writes payload + Kafka coordinates through fsync + atomic rename.
 - [x] **K1 recovery evidence** — crash after durable landing/before commit, redelivery reuse, offset recovery, bounded replay.
 - [x] **K1 quarantine evidence** — invalid event is durably quarantined and does not block the single partition.
-- [ ] **K1.5 batch adapter decision** — evaluate landed JSONL -> existing batch/Iceberg path after K1.
+- [x] **K1.5 landing -> batch bridge** — deterministic provenance-preserving CSV reuses the existing quality/gold/Iceberg path; same input is skipped.
 - [ ] **Spark Structured Streaming** — backlog until a real window/watermark/latency pressure exists.
 
 ## Scope: CORE vs OPTIONAL
 
-- **CORE** (the thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · local Spark/Iceberg · bounded Kafka K1.
+- **CORE** (the thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · local Spark/Iceberg · bounded Kafka K1/K1.5.
 - **OPTIONAL** (only if a specific interview makes it relevant — e.g. Labrador-style): AI Dataset QA · RAG/vectorDB/LLM-preprocessing.
 
 ## Design Strategy

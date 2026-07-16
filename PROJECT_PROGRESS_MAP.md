@@ -40,6 +40,7 @@ flowchart LR
   report["Operator report\nread-only evidence view"]
   kafka_source["Synthetic Kafka events"]
   kafka_raw["Bounded Kafka raw landing\nJSONL + coordinate manifest"]
+  kafka_batch["K1.5 deterministic batch bridge\nCSV + provenance"]
 
   raw --> bronze --> silver --> gold
   silver --> quality
@@ -52,7 +53,7 @@ flowchart LR
   gold --> lineage
   catalog --> report
   lineage --> report
-  kafka_source --> kafka_raw
+  kafka_source --> kafka_raw --> kafka_batch --> bronze
 ```
 
 ## Workstream Status
@@ -69,6 +70,7 @@ flowchart LR
 | Airflow-triggered Spark/Iceberg | Local scheduler path verified | `dags/manufacturing_iceberg_skeleton.py`, `tests/test_orchestration.py`, Airflow CLI/standalone, Spark/Iceberg evidence JSON | local Airflow `dags test` and development `standalone` scheduler/LocalExecutor trigger the Spark/Iceberg skeleton; production deployment and cluster Spark not claimed |
 | Lakehouse -> Iceberg publish DAG | Local 2-task DAG verified | `dags/manufacturing_lakehouse_to_iceberg_daily.py`, `tests/test_publish_gold_to_iceberg.py`, Airflow `dags test` | local Airflow DAG runs JSON lakehouse CLI, then publishes the successful gold CSV to a local Iceberg table; Mongo-backed publish and full Spark rewrite not claimed |
 | Kafka K1 raw ingestion | Bounded local slice implemented, broker-verified | `tests/test_kafka_ingestion.py`, `scripts/verify_kafka_k1.sh`, immutable JSONL/manifest evidence | one-broker/one-partition bounded raw landing, landing-before-commit crash recovery, replay, quarantine; not continuous/production streaming |
+| Kafka K1.5 landing -> batch | Bounded local bridge implemented, runtime-verified | `tests/test_kafka_batch_adapter.py`, `scripts/verify_kafka_k1_5.sh`, adapter/quality/Iceberg evidence | deterministic one-date CSV with Kafka provenance, existing quality/gold and Iceberg publish reuse; not Structured Streaming or direct sink |
 | Robot/session/MCAP | Backlog | none | not claimed |
 
 ## Portfolio Artifacts
@@ -97,6 +99,7 @@ flowchart TD
   publish["Lakehouse -> Iceberg publish\nDONE"]
   b5["B5 Iceberg blog\nDEV.to draft"]
   kafka_k1["Kafka bounded raw landing\nDONE"]
+  kafka_k15["Kafka landing -> batch bridge\nDONE"]
   streaming["Continuous Kafka / Spark streaming\nBACKLOG"]
   robot["Robot/session/MCAP\nBACKLOG"]
 
@@ -111,7 +114,7 @@ flowchart TD
   iceberg --> publish
   publish --> b5
   source --> kafka_k1
-  kafka_k1 --> streaming
+  kafka_k1 --> kafka_k15 --> streaming
   source --> robot
 ```
 
@@ -252,19 +255,18 @@ evidence-based blog/resume claim management
 Still to cover:
 
 ```text
-Airflow runtime verification
+production Airflow deployment remains out of scope
 full Spark medallion rewrite remains out of scope
 Spark/Iceberg blog/resume packaging
 possibly dbt-style modeling or semantic layer later
-Kafka K1.5 batch adapter remains undecided
 continuous Kafka/Spark streaming remains backlog
 ```
 
 Recommended sequence:
 
 ```text
-Kafka K1.5 adapter decision
--> reuse existing quality/gold/Iceberg path if the adapter stays small
+failure-state forensics or portfolio promotion
+-> reuse the now-verified Kafka -> batch -> quality/gold/Iceberg evidence
 -> add Spark Structured Streaming only when window/watermark/latency pressure exists
 ```
 

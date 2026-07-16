@@ -229,8 +229,10 @@ calling K1 a "streaming pipeline" (K1 is bounded raw ingestion, not a continuous
 
 ## 7. Next Questions
 
+> K1.5 (accepted JSONL -> batch bridge)는 구현 및 local runtime 검증됐다: [`06-kafka-landing-to-batch.ko.md`](06-kafka-landing-to-batch.ko.md).
+
 ```text
-Should K1.5 adapt accepted JSONL envelopes into the existing batch row contract to reuse quality/gold/Iceberg publish without Spark Structured Streaming?
+K1.5 answer: accepted JSONL is adapted deterministically into the existing batch row contract, reusing quality/gold/Iceberg publish without Spark Structured Streaming.
 Is Spark Structured Streaming (K2) actually needed, or only when a window/latency pressure is named? Otherwise the next real pressure may be failure-state forensics.
 Does Airflow own only bounded replay/backfill and downstream publish, not the continuous consumer?
 ```

@@ -1201,3 +1201,84 @@ Notes:
 
 - `CLAUDE_IMPLEMENTATION_PACKAGE.md` and `EXTERNAL-AUDIT-PACKAGE.md` are temporary coordination artifacts, not public implementation evidence or commit candidates.
 - K1.5 landed-JSONL-to-batch integration remains a separate next Slice.
+
+## 2026-07-16 — Kafka K1.5 landing-to-batch bridge
+
+Scope:
+
+- Adapt one explicit `business_date` from immutable K1 accepted JSONL into a deterministic, content-addressed CSV.
+- Preserve `event_id`, Kafka coordinate, key, timestamp, and source-record fingerprint in source/bronze identity evidence.
+- Reuse the existing JSON-backed quality/gold pipeline and local Spark/Iceberg publisher.
+- Keep Spark Structured Streaming, direct Kafka-to-Iceberg writes, Airflow changes, multi-partition input, and production claims outside K1.5.
+
+Commands:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m pytest tests/test_kafka_batch_adapter.py -q
+PYTHONPATH=src .venv/bin/python -m pytest -q
+PYTHONPATH=src python -m pytest -q
+./scripts/verify_kafka_k1.sh
+./scripts/verify_kafka_k1_5.sh
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.publish_gold_to_iceberg \
+  --lakehouse-output-dir /tmp/manufacturing-mini-kafka-k1-5-evidence/lakehouse \
+  --business-date 2026-06-29 \
+  --warehouse /tmp/manufacturing-mini-kafka-k1-5-evidence/warehouse \
+  --output-dir /tmp/manufacturing-mini-kafka-k1-5-evidence/iceberg --clean
+# repeat the publisher without --clean
+git diff --check
+```
+
+Results:
+
+```text
+focused adapter tests: 22 passed
+base environment: 80 passed, 7 skipped
+Spark-visible environment: 83 passed, 4 skipped
+Kafka 4.3.1 K1 broker verification: passed
+K1.5 runtime checks: 11 passed
+
+selected accepted events: 4
+adapter first/second status: created -> reused
+lakehouse first/second status: processed -> skipped
+adapter source_hash == lakehouse source_hash: true
+lakehouse run directories for the date: 1
+gold rows: 1
+gold totals: units_produced=100, defect_count=6
+
+Iceberg first publish: published
+Iceberg retry: skipped
+snapshot count: 1 -> 1
+snapshot id unchanged: 2896841135077514634
+target partition rows: 1
+```
+
+Verified:
+
+- [x] Only accepted envelopes whose coordinate/status/event identity/key/timestamp agree with the sibling manifest enter the adapter.
+- [x] Manifest `accepted_count`, accepted entries, and accepted JSONL row count must agree.
+- [x] Empty-date, malformed/tampered, and multi-partition input fails before lakehouse current state can advance.
+- [x] Fixed columns, `\n`, and `(topic, partition, offset)` ordering make canonical CSV bytes deterministic.
+- [x] Batch grouping changes neither canonical CSV bytes nor source hash.
+- [x] Existing content-addressed versions reuse only when both CSV and persisted provenance match.
+- [x] Different physical manifest grouping with the same CSV identity raises a provenance consistency error instead of returning stale provenance.
+- [x] Same accepted set reuses the adapter version and existing lakehouse run without doubling gold.
+- [x] The K1 landing from a real local broker flows through adapter, quality-passed gold, and the existing local Iceberg publish.
+- [x] Re-publishing the same lakehouse run creates no new Iceberg snapshot.
+
+Review disposition:
+
+```text
+ADR status: Implemented
+wall-clock omitted from provenance: accepted for reproducibility
+manifest/JSONL count cross-check: accepted as input-contract validation, not scope expansion
+multi-partition input: explicitly rejected until that scope is designed and verified
+```
+
+Known pre-existing follow-up:
+
+- A cold Spark/Iceberg publish writes Ivy resolution lines to process stdout before the final JSON, so redirecting stdout to a JSON parser fails. The persisted publish evidence JSON is valid. This CLI stream-cleanliness issue is outside K1.5 and remains a separate fix.
+
+Claim boundary:
+
+- Allowed: bounded local Kafka landing-to-batch bridge for one date; deterministic source identity with Kafka provenance; existing quality/gold rerun contract reuse; downstream local Iceberg publish and publish retry evidence.
+- Not allowed: continuous streaming pipeline, Spark Structured Streaming, direct Kafka-to-Iceberg sink, multi-partition/rebalance, end-to-end exactly-once, column-level lineage, cryptographic payload-integrity chain, concurrent writer correctness, or production Kafka/Spark/Airflow operation.

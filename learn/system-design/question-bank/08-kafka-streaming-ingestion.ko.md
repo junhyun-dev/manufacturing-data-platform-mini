@@ -309,7 +309,7 @@ CPython 3.10 wheel 설치와 Kafka 4.3.1 연결이 실제로 통과했기 때문
 
 ```text
 Slice K1:   Kafka producer/consumer -> bounded raw landing
-Slice K1.5 candidate: landed JSONL을 기존 batch pipeline row contract로 변환해 gold/Iceberg publish를 재사용
+Implemented K1.5 reference: landed JSONL을 결정적으로 기존 batch pipeline row contract로 변환해 gold/Iceberg publish를 재사용
                       (K1 완료 후 adapter 비용과 contract를 확인해야 하며, 현재 Core 아님)
 Slice K2:   Spark Structured Streaming read/checkpoint/window (Backlog — window/latency pressure가 명시될 때만 Core로 승격)
 Slice K3:   bounded Iceberg publish + late-event correction evidence
