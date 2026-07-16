@@ -89,6 +89,22 @@ def test_landing_writes_accepted_jsonl_and_manifest_atomically(tmp_path):
     assert [row["kafka"]["offset"] for row in accepted] == [0, 1]
 
 
+def test_landing_allows_valid_kafka_offset_gaps_and_commits_after_last_record(
+    tmp_path,
+):
+    result = land_records([_record(0), _record(2)], tmp_path / "raw")
+
+    assert result.accepted_count == 2
+    assert result.committable_offsets == (
+        {"topic": TOPIC, "partition": 0, "next_offset": 3},
+    )
+
+
+def test_landing_rejects_records_that_do_not_preserve_poll_order(tmp_path):
+    with pytest.raises(ValueError, match="preserve consumer poll order"):
+        land_records([_record(1), _record(0)], tmp_path / "raw")
+
+
 def test_redelivered_coordinates_are_reused_without_new_batch(tmp_path):
     output = tmp_path / "raw"
     first = land_records([_record(0), _record(1)], output)

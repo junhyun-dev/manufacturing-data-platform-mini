@@ -80,12 +80,20 @@ consume record
 -> write JSONL + manifest in staging directory
 -> fsync files/directory
 -> atomic rename to immutable batch path
--> commit next Kafka offset
+-> commit last processed record offset + 1
 ```
 
 landing 뒤 offset commit 전에 죽으면 같은 coordinate가 재전달된다. 기존 immutable
 manifest의 fingerprint가 같으면 새 accepted row를 만들지 않고 offset commit만 복구한다.
 같은 coordinate의 payload/key가 달라지면 consistency error다.
+
+Kafka offset은 항상 연속이라는 보장이 없다. K1 runtime은 `consumer.poll()`이 반환한
+record를 누락 없이 증가 순서로 landing에 넘기며, gap 자체는 오류로 보지 않는다. 임의로
+일부 record를 제외한 batch는 이 계약 밖이다.
+
+atomic rename과 fsync 경로는 local Linux filesystem에서만 검증했다. NFS/object store의
+동등한 durability나 SIGKILL/power-loss crash consistency는 검증하지 않았다. 주입한 실패는
+landing 완료 뒤·commit 전의 in-process 예외다.
 
 ## 6. Claim boundary
 

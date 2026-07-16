@@ -1150,3 +1150,54 @@ Claim boundary:
 
 - Allowed: bounded local one-broker/one-partition Kafka raw ingestion; strict synthetic event contract; payload+coordinate immutable JSONL evidence; manual landing-before-commit offset handling; injected crash recovery; bounded replay; invalid-event quarantine.
 - Not allowed: continuous streaming service, production Kafka operation, multi-partition ordering/rebalance, multi-broker HA, end-to-end exactly-once, Schema Registry, TLS/SASL/ACL, Spark Structured Streaming, direct Iceberg streaming sink, or Airflow-owned continuous consumer.
+
+## 2026-07-16 — Kafka K1 offset-gap contract review
+
+Scope:
+
+- Review the external-audit finding that `max(offset) + 1` could silently skip a gapped batch.
+- Reconcile the landing contract with Apache Kafka 4.3.1 and confluent-kafka 2.15.0 semantics.
+- Keep the change inside the existing one-topic/one-partition bounded K1 scope.
+
+Commands:
+
+```bash
+.venv/bin/python -m pytest -q tests/test_kafka_ingestion.py
+.venv/bin/python -m pytest -q
+python -m pytest -q
+./scripts/verify_kafka_k1.sh
+git diff --check
+```
+
+Results:
+
+```text
+Kafka unit tests: 13 passed
+base environment: 58 passed, 7 skipped
+Spark-visible environment: 61 passed, 4 skipped
+Kafka 4.3.1 local broker verification: passed
+git diff --check: passed
+```
+
+Verified:
+
+- [x] Kafka offsets are not required to be consecutive; a batch with offsets `0, 2` commits next offset `3`.
+- [x] K1 landing rejects input that does not preserve strictly increasing consumer poll order.
+- [x] The runtime passes every collected single-partition poll record to landing before synchronous commit.
+- [x] Existing landing-before-commit recovery, coordinate reuse, bounded replay, and quarantine behavior still pass against a real local broker.
+- [x] Filesystem wording is limited to the local Linux `fsync` + same-filesystem atomic rename path.
+- [x] Injected failure remains an in-process logical recovery test, not SIGKILL or power-loss crash-consistency proof.
+
+Decision:
+
+```text
+reject contiguous-offset enforcement
+accept strictly increasing poll-order contract
+commit last durably handled record offset + 1
+keep arbitrary filtered subsets outside the land_records caller contract
+```
+
+Notes:
+
+- `CLAUDE_IMPLEMENTATION_PACKAGE.md` and `EXTERNAL-AUDIT-PACKAGE.md` are temporary coordination artifacts, not public implementation evidence or commit candidates.
+- K1.5 landed-JSONL-to-batch integration remains a separate next Slice.

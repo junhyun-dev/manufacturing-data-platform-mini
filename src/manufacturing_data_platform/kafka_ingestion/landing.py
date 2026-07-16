@@ -180,7 +180,9 @@ def land_records(
         {
             "topic": batch[0].topic,
             "partition": batch[0].partition,
-            "next_offset": max(record.offset for record in batch) + 1,
+            # Kafka offsets may have legitimate gaps. Commit after the last
+            # record delivered and durably handled by this ordered poll batch.
+            "next_offset": batch[-1].offset + 1,
         },
     )
 
@@ -247,6 +249,13 @@ def _validate_batch_scope(records: list[KafkaRecord]) -> None:
         if previous is not None:
             raise ValueError(f"input repeats coordinate={record.coordinate!r}")
         seen[record.coordinate] = fingerprint
+
+    offsets = [record.offset for record in records]
+    if offsets != sorted(offsets):
+        raise ValueError(
+            "K1 landing records must preserve consumer poll order with "
+            "strictly increasing offsets"
+        )
 
 
 def _base_entry(record: KafkaRecord, fingerprint: str) -> dict[str, Any]:
