@@ -1282,3 +1282,80 @@ Claim boundary:
 
 - Allowed: bounded local Kafka landing-to-batch bridge for one date; deterministic source identity with Kafka provenance; existing quality/gold rerun contract reuse; downstream local Iceberg publish and publish retry evidence.
 - Not allowed: continuous streaming pipeline, Spark Structured Streaming, direct Kafka-to-Iceberg sink, multi-partition/rebalance, end-to-end exactly-once, column-level lineage, cryptographic payload-integrity chain, concurrent writer correctness, or production Kafka/Spark/Airflow operation.
+
+## 2026-07-16 — Kafka K1/K1.5 portfolio promotion evidence
+
+Scope:
+
+- Re-run the representative Kafka K1 and K1.5 scenario from the public reproduction commands.
+- Re-publish the resulting quality-passed gold to a clean local Iceberg table and verify publish retry behavior.
+- Package a public-safe evidence summary, one architecture/runtime overview, one failure/recovery screen, and one batch/Iceberg rerun screen.
+- Link the package from the external-reader README without changing implementation claims.
+
+Commands:
+
+```bash
+.venv/bin/python -m pytest -q
+PYTHONPATH=src .venv/bin/python -m manufacturing_data_platform.pipeline.run \
+  --catalog-backend json --output-dir /tmp/manufacturing-mini-promotion-cli
+PYTHONPATH=src .venv/bin/python -m manufacturing_data_platform.pipeline.operator_report \
+  --output-dir /tmp/manufacturing-mini-promotion-cli --business-date 2026-06-29
+PYTHONPATH=src .venv/bin/python -m manufacturing_data_platform.pipeline.run_eav \
+  --catalog-backend json --output-dir /tmp/manufacturing-mini-promotion-eav
+./scripts/verify_kafka_k1.sh
+./scripts/verify_kafka_k1_5.sh
+PYTHONPATH=src python -m manufacturing_data_platform.pipeline.publish_gold_to_iceberg \
+  --lakehouse-output-dir /tmp/manufacturing-mini-kafka-k1-5-evidence/lakehouse \
+  --business-date 2026-06-29 \
+  --warehouse /tmp/manufacturing-mini-kafka-k1-5-evidence/warehouse \
+  --output-dir /tmp/manufacturing-mini-kafka-k1-5-evidence/iceberg --clean
+# repeat the publisher without --clean
+jq empty docs/portfolio/kafka-k1-k1-5/evidence/runtime-evidence.json
+npx playwright screenshot ...
+```
+
+Results:
+
+```text
+pytest: 80 passed, 7 skipped
+JSON lakehouse CLI + operator report: passed
+EAV JSON CLI: passed
+publication secret scan: no findings
+publication private-path placeholder scan: no findings
+
+Kafka 4.3.1 K1 broker verification: passed
+K1 reconciliation: produced=5, persisted=5, accepted=4, quarantined=1
+landing-before-commit failure observed: true
+recovery: redelivered=1, landing status=reused, accepted total=4
+bounded replay: reused=4, normal group commit=false
+
+K1.5 checks: 11 passed
+adapter: created -> reused
+lakehouse: processed -> skipped
+quality: 8 checks passed
+gold: 1 row, units_produced=100, defect_count=6
+source_hash: 9efd6173efd21cd6563c9ab88d4d63cde7cb4599287faa6ea1576a68b589ed53
+
+Iceberg: published -> skipped
+snapshot count: 1 -> 1
+snapshot id unchanged: 3544754184027092485
+
+portfolio screens: 3 PNG files, each 1440x900
+desktop visual inspection: passed
+mobile report layout visual inspection: passed
+```
+
+The K1.5 bridge entry above and this promotion recheck are separate point-in-time runs. A fresh Kafka production run assigns new record timestamps/fingerprints, so the canonical adapter `source_hash` can change; a clean Iceberg warehouse publish also receives a new `snapshot_id`. Determinism and retry-skip assertions apply within the same immutable landing/publish state, while each entry preserves the values observed in that run.
+
+Artifacts:
+
+- `docs/portfolio/kafka-k1-k1-5/README.md`
+- `docs/portfolio/kafka-k1-k1-5/README.ko.md`
+- `docs/portfolio/kafka-k1-k1-5/evidence/runtime-evidence.json`
+- `docs/portfolio/kafka-k1-k1-5/report.html`
+- `docs/portfolio/kafka-k1-k1-5/assets/*.png`
+
+Claim boundary:
+
+- Allowed: the same K1/K1.5 local bounded claims recorded above, now packaged as an external-reader walkthrough with actual runtime-derived screens.
+- Not allowed: dashboard/production observability operation, continuous streaming, multi-partition or multi-broker correctness, production Kafka/Spark/Iceberg operation, or any claim not already supported by K1/K1.5 verification.

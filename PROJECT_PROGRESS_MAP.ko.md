@@ -78,11 +78,12 @@ flowchart LR
 
 | id | Topic | 상태 | Evidence |
 |---|---|---:|---|
-| B1 | `source_hash` idempotent rerun | DEV.to draft | idempotency tests, JSON CLI |
-| B2 | schema drift as warn, not fail | DEV.to draft | schema drift tests, latest verification log |
-| B3 | wide CSV -> EAV -> gold | DEV.to draft | EAV tests, processed/skipped CLI run |
+| B1 | `source_hash` idempotent rerun | Published | idempotency tests, JSON CLI, DEV.to |
+| B2 | schema drift as warn, not fail | Published | schema drift tests, verification log, DEV.to |
+| B3 | wide CSV -> EAV -> gold | Published | EAV tests, processed/skipped CLI run, DEV.to |
 | B4 | operator debugging with quality/lineage evidence | Published | operator report tests, CLI, DEV.to |
-| B5 | Lakehouse gold -> Iceberg publish | DEV.to draft | publish CLI tests, Spark/Iceberg evidence, Airflow `dags test` |
+| B5 | `business_date` correction과 Iceberg partition overwrite | Published | Spark/Iceberg tests, snapshot evidence, DEV.to |
+| B6 | Kafka landing-before-commit 복구와 batch bridge | 포트폴리오 승격 진행 중 | K1/K1.5 broker evidence, 장애 주입, quality/gold/Iceberg rerun |
 
 ## 설계 완료 지도
 
@@ -98,7 +99,7 @@ flowchart TD
   iceberg["Spark/Iceberg walking skeleton\nDONE"]
   airflow_iceberg["Airflow -> Spark/Iceberg\nDONE"]
   publish["Lakehouse -> Iceberg publish\nDONE"]
-  b5["B5 Iceberg blog\nDEV.to draft"]
+  b5["B5 Iceberg blog\nPUBLISHED"]
   kafka_k1["Kafka bounded raw landing\nDONE"]
   kafka_k15["Kafka landing -> batch bridge\nDONE"]
   streaming["Continuous Kafka / Spark streaming\nBACKLOG"]

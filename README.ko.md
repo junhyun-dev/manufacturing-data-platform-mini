@@ -31,6 +31,11 @@ CSV
 - lineage
 - EAV multi-format intake
 - Spark/Iceberg partition overwrite skeleton
+- bounded Kafka raw landing + landing-to-batch bridge
+
+## 대표 포트폴리오 Walkthrough
+
+[`Kafka K1/K1.5: 설비 event -> 복구 가능한 raw landing -> trusted gold -> local Iceberg`](docs/portfolio/kafka-k1-k1-5/README.ko.md)에 대표 시나리오, 아키텍처, 실제 실행 화면, 장애 복구 과정, 재현 명령, evidence, limitation을 한곳에 정리했다.
 
 ## Phase 1
 

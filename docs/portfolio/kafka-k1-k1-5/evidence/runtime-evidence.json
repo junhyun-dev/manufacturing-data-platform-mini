@@ -1,0 +1,100 @@
+{
+  "evidence_version": 1,
+  "verified_on": "2026-07-16",
+  "source_commit": "c42527a",
+  "scope": "bounded local Kafka K1 raw landing and K1.5 landing-to-batch bridge",
+  "kafka_k1": {
+    "status": "passed",
+    "runtime": {
+      "kafka_version": "4.3.1",
+      "broker_count": 1,
+      "topic": "manufacturing.machine-events.v1",
+      "partition_count": 1
+    },
+    "reconciliation": {
+      "produced_record_count": 5,
+      "persisted_coordinate_count": 5,
+      "accepted_event_count": 4,
+      "quarantined_event_count": 1,
+      "immutable_batch_count": 3
+    },
+    "failure_recovery": {
+      "injected_failure": "after durable landing and before offset commit",
+      "failure_observed": true,
+      "redelivered_coordinate_count": 1,
+      "accepted_total_after_recovery": 4,
+      "recovery_landing_status": "reused",
+      "committed_next_offset": 4
+    },
+    "bounded_replay": {
+      "input_record_count": 4,
+      "reused_coordinate_count": 4,
+      "accepted_total_after_replay": 4,
+      "offset_commit_performed": false
+    }
+  },
+  "kafka_k1_5": {
+    "status": "passed",
+    "business_date": "2026-06-29",
+    "verification_check_count": 11,
+    "selected_event_count": 4,
+    "source_hash": "9efd6173efd21cd6563c9ab88d4d63cde7cb4599287faa6ea1576a68b589ed53",
+    "first_run": {
+      "adapter_status": "created",
+      "lakehouse_status": "processed",
+      "quality_passed": true,
+      "quality_check_count": 8,
+      "silver_row_count": 4,
+      "gold_row_count": 1
+    },
+    "second_run": {
+      "adapter_status": "reused",
+      "lakehouse_status": "skipped",
+      "same_run_id": true,
+      "gold_not_doubled": true
+    },
+    "gold": {
+      "grain": [
+        "business_date",
+        "plant_id",
+        "line_id",
+        "product_code"
+      ],
+      "units_produced": 100,
+      "defect_count": 6,
+      "defect_rate": 0.06,
+      "avg_cycle_time_ms": 825.0
+    }
+  },
+  "iceberg_publish": {
+    "table": "local.db.gold_daily_metrics",
+    "runtime_coordinate": "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.11.0",
+    "first_publish_status": "published",
+    "retry_status": "skipped",
+    "snapshot_count_before_retry": 1,
+    "snapshot_count_after_retry": 1,
+    "snapshot_id_unchanged": true,
+    "snapshot_id": "3544754184027092485",
+    "target_partition_row_count": 1
+  },
+  "claim_boundary": {
+    "verified": [
+      "bounded local producer and consumer",
+      "immutable JSONL landing with Kafka coordinate evidence",
+      "landing-before-offset-commit failure recovery",
+      "bounded replay without advancing normal group progress",
+      "deterministic one-date batch adapter",
+      "reuse of the existing quality and gold pipeline",
+      "local Iceberg publish retry without a new snapshot"
+    ],
+    "not_verified": [
+      "continuous streaming service",
+      "multi-partition ordering or rebalance",
+      "multi-broker availability",
+      "Spark Structured Streaming",
+      "direct Kafka-to-Iceberg sink",
+      "end-to-end exactly-once",
+      "production security, scale, or operations"
+    ]
+  }
+}
