@@ -1,6 +1,6 @@
-# 01. Scenario seed — 시스템 시나리오
+# 00. Scenario seed — 시스템 시나리오
 
-상태: 같이 검토할 초안  
+상태: baseline batch scenario / implementation-backed
 프로젝트: `manufacturing-data-platform-mini`
 
 이 문서는 `schema drift`, `idempotency`, `quality`, `catalog`, `lineage` 같은 개별 기능으로 들어가기 전에, 질문을 만들기 위한 **scenario seed**를 정리한다.
@@ -27,7 +27,7 @@ source CSV
 | 역할 | 알고 싶은 것 |
 |---|---|
 | 데이터 사용자 / 분석가 | 어떤 데이터셋이 있고, 어떤 컬럼이 있고, 어떤 기간을 믿고 쓸 수 있는가? |
-| ML / 로봇 데이터 사용자 | 어떤 source로 만든 dataset version인지, 다시 재현 가능한가? |
+| ML / 제조 데이터 사용자 | 어떤 source로 만든 dataset version인지, 다시 재현 가능한가? |
 | 운영자 / 데이터 엔지니어 | run이 성공했는가, 실패했는가, 품질은 통과했는가, 문제가 생기면 어디서 생겼는가? |
 
 이 시스템은 단순히 CSV를 읽어 gold table을 만드는 것이 아니라, 이 사람들이 나중에 질문할 정보를 남기는 것이 목표다.
@@ -37,7 +37,7 @@ source CSV
 이 프로젝트의 서비스 이유는 "로봇 데이터를 처리한다"보다 더 구체적이어야 한다.
 
 ```text
-로봇/제조/ML 데이터 팀은 raw file만 보고는
+제조/ML 데이터 팀은 raw file만 보고는
 어떤 데이터셋을 믿고 분석/학습/리포팅에 써도 되는지 판단하기 어렵다.
 ```
 
@@ -75,7 +75,7 @@ idempotent rerun evidence
 이 프로젝트의 대표 시나리오는 아래 하나로 잡는다.
 
 ```text
-로봇/제조 이벤트 파일이 하루 단위로 들어온다.
+제조 이벤트 파일이 하루 단위로 들어온다.
 데이터 엔지니어는 이 파일을 처리해 daily metric mart를 만들고 싶다.
 분석가/ML 사용자는 결과 숫자를 쓰기 전에 데이터셋의 schema, freshness, quality, source version을 알고 싶다.
 운영자는 같은 날짜를 다시 처리해도 중복되지 않고, 문제가 생기면 어느 source/run에서 왔는지 추적하고 싶다.
@@ -228,13 +228,14 @@ v0에서 작게 잡은 것:
 
 v0에서 피한 것:
 
-- full Spark/Iceberg platform runtime
-- Kafka/Flink streaming
+- full Spark/Iceberg medallion runtime
+- continuous Kafka/Flink/Spark Structured Streaming
+- multi-partition Kafka rebalance/ordering
 - full schema registry
 - governance/RBAC
 - lineage graph backend
 - UI
-- production scheduler 운영
+- production scheduler/HA executor 운영
 
 작게 잡는 이유는 기능을 못해서가 아니라, 먼저 핵심 의사결정을 검증하기 위해서다.
 
@@ -251,16 +252,16 @@ v0에서 피한 것:
 
 - [`../../reference-decisions/schema-drift.md`](../../reference-decisions/schema-drift.md)
 
-다음으로 만들 후보:
+현재 코드/테스트에는 있지만 독립 decision note가 약한 후보:
 
 - `idempotency.md`
 - `quality-reconciliation.md`
 - `bronze-silver-gold.md`
 - `catalog-lineage.md`
 
-## 11. 같이 볼 질문
+## 11. 확장할 때 다시 볼 질문
 
-이 문서는 아직 초안이다. 다음 질문을 먼저 같이 검토한다.
+baseline batch 시나리오는 구현됐지만, 다음 slice를 고를 때 아래 질문을 다시 검토한다.
 
 1. 이 시스템의 사용자는 분석가/ML 사용자/운영자로 나누는 게 맞나?
 2. v0 source를 manufacturing CSV로 두는 게 충분히 좋은 연습 시나리오인가?

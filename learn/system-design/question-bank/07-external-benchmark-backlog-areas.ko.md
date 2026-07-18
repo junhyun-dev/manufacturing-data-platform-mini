@@ -160,9 +160,9 @@ Kafka/Flink/Spark Structured Streaming 중 무엇이 문제에 맞는가?
 분류:
 
 ```text
-Kafka ingestion은 별도 scenario/question map/slice로 discovery를 시작했다.
-아직 design-only이며 Kafka code/runtime evidence는 없다.
-Flink/CDC와 Spark Structured Streaming 구현은 계속 named Backlog다.
+Kafka bounded raw landing(S5)과 landing-to-batch bridge(S6)는 local broker로 구현·검증됐다.
+남은 streaming 영역 — continuous consumer service, watermark/window, exactly-once sink,
+Flink/CDC, Spark Structured Streaming — 은 계속 named Backlog다.
 ```
 
 활성화된 설계 문서:

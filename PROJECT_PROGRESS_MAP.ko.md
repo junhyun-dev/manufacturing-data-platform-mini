@@ -5,6 +5,8 @@
 이 문서는 `manufacturing-data-platform-mini`를 한 화면에서 파악하기 위한 진행 지도다.
 깊은 설계 문서를 열기 전에 먼저 이 문서를 본다.
 
+시나리오에서 기능이 도출된 과정을 보려면 [`learn/system-design/01-system-traceability-map.ko.md`](learn/system-design/01-system-traceability-map.ko.md)를 본다.
+
 ## 현재 Thesis
 
 ```text
@@ -83,7 +85,7 @@ flowchart LR
 | B3 | wide CSV -> EAV -> gold | Published | EAV tests, processed/skipped CLI run, DEV.to |
 | B4 | operator debugging with quality/lineage evidence | Published | operator report tests, CLI, DEV.to |
 | B5 | `business_date` correction과 Iceberg partition overwrite | Published | Spark/Iceberg tests, snapshot evidence, DEV.to |
-| B6 | Kafka landing-before-commit 복구와 batch bridge | 포트폴리오 승격 진행 중 | K1/K1.5 broker evidence, 장애 주입, quality/gold/Iceberg rerun |
+| B6 | Kafka landing-before-commit 복구와 batch bridge | 공개 완료 | K1/K1.5 broker evidence, 장애 주입, quality/gold/Iceberg rerun, DEV.to series |
 
 ## 설계 완료 지도
 

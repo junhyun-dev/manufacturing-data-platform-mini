@@ -14,7 +14,9 @@ The architecture source of truth for this project lives in this public repo: `RE
 
 This repo exists to close a concrete data-platform gap: **NoSQL/MongoDB-style metadata catalog + dataset version manifest + quality/lineage evidence**. The data is synthetic manufacturing-style CSV, not real ROS2 bag / MCAP / Jetson data. Until a machine/session source slice exists, describe this externally as a **manufacturing-style/tabular mini data platform**, not a production manufacturing data platform. The point is the platform loop, kept deliberately small.
 
-**Flagship walkthrough:** [`Kafka K1/K1.5: machine events -> recoverable raw landing -> trusted gold -> local Iceberg`](docs/portfolio/kafka-k1-k1-5/README.md) packages the representative scenario, architecture, actual runtime screens, failure/recovery trace, reproduction commands, evidence, and explicit limitations in one place.
+**Overall design trace:** [`service purpose -> scenario -> questions -> contracts -> features -> evidence`](learn/system-design/01-system-traceability-map.ko.md) shows how the batch spine, EAV, operator evidence, Spark/Iceberg, Airflow, and Kafka slices fit into one platform.
+
+**Kafka milestone walkthrough:** [`Kafka K1/K1.5: machine events -> recoverable raw landing -> trusted gold -> local Iceberg`](docs/portfolio/kafka-k1-k1-5/README.md) packages one representative failure/recovery scenario, runtime screens, reproduction commands, evidence, and explicit limitations. It is an ingestion-path milestone, not the whole platform architecture.
 
 ## Phase 1 Scope
 

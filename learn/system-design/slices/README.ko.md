@@ -82,3 +82,6 @@ Current slices:
 5. [`05-kafka-raw-ingestion.ko.md`](05-kafka-raw-ingestion.ko.md)
    - Kafka가 필요한 시나리오에서 producer/consumer/offset/raw landing 질문을 Core로 자른 slice.
    - bounded local K1 구현과 crash recovery/replay broker 검증까지 완료.
+6. [`06-kafka-landing-to-batch.ko.md`](06-kafka-landing-to-batch.ko.md)
+   - accepted Kafka landing을 한 날짜의 deterministic batch input으로 바꿔 기존 quality/gold/Iceberg 경로에 연결한 slice.
+   - Kafka가 새 처리 플랫폼을 만든 것이 아니라 기존 batch spine의 입력 경로를 확장했음을 증명한다.

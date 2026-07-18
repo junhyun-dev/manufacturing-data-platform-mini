@@ -1,6 +1,6 @@
 # System Design Notes
 
-이 폴더는 `manufacturing-data-platform-mini`를 기능별로 보기 전에, 시스템을 **서비스 목적 -> 시나리오 -> 질문 지도 -> slice map -> 결정 -> 테스트 -> 구현** 순서로 이해하기 위한 학습 노트다.
+이 폴더는 `manufacturing-data-platform-mini`를 기능별로 보기 전에, 시스템을 **서비스 목적 -> 전체 추적 지도 -> 시나리오 -> 질문 지도 -> 계약/결정 -> slice -> 테스트/구현** 순서로 이해하기 위한 학습 노트다.
 
 기준 프로세스: 이 README의 Thinking Order와 `slices/TEMPLATE.ko.md`에 공개 repo용으로 정리한다.
 
@@ -8,6 +8,7 @@
 
 ```text
 service purpose charter
+-> plain project map / system traceability map
 -> scenario seed
 -> question map
 -> question map audit / challenge
@@ -24,25 +25,28 @@ service purpose charter
 1. **Service purpose charter**
    - 이 프로젝트가 왜 존재하는지, 누가 어떤 질문을 위해 쓰는지 먼저 고정한다.
    - 기능 목록이 아니라 service question에서 feature를 도출한다.
-2. **Scenario seed**
+2. **Plain map / traceability map**
+   - 전체 데이터 흐름과 시나리오별 질문 -> 계약 -> 기능 -> evidence 연결을 먼저 본다.
+   - 최신 기술 문서 하나가 프로젝트 전체처럼 보이지 않게 중심 spine을 고정한다.
+3. **Scenario seed**
    - 어떤 상황에서 문제가 생기는지 작게 잡는다.
    - 시나리오는 하나로 고정되지 않는다. late data, schema drift, rerun, bad run, operator debugging처럼 계속 늘어날 수 있다.
-3. **Question map**
+4. **Question map**
    - 시나리오에서 어떤 설계 질문이 생기는지 넓게 펼친다.
    - 각 질문을 `Core`, `Demo`, `Backlog`, `Unknown`으로 나눈다.
    - 질문이 국소적으로 좁아지면 [`08-area-question-bank.ko.md`](08-area-question-bank.ko.md)에서 보안/분산처리/재처리/장애/운영/claim 축을 다시 확인한다.
-4. **Question map audit / challenge**
+5. **Question map audit / challenge**
    - Claude/외부 benchmark 관점으로 빠진 질문, 과한 질문, 과장 위험을 찾는다.
    - 구현 범위는 늘리지 않고 질문 품질만 검토한다.
-5. **State trace / evidence**
+6. **State trace / evidence**
    - 질문이 실제 데이터 상태 전이 어디에서 생기는지 확인한다.
    - 기존 코드와 테스트가 이미 답한 contract를 확인한다.
-6. **Slice map**
+7. **Slice map**
    - 한 build 단위에서 어떤 질문을 Core로 잡고 무엇을 Backlog로 뺐는지 얇게 묶는다.
    - 상세 상태를 복사하지 않고 code/test/verification log를 링크한다.
-7. **Reference decision**
+8. **Reference decision**
    - 질문 하나를 골라 options/tradeoff/decision/test로 수렴한다.
-8. **Implementation**
+9. **Implementation**
    - decision의 test contract를 먼저 검증하고 코드를 붙인다.
 
 ## Root Documents
@@ -53,15 +57,18 @@ service purpose charter
    - 이 프로젝트가 왜 존재하는지, 누가 어떤 질문을 위해 쓰는지, 어떤 상태를 만들어야 하는지 고정한다.
    - 모든 scenario/question map의 상위 anchor다.
 1. [`00a-plain-project-map.md`](00a-plain-project-map.md)
-   - Spark/Iceberg 전에 이 프로젝트 자체를 쉽게 보는 입문 지도.
-   - 파일이 들어와서 어떤 상태와 증거가 남는지 먼저 이해한다.
-2. [`live-study-notes.md`](live-study-notes.md)
-   - 정식 decision이 되기 전, 채팅하며 이해한 내용을 쌓는 실시간 공부장.
-   - 충분히 정리된 내용만 `scenarios/`나 `reference-decisions/`로 승격한다.
+   - 특정 기술 전에 프로젝트 자체를 쉽게 보는 입문 지도.
+   - CSV/Kafka 입력이 어떤 상태와 증거로 이어지는지 먼저 이해한다.
+2. [`01-system-traceability-map.ko.md`](01-system-traceability-map.ko.md)
+   - 프로젝트 전체를 시나리오 -> 질문 영역 -> 계약/결정 -> 기능 -> evidence로 연결하는 canonical index.
+   - Kafka가 전체가 아니라 입력 경로 중 하나이고, batch/quality/catalog spine이 중심임을 보여준다.
 3. [`08-area-question-bank.ko.md`](08-area-question-bank.ko.md)
    - 보안, 분산처리, 재처리, 장애, 품질, 운영, claim boundary 등 영역별 질문 은행.
    - 특정 slice를 구현하기 전에 관련 질문을 넓게 뽑고 Core/Demo/Backlog/Unknown으로 내릴 때 사용한다.
    - 상세 질문은 [`question-bank/`](question-bank/) 아래에 영역별로 나뉘어 있다. 처음 읽을 때는 [`question-bank/00-plain-language-guide.ko.md`](question-bank/00-plain-language-guide.ko.md)부터 본다.
+4. [`live-study-notes.md`](live-study-notes.md)
+   - 정식 decision이 되기 전, 채팅하며 이해한 내용을 쌓는 선택적 공부장.
+   - 프로젝트 상태나 필수 설계의 source of truth가 아니다.
 
 ## Folder Layout
 
@@ -129,9 +136,15 @@ decision        = 특정 선택의 tradeoff
   - Spark/Iceberg partition overwrite slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
 - [`slices/02-airflow-wrapper-command-contract.ko.md`](slices/02-airflow-wrapper-command-contract.ko.md)
   - Airflow wrapper command contract slice의 질문 -> 설계 -> 구현 -> 검증 링크 지도.
+- [`slices/03-airflow-spark-iceberg-runtime.ko.md`](slices/03-airflow-spark-iceberg-runtime.ko.md)
+  - local Airflow `dags test`와 standalone/LocalExecutor로 Spark/Iceberg CLI 배선을 검증한 지도.
+- [`slices/04-lakehouse-to-iceberg-publish.ko.md`](slices/04-lakehouse-to-iceberg-publish.ko.md)
+  - quality-passed lakehouse gold를 local Iceberg table로 publish하는 지도.
 - [`slices/05-kafka-raw-ingestion.ko.md`](slices/05-kafka-raw-ingestion.ko.md)
-  - Kafka ingestion 질문을 넓게 펼친 뒤 첫 raw-landing build 범위를 자른 지도.
-  - Kafka 4.3.1 + confluent-kafka 2.15.0 Test 0은 검증됐고, K1 raw landing은 다음 구현 단계다.
+  - Kafka ingestion 질문을 넓게 펼친 뒤 bounded raw-landing build 범위를 자른 지도.
+  - local K1 구현과 broker failure/replay 검증이 완료됐다.
+- [`slices/06-kafka-landing-to-batch.ko.md`](slices/06-kafka-landing-to-batch.ko.md)
+  - Kafka accepted landing을 기존 batch/quality/Iceberg 경로로 연결한 K1.5 지도.
 
 ## Scenario Walkthroughs
 
@@ -146,7 +159,7 @@ decision        = 특정 선택의 tradeoff
   - 기존 catalog/lineage claim을 실제 RCA walkthrough로 exercise한다.
 - [`scenarios/03-kafka-machine-event-ingestion.md`](scenarios/03-kafka-machine-event-ingestion.md)
   - 제조 설비 event를 파일 마감 전에 받아 replay 가능한 raw landing으로 넘기려면 Kafka가 필요한가?
-  - event identity, partition ordering, offset commit, failure/replay 질문을 여는 design-only 시나리오다.
+  - event identity, partition ordering, offset commit, failure/replay 질문에서 local K1 구현으로 내려간 시나리오다.
 
 ## Large Slice Supporting Docs
 
@@ -176,3 +189,7 @@ scenario
 - [`../reference-decisions/schema-drift.md`](../reference-decisions/schema-drift.md)
 - [`../reference-decisions/gold-grain.md`](../reference-decisions/gold-grain.md)
 - [`../reference-decisions/iceberg-write-semantics.md`](../reference-decisions/iceberg-write-semantics.md)
+- [`../reference-decisions/failure-state-model.md`](../reference-decisions/failure-state-model.md)
+- [`../reference-decisions/kafka-event-identity-and-key.md`](../reference-decisions/kafka-event-identity-and-key.md)
+- [`../reference-decisions/kafka-offset-and-landing-commit.md`](../reference-decisions/kafka-offset-and-landing-commit.md)
+- [`../reference-decisions/kafka-landing-to-batch-adapter.md`](../reference-decisions/kafka-landing-to-batch-adapter.md)

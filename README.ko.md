@@ -4,7 +4,7 @@
 
 ## 한 줄 요약
 
-synthetic manufacturing-ish CSV를 ingest해서 bronze -> silver -> gold -> quality -> catalog/lineage -> dataset version manifest까지 이어지는 작은 data platform slice다.
+synthetic manufacturing-style CSV와 bounded Kafka landing을 기존 batch spine에 연결해 bronze -> silver -> gold -> quality -> catalog/lineage -> local Iceberg publish까지 검증하는 작은 data platform이다.
 
 ```text
 CSV
@@ -33,9 +33,13 @@ CSV
 - Spark/Iceberg partition overwrite skeleton
 - bounded Kafka raw landing + landing-to-batch bridge
 
-## 대표 포트폴리오 Walkthrough
+## 전체 설계 지도
 
-[`Kafka K1/K1.5: 설비 event -> 복구 가능한 raw landing -> trusted gold -> local Iceberg`](docs/portfolio/kafka-k1-k1-5/README.ko.md)에 대표 시나리오, 아키텍처, 실제 실행 화면, 장애 복구 과정, 재현 명령, evidence, limitation을 한곳에 정리했다.
+[`서비스 목적 -> 시나리오 -> 질문 -> 계약 -> 기능 -> evidence`](learn/system-design/01-system-traceability-map.ko.md)에서 batch spine, EAV, operator evidence, Spark/Iceberg, Airflow, Kafka가 한 플랫폼 안에서 어떤 역할을 하는지 연결한다.
+
+## Kafka Milestone Walkthrough
+
+[`Kafka K1/K1.5: 설비 event -> 복구 가능한 raw landing -> trusted gold -> local Iceberg`](docs/portfolio/kafka-k1-k1-5/README.ko.md)에 한 ingestion failure/recovery 시나리오, 실제 실행 화면, 재현 명령, evidence, limitation을 정리했다. 이 문서는 전체 플랫폼 아키텍처가 아니라 Kafka 입력 경로의 milestone이다.
 
 ## Phase 1
 

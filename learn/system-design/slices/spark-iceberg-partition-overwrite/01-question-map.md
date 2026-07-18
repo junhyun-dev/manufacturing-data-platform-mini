@@ -1,6 +1,6 @@
 # 01. Spark/Iceberg Question Map
 
-상태: 같이 검토할 초안
+상태: audited question input / local walking skeleton implemented
 프로젝트: `manufacturing-data-platform-mini`
 
 > 목적: Slice2에서 "무슨 질문들이 나올 수 있고, 각각 어디서/어떻게 풀리는가"를 먼저 넓게 펼친다.

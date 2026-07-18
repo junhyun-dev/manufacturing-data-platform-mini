@@ -5,6 +5,8 @@ Korean version: [`PROJECT_PROGRESS_MAP.ko.md`](PROJECT_PROGRESS_MAP.ko.md)
 This document is the one-screen map for `manufacturing-data-platform-mini`.
 Use it before opening the deeper design notes.
 
+For the derivation from scenario to questions, contracts, features, and evidence, see [`learn/system-design/01-system-traceability-map.ko.md`](learn/system-design/01-system-traceability-map.ko.md).
+
 ## Current Thesis
 
 ```text
@@ -82,7 +84,7 @@ flowchart LR
 | B3 | wide CSV -> EAV -> gold | Published | EAV tests, processed/skipped CLI run, DEV.to |
 | B4 | operator debugging with quality/lineage evidence | Published | operator report tests, CLI, DEV.to |
 | B5 | `business_date` correction with Iceberg partition overwrite | Published | Spark/Iceberg tests, snapshot evidence, DEV.to |
-| B6 | Kafka landing-before-commit recovery and batch bridge | Portfolio promotion in progress | K1/K1.5 broker evidence, failure injection, quality/gold/Iceberg rerun |
+| B6 | Kafka landing-before-commit recovery and batch bridge | Published | K1/K1.5 broker evidence, failure injection, quality/gold/Iceberg rerun, DEV.to series |
 
 ## Design Completion Map
 
