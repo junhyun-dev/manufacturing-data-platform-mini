@@ -1,6 +1,6 @@
 # External Reader Audit — Kafka K1/K1.5 Portfolio Promotion
 
-Status: returned-unreviewed / Codex review required
+Status: accepted-closed / Codex reviewed
 
 Codex disposition: reviewed / accepted with minor corrections
 
@@ -114,7 +114,7 @@ Recommended:
 Unknown:
 - `junhyun-dev` GitHub repo의 public/pushed 상태 (F1) — 세션에서 확인 불가.
 
-블로킹 correctness/claim 결함 없음. 이 audit의 모든 material 항목은 Codex의 accept/revise/reject/keep-unknown 재검토 대상이며, 상태는 `returned-unreviewed / Codex review required`.
+블로킹 correctness/claim 결함 없음. 아래 Codex disposition에서 모든 material 항목을 재검토했고, 현재 lifecycle 상태는 `accepted-closed / Codex reviewed`다.
 
 ## 11. Codex disposition
 
