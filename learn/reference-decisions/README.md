@@ -61,3 +61,7 @@ status는 decision의 lifecycle만 말한다. 최신 테스트 수와 실행 결
    - accepted Kafka landing을 한 business_date의 결정적 batch input으로 어떻게 바꾸는가?
    - 왜 source identity가 Kafka provenance를 포함한 canonical CSV의 SHA-256인가?
    - 왜 invalid/tampered input은 lakehouse pipeline 호출 전에 실패해야 하는가?
+8. [`spark-engine-swap-contract.md`](spark-engine-swap-contract.md) (S7)
+   - 기존 Python silver/gold를 Spark로 옮길 때 코드보다 먼저 무엇을 고정했는가? (grain, dedup, round, quality)
+   - 왜 dedup을 Kafka coordinate 순서로 맞추고, round를 `format_number`(Python round parity)로 하는가?
+   - 왜 Spark quality를 새로 짜지 않고 기존 suite를 Spark 결과에 적용하는가?

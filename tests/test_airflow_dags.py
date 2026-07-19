@@ -34,6 +34,7 @@ def test_airflow_dagbag_parses_project_dags():
     assert "manufacturing_lakehouse_daily" in dagbag.dags
     assert "manufacturing_iceberg_skeleton" in dagbag.dags
     assert "manufacturing_lakehouse_to_iceberg_daily" in dagbag.dags
+    assert "manufacturing_spark_machine_event_batch" in dagbag.dags
 
 
 def test_airflow_lakehouse_dag_calls_lakehouse_cli():
@@ -68,3 +69,18 @@ def test_airflow_lakehouse_to_iceberg_dag_chains_pipeline_then_publish():
     assert "--lakehouse-output-dir" in publish_task.bash_command
     assert "--warehouse" in publish_task.bash_command
     assert publish_task.task_id in run_task.downstream_task_ids
+
+
+def test_airflow_spark_machine_event_batch_dag_is_single_task_wrapper():
+    dag = _dagbag().dags["manufacturing_spark_machine_event_batch"]
+
+    assert dag.max_active_runs == 1
+    assert len(dag.tasks) == 1
+    task = dag.get_task("spark_machine_event_batch_task")
+    assert "manufacturing_data_platform.pipeline.spark_machine_event_batch" in task.bash_command
+    assert "dag_run.conf.get" in task.bash_command
+    assert "--landing-dir" in task.bash_command
+    assert "--business-date" in task.bash_command
+    # No transform/quality/Iceberg logic leaks into the DAG body.
+    assert "groupBy" not in task.bash_command
+    assert "overwritePartitions" not in task.bash_command

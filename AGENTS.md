@@ -6,7 +6,7 @@ AI-assisted development notes. Human scope and review gates stay in place.
 manufacturing/ML-style data platform의 핵심 루프(수집→카탈로그→버전/재현성→서빙)를 **얇게 한 번 관통**하는 public-safe demo.
 
 ## 절대 규칙
-- **스코프를 키우지 말 것.** ROS2/MCAP·Jetson·Iceberg·Spark·Kafka는 v1에 넣지 않는다 (ROADMAP Phase 2~3). 추가 제안 시 먼저 사람에게 묻기.
+- **스코프를 키우지 말 것.** 현재 local Spark/Iceberg walking skeleton과 bounded Kafka K1/K1.5만 구현돼 있다. 승인된 Slice/package 없이 full Spark medallion, continuous streaming, multi-partition Kafka, cluster/Kubernetes, ROS2/MCAP·Jetson으로 확장하지 않는다.
 - 공개 repo 전제 — 회사 내부 도구명/고객명/기밀/개인정보를 넣지 말 것.
 
 ## 코드 컨벤션

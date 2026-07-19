@@ -173,6 +173,18 @@ parameter로 실행할지 조정한다.
 | Evidence | [`slices/06-kafka-landing-to-batch.ko.md`](slices/06-kafka-landing-to-batch.ko.md), [`../../src/manufacturing_data_platform/kafka_ingestion/batch_adapter.py`](../../src/manufacturing_data_platform/kafka_ingestion/batch_adapter.py), [`../../tests/test_kafka_batch_adapter.py`](../../tests/test_kafka_batch_adapter.py) |
 | 경계 | Spark Structured Streaming이나 direct Kafka-to-Iceberg sink가 아니라 bounded batch bridge |
 
+### S7. landing된 한 날짜를 Spark batch로 다시 표현한다
+
+| 단계 | 연결 |
+|---|---|
+| 문제 상황 | 연산 표현을 Spark로 옮기더라도 기존 gold grain·합계·재실행 계약은 바뀌면 안 됨 |
+| 가져온 질문 | 같은 grain을 Spark로 어떻게 동일 표현하는가? dedup "first"와 round를 Python과 어떻게 맞추는가? quality fail이 trusted current를 막는가? 같은 source와 정정 source를 snapshot으로 어떻게 구분하는가? |
+| Question Bank | storage/spark consistency, quality/current-state, rerun, orchestration 경계 질문 |
+| 계약/결정 | [`../reference-decisions/spark-engine-swap-contract.md`](../reference-decisions/spark-engine-swap-contract.md): adapter input 재사용, `format_number` Python-round parity, coordinate-order dedup, 기존 quality suite 적용, `overwritePartitions()` |
+| 구현 기능 | canonical CSV -> Spark silver/gold(parity) -> Spark quality gate -> Iceberg partition overwrite, same-source skip / correction snapshot, shuffle-plan evidence, 얇은 Airflow wrapper |
+| Evidence | [`scenarios/04-spark-machine-event-batch.md`](scenarios/04-spark-machine-event-batch.md), [`slices/07-spark-machine-event-batch.ko.md`](slices/07-spark-machine-event-batch.ko.md), [`../../src/manufacturing_data_platform/pipeline/spark_machine_event_batch.py`](../../src/manufacturing_data_platform/pipeline/spark_machine_event_batch.py), [`../../tests/test_spark_machine_event_batch.py`](../../tests/test_spark_machine_event_batch.py) |
+| 경계 | cluster/분산 Spark, 성능·throughput, Structured Streaming, exactly-once, concurrent writer는 아님 |
+
 ## 4. 시나리오가 Question Bank를 가져오는 방식
 
 | 시나리오 | 주로 가져오는 영역 | 이번에 일부러 가져오지 않는 영역 |
@@ -184,6 +196,7 @@ parameter로 실행할지 조정한다.
 | S4 Airflow | orchestration, retry ownership, dependency packaging | Celery/Kubernetes executor, HA scheduler |
 | S5 Kafka landing | event identity, offset/replay, durability, quarantine | multi-partition rebalance, Schema Registry, continuous streaming |
 | S6 batch bridge | cross-system identity, current-state guard, deterministic rerun | direct streaming sink, window/watermark |
+| S7 Spark batch | engine parity, storage/spark consistency, quality gate, snapshot identity | cluster/분산 Spark, 성능/throughput, streaming |
 
 이 표의 목적은 질문을 줄이는 것이 아니라, 질문을 넓게 본 뒤 **현재 contract를 바꾸는 질문만
 Core로 선택했는지** 확인하는 것이다.

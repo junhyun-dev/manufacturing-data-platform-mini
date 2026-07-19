@@ -4,6 +4,7 @@ from manufacturing_data_platform.orchestration import (
     build_gold_iceberg_publish_cli_command,
     build_lakehouse_cli_command,
     build_spark_iceberg_cli_command,
+    build_spark_machine_event_batch_cli_command,
 )
 
 
@@ -72,6 +73,42 @@ def test_airflow_spark_iceberg_wrapper_command_supports_jinja_runtime_parameters
     assert "warehouse" in command
     assert "output_dir" in command
     assert "--clean" in command
+
+
+def test_spark_machine_event_batch_command_uses_batch_entrypoint():
+    command = build_spark_machine_event_batch_cli_command(
+        landing_dir="/tmp/manufacturing-mini-kafka-k1-evidence/raw",
+        business_date="2026-06-29",
+        adapter_output_dir="/tmp/spark-batch/adapter",
+        warehouse="/tmp/spark-batch/warehouse",
+        output_dir="/tmp/spark-batch/evidence",
+    )
+
+    assert command.startswith(
+        "PYTHONPATH=src python -m manufacturing_data_platform.pipeline.spark_machine_event_batch"
+    )
+    assert "--landing-dir /tmp/manufacturing-mini-kafka-k1-evidence/raw" in command
+    assert "--business-date 2026-06-29" in command
+    assert "--adapter-output-dir /tmp/spark-batch/adapter" in command
+    assert "--warehouse /tmp/spark-batch/warehouse" in command
+    assert "--output-dir /tmp/spark-batch/evidence" in command
+    assert "--table local.db.gold_daily_metrics" in command
+
+
+def test_spark_machine_event_batch_command_supports_jinja_runtime_parameters():
+    command = build_spark_machine_event_batch_cli_command(
+        landing_dir='{{ dag_run.conf.get("landing_dir", "/tmp/raw") }}',
+        business_date='{{ dag_run.conf.get("business_date", ds) }}',
+        adapter_output_dir='{{ dag_run.conf.get("adapter_output_dir", "/tmp/adapter") }}',
+        warehouse='{{ dag_run.conf.get("warehouse", "/tmp/warehouse") }}',
+        output_dir='{{ dag_run.conf.get("output_dir", "/tmp/evidence") }}',
+    )
+
+    assert "dag_run.conf.get" in command
+    assert "landing_dir" in command
+    assert "business_date" in command
+    assert "adapter_output_dir" in command
+    assert "warehouse" in command
 
 
 def test_gold_iceberg_publish_command_uses_publish_entrypoint():

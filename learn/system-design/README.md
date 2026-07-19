@@ -145,6 +145,8 @@ decision        = 특정 선택의 tradeoff
   - local K1 구현과 broker failure/replay 검증이 완료됐다.
 - [`slices/06-kafka-landing-to-batch.ko.md`](slices/06-kafka-landing-to-batch.ko.md)
   - Kafka accepted landing을 기존 batch/quality/Iceberg 경로로 연결한 K1.5 지도.
+- [`slices/07-spark-machine-event-batch.ko.md`](slices/07-spark-machine-event-batch.ko.md)
+  - K1.5 canonical landing을 Spark로 재표현해 engine parity·quality gate·Iceberg publish를 검증한 S7 지도.
 
 ## Scenario Walkthroughs
 
@@ -160,6 +162,8 @@ decision        = 특정 선택의 tradeoff
 - [`scenarios/03-kafka-machine-event-ingestion.md`](scenarios/03-kafka-machine-event-ingestion.md)
   - 제조 설비 event를 파일 마감 전에 받아 replay 가능한 raw landing으로 넘기려면 Kafka가 필요한가?
   - event identity, partition ordering, offset commit, failure/replay 질문에서 local K1 구현으로 내려간 시나리오다.
+- [`scenarios/04-spark-machine-event-batch.md`](scenarios/04-spark-machine-event-batch.md)
+  - landing된 한 business_date를 Spark batch로 backfill할 때 기존 gold 계약을 그대로 유지하는 S7 시나리오다.
 
 ## Large Slice Supporting Docs
 
@@ -193,3 +197,4 @@ scenario
 - [`../reference-decisions/kafka-event-identity-and-key.md`](../reference-decisions/kafka-event-identity-and-key.md)
 - [`../reference-decisions/kafka-offset-and-landing-commit.md`](../reference-decisions/kafka-offset-and-landing-commit.md)
 - [`../reference-decisions/kafka-landing-to-batch-adapter.md`](../reference-decisions/kafka-landing-to-batch-adapter.md)
+- [`../reference-decisions/spark-engine-swap-contract.md`](../reference-decisions/spark-engine-swap-contract.md)

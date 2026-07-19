@@ -1359,3 +1359,97 @@ Claim boundary:
 
 - Allowed: the same K1/K1.5 local bounded claims recorded above, now packaged as an external-reader walkthrough with actual runtime-derived screens.
 - Not allowed: dashboard/production observability operation, continuous streaming, multi-partition or multi-broker correctness, production Kafka/Spark/Iceberg operation, or any claim not already supported by K1/K1.5 verification.
+
+## 2026-07-19 — S7 Spark machine-event batch (Codex reviewed / accepted)
+
+Scope:
+
+- Re-express the existing Python silver/gold on one landed `business_date` with Spark DataFrame built-ins, reusing the K1.5 canonical CSV + `source_hash` as the input contract.
+- Gate the Iceberg publish on the existing quality suite applied to the Spark result; publish quality-passed corrections with `overwritePartitions()`.
+- Keep Spark Structured Streaming, direct Kafka-to-Iceberg sink, full medallion rewrite, cluster/distributed Spark, and performance claims out of scope.
+
+Commands:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m pytest -q tests/test_spark_machine_event_batch.py
+PYTHONPATH=src .venv/bin/python -m pytest -q
+PYTHONPATH=src python -m pytest -q
+python -m pytest -q tests/test_spark_machine_event_batch.py   # Spark-visible (pyspark 3.5.8)
+PYTHON_BIN=python bash scripts/verify_spark_machine_event_batch.sh
+python -m py_compile dags/manufacturing_spark_machine_event_batch.py
+git diff --check
+```
+
+Results:
+
+```text
+S7 pure tests (.venv): passed; Spark integration tests skipped without pyspark
+base environment (.venv): 88 passed, 12 skipped
+Spark-visible environment (system python): 95 passed, 5 skipped
+S7 Spark integration (system python): 10 passed (engine parity, dedup, quality gate, publish/rerun/correction/other-date)
+S7 runtime verification (scripts/verify_spark_machine_event_batch.sh): 8/8 checks passed
+DAG py_compile: valid
+git diff --check: passed
+
+runtime state transitions (real local Iceberg table local.db.gold_daily_metrics):
+  other-date D2 publish -> published (baseline partition)
+  source A publish -> published, snapshot_count 1 -> 2
+  same source A retry -> skipped, snapshot_id unchanged (5635830946204702022), snapshot_count 2
+  correction source B -> published, snapshot_count 2 -> 3, target D1 partition replaced (units_produced=200)
+  other-date D2 rows preserved through the correction
+  gold groupBy executed plan -> Exchange observed
+  Spark batch source_hash == adapter source_hash
+```
+
+Verified:
+
+- [x] Spark silver/gold match Python `transform_silver`/`transform_gold` on the same canonical rows (grain, totals, `defect_rate`, `avg_cycle_time_ms`), using a `format_number`-based round that matches Python `round` at boundary doubles like `802.675` (see revision below) and Kafka-coordinate-ordered natural-key dedup.
+- [x] The existing quality suite runs on the Spark-materialized result; a numeric-range/conservation violation blocks the Iceberg write and writes no success-state pointer.
+- [x] Same `table + business_date + source_hash` success is skipped with no new snapshot; a changed source creates exactly one new snapshot and replaces only the target `business_date` partition.
+- [x] `source_hash` (input), `run_id` (execution), and `snapshot_id` (table commit) are recorded as separate fields.
+- [x] The gold aggregation produces a shuffle `Exchange`, recorded as local execution-plan learning evidence, not a performance claim.
+- [x] The single-task Airflow DAG only assembles one validated CLI command; no transform/quality/Iceberg logic in the DAG body. `max_active_runs=1`.
+
+Airflow evidence (from Codex independent review after the revision, isolated Airflow 3.3.0 runtime):
+
+```text
+isolated DagBag suite: 5 passed
+airflow dags test manufacturing_spark_machine_event_batch: DagRun success, task exit 0,
+  local Iceberg publish status=published, snapshot_count=1
+This is a DagBag/dags-test wiring proof only, NOT scheduler/executor/production Airflow evidence.
+In Claude's own environment airflow is not installed, so the Airflow tests skip here.
+```
+
+Claim boundary:
+
+- Allowed: local bounded Spark batch reusing a provenance-checked Kafka landing adapter, preserving the existing gold grain and reconciliation contract, publishing only quality-passed corrections to one Iceberg gold table; verified same-source no-op, changed-source partition replacement, other-date preservation, shuffle-plan evidence, and a thin local Airflow DagBag/dags-test wrapper contract.
+- Not allowed: production or cluster Spark, large-scale performance/throughput improvement, full Spark/Iceberg medallion pipeline, continuous Kafka/Spark streaming, end-to-end exactly-once, concurrent writer correctness, distributed Spark-native quality evaluation (quality is collected to the driver), or production Airflow operation.
+
+Revision (2026-07-19) — Codex review H1/H2/M1/M2 addressed:
+
+```text
+H1 rounding parity: bround/round/decimal-cast diverge from Python round at valid boundary doubles
+  (probe: bround 204, round 779, decimal 779 mismatches / 40,400 integer-ratio cases at scale 2;
+   32107/40 -> Python 802.67 vs bround 802.68). Switched gold rounding to format_number + comma
+   strip + double cast (0 mismatches / 40,400). Added boundary golden test
+   test_gold_rounding_matches_python_at_half_boundary (avg 802.675 -> 802.67, Spark == Python). No UDF.
+H2 stale-state skip: skip now requires the recorded snapshot to still exist in the current table's
+  snapshot history, so an emptied/recreated warehouse with persisted state rewrites instead of a
+  false skip. Added test_stale_success_state_on_recreated_warehouse_rewrites.
+M1 quality-fail exit code: main() now non-zero exits on status=quality_failed so a BashOperator
+  task fails. Added pure test_main_exits_nonzero_on_quality_failure.
+M2 bridge provenance persistence: run_bridge_spark_batch threads adapter identity via extra_evidence
+  so the persisted spark_machine_event_batch.json contains the same adapter/source_hash as the return
+  value. Added pure test_bridge_persists_adapter_identity + persisted==returned assertion in the
+  publish integration test.
+Doc corrections: rounding wording fixed across ADR/slice/scenario/roadmap/traceability; claim
+  boundary now states quality is driver-collected (not distributed Spark-native); ADR Status set to
+  Proposed pending Codex re-verification; this entry re-dated 2026-07-19.
+
+Re-run results (2026-07-19):
+  base (.venv): 90 passed, 14 skipped
+  Spark-visible (system python): 99 passed, 5 skipped
+  S7 Spark integration (system): 14 passed (incl. H1 boundary parity, H2 recreated-warehouse recovery)
+  S7 runtime verification: 8/8 checks passed
+  git diff --check: passed
+```

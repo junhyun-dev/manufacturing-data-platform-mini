@@ -32,6 +32,7 @@ CSV
 - EAV multi-format intake
 - Spark/Iceberg partition overwrite skeleton
 - bounded Kafka raw landing + landing-to-batch bridge
+- Spark machine-event batch (engine parity + quality-gated Iceberg publish)
 
 ## 전체 설계 지도
 

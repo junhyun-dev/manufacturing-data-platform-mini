@@ -74,6 +74,7 @@ flowchart LR
 | Lakehouse -> Iceberg publish DAG | local 2-task DAG 검증 완료 | `dags/manufacturing_lakehouse_to_iceberg_daily.py`, `tests/test_publish_gold_to_iceberg.py`, Airflow `dags test` | local Airflow DAG가 JSON lakehouse CLI를 실행한 뒤 successful gold CSV를 local Iceberg table에 publish; Mongo-backed publish와 full Spark rewrite는 claim하지 않음 |
 | Kafka K1 raw ingestion | bounded local slice 구현 및 broker 검증 완료 | `tests/test_kafka_ingestion.py`, `scripts/verify_kafka_k1.sh`, immutable JSONL/manifest evidence | one-broker/one-partition bounded raw landing, landing-before-commit crash 복구, replay, quarantine; continuous/production streaming 아님 |
 | Kafka K1.5 landing -> batch | bounded local bridge 구현 및 runtime 검증 완료 | `tests/test_kafka_batch_adapter.py`, `scripts/verify_kafka_k1_5.sh`, adapter/quality/Iceberg evidence | Kafka provenance를 보존한 결정적 one-date CSV, 기존 quality/gold와 Iceberg publish 재사용; Structured Streaming/direct sink 아님 |
+| Spark machine-event batch (S7) | local bounded slice 구현 및 runtime 검증 완료 | `tests/test_spark_machine_event_batch.py`, `scripts/verify_spark_machine_event_batch.sh`, `dags/manufacturing_spark_machine_event_batch.py` | K1.5 canonical CSV에서 silver/gold를 Spark로 재표현(Python parity 검증), quality-gated `overwritePartitions()` publish(같은 source skip / 정정 snapshot), shuffle-plan evidence; cluster Spark·streaming·성능 claim 아님 |
 | Robot/session/MCAP | Backlog | 없음 | claim하지 않음 |
 
 ## Portfolio Artifacts

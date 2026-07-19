@@ -85,3 +85,6 @@ Current slices:
 6. [`06-kafka-landing-to-batch.ko.md`](06-kafka-landing-to-batch.ko.md)
    - accepted Kafka landing을 한 날짜의 deterministic batch input으로 바꿔 기존 quality/gold/Iceberg 경로에 연결한 slice.
    - Kafka가 새 처리 플랫폼을 만든 것이 아니라 기존 batch spine의 입력 경로를 확장했음을 증명한다.
+7. [`07-spark-machine-event-batch.ko.md`](07-spark-machine-event-batch.ko.md)
+   - K1.5 canonical landing을 Spark DataFrame으로 재표현해 기존 silver/gold 계약과의 engine parity를 검증한 slice.
+   - quality를 통과한 결과만 Iceberg partition에 publish하고, 실행 엔진만 Spark로 바꿨음을 보여준다.

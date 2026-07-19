@@ -106,6 +106,16 @@ Goal: prove bounded log-based raw ingestion before considering Spark Structured 
 - [x] **K1.5 landing -> batch bridge** — deterministic provenance-preserving CSV reuses the existing quality/gold/Iceberg path; same input is skipped.
 - [ ] **Spark Structured Streaming** — backlog until a real window/watermark/latency pressure exists.
 
+### Spark machine-event batch — S7 (implemented and local runtime-verified)
+Goal: re-express the existing Python silver/gold on one landed `business_date` with Spark, without a full medallion rewrite or streaming.
+- [x] **Adapter-input contract** — reuses the K1.5 canonical CSV + `source_hash`; Spark does not re-parse raw JSONL.
+- [x] **Engine parity** — Spark DataFrame built-ins reproduce `transform_silver`/`transform_gold` grain and totals (verified equal, incl. a `format_number`-based round matching Python `round` at boundary values like `802.675` and coordinate-ordered natural-key dedup).
+- [x] **Spark quality gate** — the existing quality suite runs on the Spark result; a failing result blocks the Iceberg write and the success pointer.
+- [x] **Partition overwrite + idempotency** — `overwritePartitions()`, same-source skip (no new snapshot), changed-source correction (exactly one new snapshot), other-date preserved.
+- [x] **Shuffle-plan evidence** — gold `groupBy` executed plan + `Exchange` observation recorded as learning evidence, not a performance claim.
+- [x] **Thin Airflow wrapper** — single-task DAG calls one validated CLI; `max_active_runs=1`; no transform logic in the DAG body.
+- [ ] **Cluster/distributed Spark, performance/throughput claims** — intentionally not implemented.
+
 ## Scope: CORE vs OPTIONAL
 
 - **CORE** (the thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · local Spark/Iceberg · bounded Kafka K1/K1.5.
