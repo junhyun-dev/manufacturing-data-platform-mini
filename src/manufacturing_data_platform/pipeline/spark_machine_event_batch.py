@@ -10,7 +10,9 @@ Engine-parity choices that matter:
 
 * Dedup uses the raw silver natural key ``(work_order_id, machine_id, event_time)`` and keeps
   the first row in Kafka-coordinate order, exactly as the Python loop keeps the first CSV row.
-* Gold rounding uses Spark ``bround`` (round-half-to-even), matching Python 3 ``round``.
+* Gold rounding uses ``format_number`` plus comma removal/cast; bounded integer-ratio and
+  half-boundary tests match the existing Python 3 ``round`` results without claiming universal
+  floating-point equivalence.
 * Quality is the same ``build_quality_checks`` suite applied to the Spark silver/gold plus the
   input rows, so "Spark quality" cannot silently diverge from the batch spine's quality.
 
