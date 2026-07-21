@@ -33,6 +33,7 @@ CSV
 - Spark/Iceberg partition overwrite skeleton
 - bounded Kafka raw landing + landing-to-batch bridge
 - Spark machine-event batch (engine parity + quality-gated Iceberg publish)
+- edge/cloud 단절 복구 시뮬레이션 (봉인 spool -> replay -> 완결 시에만 batch)
 
 ## 전체 설계 지도
 
@@ -318,6 +319,36 @@ K1.5 canonical CSV + source_hash
 
 이것은 local bounded batch다. cluster/분산 Spark, 성능·처리량 우월성, full Spark medallion
 pipeline, Structured Streaming, distributed Spark-native quality 평가는 증명하지 않는다.
+
+## S8 edge/cloud 단절 복구
+
+S8은 broker가 없는 동안 한 edge 세션을 **immutable spool**에 모아 봉인하고, 재연결 후 기존 K1
+landing으로 replay한 뒤, 봉인 구간이 **전부** 중앙에 반영됐을 때만 기존 K1.5 batch/gold 경로를
+허용한다. 새 streaming 플랫폼이 아니라 failure/recovery slice다.
+
+```text
+broker 없음 -> 로컬 spool에 1..N append(fsync + atomic rename) -> seal(expected_last_sequence)
+-> 재연결 replay -> 봉인 구간 완결 여부 판정 -> 완결일 때만 K1.5 batch/gold
+```
+
+재현 명령:
+
+```bash
+./scripts/verify_edge_recovery.sh
+```
+
+고정한 계약:
+
+- **identity 3분리**: `(edge_source_id, boot_session_id, sequence_no)`(edge 순서) · `event_id`(business) · `(topic, partition, offset)`(transport).
+- **완결성은 `event_id`로 판정한다.** Kafka offset 연속성으로 판정하지 않는다 — K1은 정상 offset gap을 허용하고 재전송 시 같은 event가 다른 offset에 앉는다.
+- **durable progress = immutable 파일 자체.** 별도 mutable cursor를 두지 않는다.
+- **봉인 없이는 완결 선언 불가.** `expected_last_sequence`가 "아직 안 옴"과 "유실"을 구분한다.
+- **미완결이면 차단.** `run_bridge` 호출 **전에** 실패해 adapter/lakehouse 산출물을 만들지 않는다.
+- **반복 replay**: transport 증거는 늘 수 있으나 accepted 집합·`source_hash`·trusted gold는 불변.
+
+이것은 **synthetic·local·bounded simulation**(단일 machine/session/partition)이다. 실제 edge
+게이트웨이·하드웨어, OPC UA/MQTT/ROS 2/DDS, continuous service, power-loss durability,
+concurrent writer, production 운영은 증명하지 않는다.
 
 ## 정직한 한계
 

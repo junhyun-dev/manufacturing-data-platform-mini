@@ -168,12 +168,12 @@ Phase 3 is organized by **operator scenario and failure pressure**, not by a tec
 
 - [x] **Bounded Kafka raw landing (K1) and landing-to-batch bridge (K1.5)** — see `### Kafka raw ingestion — K1`.
 - [x] **Spark machine-event batch (S7)** with Python parity and quality-gated Iceberg publish — see `### Spark machine-event batch — S7`.
+- [x] **Edge/cloud disconnection and recovery (S8)** — immutable sealed edge spool, replay through the existing local Kafka/K1 landing, downstream batch blocked until the sealed sequence range is fully recovered. Synthetic, local, bounded, single machine/session/partition simulation. Slice: [`learn/system-design/slices/08-edge-cloud-recovery.ko.md`](learn/system-design/slices/08-edge-cloud-recovery.ko.md).
 
 ### Proposed next scenarios (not implemented)
 
 Derived from operator scenarios and checked against official industrial-platform documentation (see `BENCHMARKS.md` §6). Each stays `Proposed` until a bounded slice is designed and verified.
 
-- [ ] **Edge/cloud disconnection and later replay** — recommended next bounded slice; extends the existing durable-landing-before-commit contract to a disconnection boundary. Scenario: [`learn/system-design/scenarios/05-industrial-telemetry-recovery.md`](learn/system-design/scenarios/05-industrial-telemetry-recovery.md).
 - [ ] **Sensor/tag/unit/schema replacement** — reuses the EAV mapping config and schema-drift check.
 - [ ] **Suspicious quality metric traced back to source/telemetry** — extends the operator evidence report.
 - [ ] **Late/out-of-order telemetry and sequence gap** — only if a real late-data/window pressure is named.

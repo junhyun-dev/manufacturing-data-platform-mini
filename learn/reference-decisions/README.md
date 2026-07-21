@@ -65,3 +65,7 @@ status는 decision의 lifecycle만 말한다. 최신 테스트 수와 실행 결
    - 기존 Python silver/gold를 Spark로 옮길 때 코드보다 먼저 무엇을 고정했는가? (grain, dedup, round, quality)
    - 왜 dedup을 Kafka coordinate 순서로 맞추고, round를 `format_number`(Python round parity)로 하는가?
    - 왜 Spark quality를 새로 짜지 않고 기존 suite를 Spark 결과에 적용하는가?
+9. [`edge-buffer-and-recovery-progress.md`](edge-buffer-and-recovery-progress.md) (S8)
+   - 단절 구간을 로컬에 모을 때 무엇을 durable progress로 볼 것인가? (immutable 파일 vs mutable cursor)
+   - "아직 안 옴"과 "유실"을 어떻게 구분하는가? (expected_last_sequence 봉인)
+   - 왜 완결성을 Kafka offset 연속성으로 판정하면 안 되는가?

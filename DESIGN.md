@@ -251,3 +251,33 @@ is tracked in `ROADMAP.md` and `VERIFICATION_LOG.md`, not by these historical ch
 - [ ] `GET /datasets/{id}`로 확인 가능
 - [ ] README에 실행 명령 + 설계 결정 3개(dataset/version 분리·schema 저장 이유·hash) 설명
 → 6개 다 체크되면 Phase 1 **완료**. extract는 별개(v0.5).
+
+## 11. S8 Edge/Cloud Recovery
+
+S8 simulates one disconnected edge session and proves that a partially recovered range cannot
+advance trusted downstream state.
+
+```text
+no broker running -> append 1..N to an immutable local spool (fsync + atomic rename)
+-> seal with expected_last_sequence -> reconnect and replay through the existing K1 landing
+-> completeness measured by event_id membership -> only then run the existing K1.5 batch/gold
+```
+
+Contracts fixed before code:
+
+- Three identity spaces stay separate: `(edge_source_id, boot_session_id, sequence_no)` for edge
+  ordering, `event_id` for business identity, `(topic, partition, offset)` for transport evidence.
+- Completeness is decided by `event_id` membership, **never** by Kafka offset continuity — K1
+  already allows legitimate offset gaps and a replay puts the same event at a different offset.
+- Durable progress is the immutable entry set itself; no separately advanced mutable cursor.
+- Without a seal (`expected_last_sequence`) "not yet arrived" cannot be distinguished from "lost",
+  so completeness cannot be declared at all.
+- An incomplete range fails **before** `run_bridge` is called, so no adapter or lakehouse output
+  is created.
+- Repeated replay may add transport evidence but must not change the accepted set, the canonical
+  `source_hash`, or the trusted gold result.
+
+Boundary: synthetic, local, bounded, single machine/session/partition simulation on a local Linux
+filesystem. Not an edge gateway, not OPC UA/MQTT/ROS 2/DDS, not power-loss durability, not
+concurrent writers, not production operation. See
+`learn/reference-decisions/edge-buffer-and-recovery-progress.md`.

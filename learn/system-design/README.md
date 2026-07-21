@@ -147,6 +147,8 @@ decision        = 특정 선택의 tradeoff
   - Kafka accepted landing을 기존 batch/quality/Iceberg 경로로 연결한 K1.5 지도.
 - [`slices/07-spark-machine-event-batch.ko.md`](slices/07-spark-machine-event-batch.ko.md)
   - K1.5 canonical landing을 Spark로 재표현해 engine parity·quality gate·Iceberg publish를 검증한 S7 지도.
+- [`slices/08-edge-cloud-recovery.ko.md`](slices/08-edge-cloud-recovery.ko.md)
+  - 단절 구간을 봉인해 모으고 완결된 뒤에만 batch를 허용하는 S8 지도.
 
 ## Scenario Walkthroughs
 
@@ -165,7 +167,7 @@ decision        = 특정 선택의 tradeoff
 - [`scenarios/04-spark-machine-event-batch.md`](scenarios/04-spark-machine-event-batch.md)
   - landing된 한 business_date를 Spark batch로 backfill할 때 기존 gold 계약을 그대로 유지하는 S7 시나리오다.
 - [`scenarios/05-industrial-telemetry-recovery.md`](scenarios/05-industrial-telemetry-recovery.md)
-  - edge/cloud 단절 후 재연결 replay. **Proposed** 상태의 다음 slice 후보이며 아직 구현 evidence가 없다.
+  - edge/cloud 단절 후 재연결 replay. S8로 구현·local 검증됐다(synthetic·bounded simulation).
 
 ## Large Slice Supporting Docs
 
@@ -200,3 +202,4 @@ scenario
 - [`../reference-decisions/kafka-offset-and-landing-commit.md`](../reference-decisions/kafka-offset-and-landing-commit.md)
 - [`../reference-decisions/kafka-landing-to-batch-adapter.md`](../reference-decisions/kafka-landing-to-batch-adapter.md)
 - [`../reference-decisions/spark-engine-swap-contract.md`](../reference-decisions/spark-engine-swap-contract.md)
+- [`../reference-decisions/edge-buffer-and-recovery-progress.md`](../reference-decisions/edge-buffer-and-recovery-progress.md)

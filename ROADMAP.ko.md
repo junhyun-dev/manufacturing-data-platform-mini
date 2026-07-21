@@ -144,12 +144,12 @@ Phase 3은 기술 목록이 아니라 **운영자 시나리오와 실패 압력*
 
 - [x] **bounded Kafka raw landing(K1)과 landing -> batch bridge(K1.5)** — `### Kafka raw ingestion — K1` 참조.
 - [x] **Spark machine-event batch(S7)** — Python parity와 quality-gated Iceberg publish. `### Spark machine-event batch — S7` 참조.
+- [x] **edge/cloud 단절 복구(S8)** — immutable sealed edge spool, 기존 local Kafka/K1 landing으로 replay, 봉인 구간이 완전히 복구되기 전에는 downstream batch 차단. synthetic·local·bounded·단일 machine/session/partition 시뮬레이션. slice: [`learn/system-design/slices/08-edge-cloud-recovery.ko.md`](learn/system-design/slices/08-edge-cloud-recovery.ko.md).
 
 ### 제안된 다음 시나리오 (미구현)
 
 운영자 시나리오에서 도출하고 공식 산업 플랫폼 문서와 대조했다(`BENCHMARKS.ko.md` 산업 lane 참조). 각 항목은 bounded slice로 설계·검증되기 전까지 `Proposed`다.
 
-- [ ] **edge/cloud 단절 후 재연결 replay** — 다음 bounded slice 권고. 기존 "durable landing 전 commit 금지" 계약을 단절 경계로 확장한다. 시나리오: [`learn/system-design/scenarios/05-industrial-telemetry-recovery.md`](learn/system-design/scenarios/05-industrial-telemetry-recovery.md).
 - [ ] **sensor/tag/단위/schema 교체** — EAV mapping config와 schema-drift check 재사용.
 - [ ] **의심스러운 품질 지표를 source/telemetry까지 역추적** — operator evidence report 확장.
 - [ ] **late/out-of-order telemetry와 sequence gap** — 실제 late-data/window 압력이 명명될 때만.

@@ -198,3 +198,27 @@ K1.5 canonical CSV + source_hash
 - 같은 source 재실행은 no-op이고, 정정은 대상 날짜 partition만 교체한다.
 - 범위는 local bounded batch 하나와 Iceberg gold table 하나다. continuous streaming,
   cluster Spark, full Spark medallion rewrite, production Airflow는 증명하지 않는다.
+
+## 10. S8 edge/cloud 단절 복구
+
+S8은 단절된 edge 세션 하나를 모사해, **부분 복구 상태에서는 trusted downstream이 전진할 수
+없음**을 증명한다.
+
+```text
+broker 없음 -> immutable 로컬 spool에 1..N append(fsync + atomic rename)
+-> expected_last_sequence로 seal -> 재연결 후 기존 K1 landing으로 replay
+-> event_id 기준 완결성 판정 -> 완결일 때만 기존 K1.5 batch/gold
+```
+
+코드보다 먼저 고정한 계약:
+
+- identity 3분리: `(edge_source_id, boot_session_id, sequence_no)`(edge 순서) · `event_id`(business) · `(topic, partition, offset)`(transport).
+- 완결성은 `event_id` 집합으로 판정한다. **Kafka offset 연속성으로 판정하지 않는다** — K1은 정상 offset gap을 허용한다.
+- durable progress는 immutable entry 집합 자체다. 별도 mutable cursor를 두지 않는다.
+- 봉인이 없으면 "아직 안 옴"과 "유실"을 구분할 수 없어 완결 선언 자체가 불가능하다.
+- 미완결이면 `run_bridge` 호출 **전에** 실패해 adapter/lakehouse 산출물을 만들지 않는다.
+- 반복 replay는 transport 증거만 늘리고 accepted 집합·`source_hash`·trusted gold는 바꾸지 않는다.
+
+경계: local Linux filesystem 위의 synthetic·local·bounded·단일 machine/session/partition
+시뮬레이션이다. edge gateway, OPC UA/MQTT/ROS 2/DDS, power-loss durability, concurrent writer,
+production 운영은 아니다. 상세는 `learn/reference-decisions/edge-buffer-and-recovery-progress.md`.

@@ -1,9 +1,12 @@
 # 05. Scenario — edge/cloud 단절 후 재연결 replay
 
-상태: **Proposed** — 설계 후보일 뿐 구현되지 않았다. code/test/runtime evidence 없음.
+상태: **Implemented / local bounded recovery verified** — Codex 독립 재검증 완료 (2026-07-21)
 
-> 이 문서는 다음 bounded slice **후보**를 시나리오 언어로 고정하기 위한 얇은 문서다.
-> implementation package가 아니며, 구현·검증 전까지 어떤 claim도 만들지 않는다.
+> S8로 구현·검증됐다: immutable sealed spool, 실제 local Kafka broker replay, 미완결 시
+> downstream 차단, 반복 replay 시 accepted/trusted 결과 불변.
+> slice map: [`../slices/08-edge-cloud-recovery.ko.md`](../slices/08-edge-cloud-recovery.ko.md) ·
+> 결정: [`../../reference-decisions/edge-buffer-and-recovery-progress.md`](../../reference-decisions/edge-buffer-and-recovery-progress.md)
+> 이는 **synthetic·local·bounded simulation**이며 실제 edge 하드웨어/프로토콜 evidence가 아니다.
 > 근거: [`../../reference-evidence/audit-inputs/2026-07-21-industrial-platform-direction/claude-audit.md`](../../reference-evidence/audit-inputs/2026-07-21-industrial-platform-direction/claude-audit.md)
 
 ## 1. 왜 이 시나리오인가
@@ -50,8 +53,12 @@ edge buffer가 durable해지기 전에 edge 수집 진행 포인터를 전진시
 ```text
 - 복구 도중 재실패        -> 마지막 durable 지점부터 재개, 중복은 identity로 흡수
 - 단절 구간이 비어 있음    -> "빈 구간"과 "유실"을 구분해 evidence로 남긴다
-- 복구분이 품질 실패       -> Iceberg write·success pointer 모두 막고 실패 evidence만 남긴다
-- 부분 복구 후 정정 입력   -> 기존 partition overwrite/정정 계약(S3/S7)으로 흡수
+- 복구분이 품질 실패       -> 기존 K1.5 batch 경로의 계약을 그대로 물려받아 successful current
+                             pointer가 전진하지 않는다. **S8은 이 품질 실패 경로를 runtime으로
+                             실행·검증하지 않았다**(상속된 경계로만 기술).
+- 부분 복구 후 정정 입력   -> 정정/재발행은 기존 S3/S7 계약의 영역이며 **S8은 Iceberg publish를
+                             호출하지도 검증하지도 않는다**. S8이 부르는 것은 K1.5의 JSON-backed
+                             batch/gold 경로까지다.
 ```
 
 ## 6. 가장 작은 evidence (구현 시)
@@ -84,6 +91,9 @@ production / HA / cluster 운영, 실시간 SLA
 ## 8. 상태
 
 ```text
-Proposed. 구현 package 없음. code/test/runtime evidence 없음.
-다음 게이트: Codex가 이 시나리오를 채택할지 판단 -> 채택 시 별도 slice/decision/test contract 설계.
+implemented / local bounded recovery verified (accepted-closed).
+S8 slice로 구현: spool -> seal -> partial replay(차단) -> complete replay -> K1.5 processed
+-> repeat replay -> K1.5 skipped. 실행 결과는 VERIFICATION_LOG.md가 source of truth다.
+Codex 독립 검증에서 focused 17 tests, 전체 107 passed/14 skipped, 실제 local broker
+partial 차단과 K1/K1.5 회귀를 다시 확인했다.
 ```

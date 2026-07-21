@@ -1453,3 +1453,214 @@ Re-run results (2026-07-19):
   S7 runtime verification: 8/8 checks passed
   git diff --check: passed
 ```
+
+## 2026-07-21 — S8 edge/cloud recovery (returned-unreviewed / Codex review required)
+
+Scope:
+
+- Simulate one bounded disconnected edge session with an immutable sealed local spool, replay it through the existing local Kafka/K1 landing after reconnect, and allow the existing K1.5 batch/gold path only after the sealed sequence range is fully represented in the central accepted set.
+- Reuse K1/K1.5 through public APIs only. No changes to `contracts.py`, `landing.py`, `runtime.py`, `batch_adapter.py`, their tests, or the shared Kafka runbook.
+- Keep OPC UA/MQTT/ROS 2/DDS, Structured Streaming/Flink, new dependencies, multi machine/session/partition, and production claims out of scope.
+
+Commands:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m pytest -q tests/test_edge_recovery.py
+PYTHONPATH=src .venv/bin/python -m pytest -q
+./scripts/verify_edge_recovery.sh
+./scripts/verify_kafka_k1.sh
+./scripts/verify_kafka_k1_5.sh
+git diff --check
+```
+
+Results:
+
+```text
+S8 targeted tests: 11 passed
+default suite (.venv): 101 passed, 14 skipped
+S8 runtime verification (scripts/verify_edge_recovery.sh): passed (broker phase 7/7, promote phase 7/7)
+K1 regression (scripts/verify_kafka_k1.sh): passed
+K1.5 regression (scripts/verify_kafka_k1_5.sh): passed
+git diff --check: passed
+
+runtime state transitions (real local Kafka broker, Apache Kafka 4.3.1 KRaft):
+  phase spool   -> broker process absent; edge events 1..3 appended and sealed (expected_last_sequence=3)
+                   central accepted total = 0; missing = [1, 2, 3]
+  phase partial -> replayed edge sequences [1, 2] at Kafka offsets [0, 1]
+                   accepted this batch = 2; central accepted total = 2; missing = [3]; recovery_complete = false
+  phase complete-> replayed [1, 2, 3] at NEW Kafka offsets [2, 3, 4]
+                   accepted this batch = 1; duplicate event_ids = 2; central accepted total = 3; missing = []
+  phase repeat  -> replayed [1, 2, 3] at NEW Kafka offsets [5, 6, 7]
+                   accepted this batch = 0; duplicate event_ids = 3; central accepted total = 3
+  accepted_total transition: 0 -> 2 -> 3 -> 3
+
+K1.5 promotion gate (project .venv):
+  first  run -> bridge lakehouse status = processed, quality_passed = true
+  second run -> bridge lakehouse status = skipped
+  adapter source_hash unchanged: 75d98a387601f6b532b756f640a7c2281813e9cd0b33d7a622c01b70ef22381a
+  lakehouse run_id unchanged:    2026-06-29-20260721T042445Z-8ddc9ebf
+  trusted gold identical across reruns
+
+identity separation observed in evidence:
+  edge sequence  [1, 2, 3]
+  Kafka offsets  [0, 1, 4]      <- different space; event 3 landed at offset 4
+  event_id       evt-20260629-000001 / -000002 / -000003
+  source_hash and run_id recorded as separate fields
+```
+
+Verified:
+
+- [x] An edge entry is only considered buffered after canonical bytes are fsynced and atomically renamed on the same local filesystem; the immutable entry set is the progress record (no separate mutable cursor).
+- [x] Same coordinate + same canonical bytes is an idempotent reuse; same coordinate + different bytes, a duplicate `event_id` at another sequence, an unsafe identifier, a seal with a missing sequence, an append after sealing, and a changed seal are all rejected.
+- [x] Completeness is decided by sealed `event_id` membership in the central accepted set, never by Kafka offset continuity; a contiguous-looking landing that misses one edge event is still reported incomplete with the exact missing sequence.
+- [x] Incomplete recovery raises before `run_bridge` is called and creates no adapter output, no lakehouse run, and no trusted-state pointer.
+- [x] Complete recovery permits the existing K1.5 path and produces a quality-passed gold result.
+- [x] Repeated producer replay at new Kafka coordinates adds duplicate transport evidence only: the accepted business-event set, the canonical `source_hash`, the `run_id`, and the trusted gold rows are unchanged and the bridge rerun is `skipped`.
+- [x] Edge sequence, `event_id`, Kafka coordinate, `source_hash`, and `run_id` remain distinguishable in the persisted evidence.
+- [x] The spool/coverage path imports neither pyspark nor pymongo at module level, so the shared Kafka runbook venv can run the broker phase; the K1.5 import is lazy.
+
+Failures encountered and resolved:
+
+```text
+1 failure during implementation: seal_edge_session validated the sequence range before checking an
+existing seal, so re-sealing with a different expected_last_sequence reported "spool also holds
+sequences [3]" instead of the correct "already sealed" conflict. Fixed by deciding reuse-vs-conflict
+on the existing seal first. Re-ran targeted tests: 11 passed.
+```
+
+Runtime/operation gate:
+
+```text
+runtime artifacts only under /tmp (spool, landing, adapter, lakehouse, evidence JSON)
+local broker started and stopped through the existing shared runbook; no broker process left running
+no persistent service deployment or migration
+no credential or private-path content in tracked files
+```
+
+Review disposition:
+
+```text
+returned-unreviewed / Codex review required
+scenario 05 moved from Proposed to implemented / local bounded recovery verified
+ADR status intentionally left Proposed pending Codex independent verification
+```
+
+Claim boundary:
+
+- Allowed: a bounded local edge-recovery **simulation** with an immutable sealed spool, replay of synthetic machine events through a real local Kafka broker into the existing K1 landing, downstream batch/gold blocked while recovery was incomplete, and complete plus repeated replay verified without accepted-set or trusted-result duplication. Required qualifiers: synthetic, local, bounded, simulation, single machine/session/partition.
+- Not allowed: industrial IoT / autonomous factory platform, real edge gateway or product-grade offline buffer, OPC UA / MQTT / ROS 2 / DDS integration, continuous or large-scale real-time streaming, power-loss-safe or distributed durability, multi-partition ordering/rebalance correctness, production Kafka/Spark/Airflow operation, end-to-end exactly-once, digital twin, anomaly detection, predictive maintenance, or machine control.
+
+### Revision (2026-07-21) — Codex review H1/H2/M1/M2 addressed
+
+```text
+H1 bounded session scope enforced:
+  seal now derives and persists machine_id and business_date; a fresh seal with more than one
+  machine_id or business_date is rejected (EdgeSessionScopeError). promote_recovered_session
+  refuses a requested business_date that differs from the sealed session date BEFORE any
+  adapter/lakehouse/evidence output. Codex's counterexample (mixed dates sealing successfully and
+  promoting 1 of 2 sealed events) no longer reproduces.
+  New tests: test_seal_rejects_mixed_machine_id, test_seal_rejects_mixed_business_date,
+             test_seal_persists_session_scope,
+             test_promotion_rejects_business_date_mismatch_without_side_effects.
+
+H2 partial-recovery gate now exercised at runtime (was unit-only):
+  phase_broker calls the real promote_recovered_session while sequence 3 is missing, asserts
+  RecoveryIncompleteError, asserts adapter/lakehouse/promotion-evidence paths do not exist, and
+  persists partial_promotion_blocked=true in the phase evidence. The lazy run_bridge import lets
+  the incomplete branch fail inside the Kafka runbook venv without the batch stack.
+  Runtime result: partial_promotion_blocked=true, no_downstream_output=true,
+  "RecoveryIncompleteError: recovery incomplete: missing edge sequences [3] of 1..3".
+
+M1 full seal re-validation on load and reuse:
+  _validate_seal checks format_version, edge_source_id, boot_session_id, sealed_event_count, the
+  exact declared sequence set 1..N, per-entry fingerprint/event_id, and session membership; every
+  entry path segment must agree with its envelope. Missing AND extra spool entries are rejected
+  instead of silently filtered, and existing-seal reuse runs the same validation.
+  New tests: test_entry_added_after_sealing_is_rejected_on_load,
+             test_tampered_seal_manifest_is_rejected (9 tamper mutations).
+
+M2 assumption and boundary recorded:
+  event_id is documented in the source contract and ADR as a globally unique, immutable v1
+  business-event identity; the same event_id with a different payload is a producer contract
+  violation, not a correction. No payload-equivalence checking is claimed because K1 performs none.
+  Scenario 05's quality-failure variant no longer says "Iceberg write": S8 invokes the K1.5
+  JSON-backed batch/gold path and does not invoke or test S7 Iceberg publish, nor a
+  quality-failure runtime case.
+```
+
+Re-run results (2026-07-21, revision):
+
+```text
+focused: PYTHONPATH=src .venv/bin/python -m pytest -q tests/test_edge_recovery.py -> 17 passed
+normal suite: PYTHONPATH=src .venv/bin/python -m pytest -q                       -> 107 passed, 14 skipped
+./scripts/verify_edge_recovery.sh  -> passed (broker phase 9/9 incl. partial promotion gate, promote phase 7/7)
+./scripts/verify_kafka_k1.sh       -> passed (regression)
+./scripts/verify_kafka_k1_5.sh     -> passed (regression)
+git diff --check                   -> clean
+
+runtime state transitions (unchanged shape, re-verified):
+  accepted_total 0 -> 2 -> 3 -> 3
+  partial phase: promotion BLOCKED at runtime, no downstream output created
+  K1.5 processed -> skipped; source_hash and run_id unchanged across reruns
+```
+
+Status after revision: `revision-pending / Codex re-review required`. ADR, scenario 05, slice 08,
+and source contract 03 are intentionally NOT promoted to `Implemented`.
+
+Note: `.venv/bin/pytest` carries a stale shebang pointing at an old `robot-data-platform-mini`
+path, so all runs above used `.venv/bin/python -m pytest`.
+
+## 2026-07-21 — S8 Codex independent re-review (accepted-closed)
+
+Review disposition:
+
+```text
+accepted-closed
+ADR status promoted: Implemented
+scenario 05 / slice 08 / source contract 03 promoted: Implemented
+```
+
+Codex independently inspected the revised code, tests, runtime script, design contract, and
+claim boundary. The H1 mixed-machine/date counterexample is now blocked at seal time, promotion
+date mismatch fails before downstream output, sealed manifests are fully revalidated on load and
+reuse, and the partial recovery gate is exercised by the real runtime path.
+
+Independent commands:
+
+```text
+PYTHONPATH=src .venv/bin/python -m pytest -q tests/test_edge_recovery.py
+  17 passed in 1.01s
+
+PYTHONPATH=src .venv/bin/python -m pytest -q
+  107 passed, 14 skipped in 2.62s
+
+./scripts/verify_edge_recovery.sh
+  passed
+  broker phase: 9/9 checks
+  promote phase: 7/7 checks
+  partial_promotion_blocked=true
+  no_downstream_output=true
+  accepted_total: 0 -> 2 -> 3 -> 3
+  K1.5: processed -> skipped
+  source_hash and run_id unchanged within the repeated promotion
+
+./scripts/verify_kafka_k1.sh
+  passed
+
+./scripts/verify_kafka_k1_5.sh
+  passed (11 checks)
+
+git diff --check
+  clean
+```
+
+Accepted design judgments:
+
+- session scope is derived from immutable spool content and persisted in the seal;
+- an entry added after sealing invalidates the sealed session and fails loudly;
+- wall-clock values remain outside canonical identity;
+- `event_id` membership is valid only under the documented globally unique, immutable v1
+  business-identity assumption.
+
+Residual boundaries remain unchanged: no power-loss/SIGKILL guarantee, NFS/object-store guarantee,
+concurrent-writer guarantee, or atomic transaction spanning landing commit and spool seal.

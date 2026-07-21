@@ -96,6 +96,7 @@ In prior **professional** work I **operated and improved** an EAV-based structur
   - Kafka K1 bounded raw ingestion — immutable JSONL landing + offset/recovery/replay evidence (done)
   - Kafka K1.5 landing -> batch bridge — deterministic provenance-preserving CSV -> existing quality/gold/Iceberg path (done)
   - Spark machine-event batch (S7) — Spark re-expresses silver/gold from the K1.5 canonical CSV with verified Python parity, quality-gated `overwritePartitions()` publish, and shuffle-plan evidence (done)
+  - Edge/cloud recovery (S8) — a synthetic, local, bounded simulation: an immutable sealed edge spool buffered while no broker runs, replayed through the existing K1 landing, with the batch/gold path blocked until the sealed sequence range is fully recovered (done)
   - Full medallion Spark rewrite (backlog)
 - **Optional** (only pursued if a specific interview, e.g. Labrador-style, makes it relevant):
   - AI Dataset QA slice
