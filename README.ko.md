@@ -289,9 +289,39 @@ lakehouse run을 `status="skipped"`로 반환한다.
 이것은 bounded local bridge다. continuous streaming pipeline, direct Kafka-to-Iceberg sink,
 end-to-end exactly-once, column-level lineage, production Kafka/Spark 운영은 증명하지 않는다.
 
+## S7 Spark machine-event batch
+
+S7은 K1.5가 만든 한 날짜의 canonical CSV와 `source_hash`를 입력 계약으로 받아, 기존 Python
+silver/gold의 의미를 Spark DataFrame 연산으로 **동일하게** 다시 표현한다. 새 처리 플랫폼이
+아니라 한 slice의 실행 엔진만 바꾼 것이다.
+
+```text
+K1.5 canonical CSV + source_hash
+-> Spark silver/gold (기존 grain·합계 유지)
+-> 기존 quality suite 통과 시에만
+-> Iceberg business_date partition overwrite
+```
+
+재현 명령:
+
+```bash
+./scripts/verify_spark_machine_event_batch.sh
+```
+
+고정한 계약은 다섯 가지다.
+
+- **입력**: adapter가 검증한 CSV/`source_hash`만 받는다. Spark가 raw JSONL을 다시 해석하지 않는다.
+- **parity**: gold grain `(business_date, plant_id, line_id, product_code)`와 합계를 Python 결과와 일치시킨다. 반올림은 `802.675` 같은 boundary에서도 Python `round`와 같도록 `format_number` 기반으로 맞췄고, natural-key dedup은 Kafka coordinate 순서로 "첫 행"을 고정한다.
+- **quality gate**: 기존 quality suite를 Spark 결과에 적용하고, 실패하면 Iceberg write와 success pointer를 모두 막고 CLI가 non-zero로 종료한다.
+- **publish**: `overwritePartitions()`로 대상 날짜만 교체한다. 같은 source 재실행은 새 snapshot을 만들지 않고, 정정 source는 새 snapshot 1개를 만든다.
+- **identity**: `source_hash`(입력)·`run_id`(실행)·`snapshot_id`(table commit)를 각각 따로 기록한다.
+
+이것은 local bounded batch다. cluster/분산 Spark, 성능·처리량 우월성, full Spark medallion
+pipeline, Structured Streaming, distributed Spark-native quality 평가는 증명하지 않는다.
+
 ## 정직한 한계
 
-- Spark/Iceberg는 단일 gold table walking skeleton까지만 구현됐다. full Spark medallion rewrite는 backlog다.
+- Spark/Iceberg는 단일 gold table 범위다. S7에서 한 slice의 silver/gold를 Spark로 재표현하고 quality 통과분만 publish하는 것까지 검증했으나, full Spark medallion rewrite와 cluster/분산 실행은 여전히 backlog다.
 - runtime Mongo는 현재 환경에서 완전 검증되지 않았다. Airflow는 local `dags test`와 local `standalone` scheduler/LocalExecutor run까지만 검증했다.
 - Kafka는 bounded local K1 raw landing과 복구/replay까지만 검증됐다. continuous/production streaming은 아니다.
 - manufacturing strict numeric cast는 일부 bad row를 graceful quarantine하지 못하고 fail-fast한다.

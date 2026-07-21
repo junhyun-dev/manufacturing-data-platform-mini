@@ -4,7 +4,10 @@
 
 ## 0. 목적
 
-이 프로젝트는 NoSQL/MongoDB catalog, dataset version manifest, data quality, lineage를 작은 실행 가능한 slice로 증명한다.
+이 프로젝트는 합성 제조 데이터를 믿고 쓸 수 있는 지표로 바꾸고, 그 숫자가 어느
+입력·실행·품질 판정에서 나왔는지 설명하고 재현할 수 있게 하는 local 데이터 플랫폼이다.
+NoSQL/MongoDB catalog, dataset version manifest, data quality, lineage를 작은 실행 가능한
+slice로 증명하는 것에서 시작해 bounded Kafka와 Spark/Iceberg 경로까지 확장했다.
 
 큰 원칙:
 
@@ -165,3 +168,33 @@ landing 뒤 commit 전 crash가 나면 같은 coordinate가 다시 오고, immut
 검증 범위는 local broker 1개/partition 1개의 bounded ingestion, recovery, replay,
 quarantine이다. continuous operation, multi-partition rebalance, multi-broker HA,
 end-to-end exactly-once, Spark Structured Streaming, direct Iceberg streaming write는 미구현이다.
+
+## 9. K1.5 landing-to-batch와 S7 Spark engine swap
+
+K1.5는 Kafka landing을 direct streaming sink가 아니라 기존 batch spine에 연결한다.
+
+```text
+accepted JSONL + manifest
+-> 결정적 canonical CSV + provenance
+-> 기존 quality / gold / Iceberg 경로
+```
+
+adapter가 입력 계약과 CSV `source_hash`를 소유하고 기존 pipeline이 같은 hash를 재실행
+멱등성에 사용한다. Spark는 raw Kafka JSONL을 다시 해석하지 않는다.
+
+S7은 한 날짜의 transform engine만 Spark로 교체하면서 기존 계약을 유지한다.
+
+```text
+K1.5 canonical CSV + source_hash
+-> Python과 parity를 맞춘 Spark silver/gold
+-> 기존 quality suite
+-> quality 통과 시 overwritePartitions() publish
+```
+
+설계 경계:
+
+- `source_hash`, `run_id`, Iceberg `snapshot_id`는 서로 다른 identity다.
+- quality 실패는 Iceberg write와 successful-run pointer 전진을 모두 막는다.
+- 같은 source 재실행은 no-op이고, 정정은 대상 날짜 partition만 교체한다.
+- 범위는 local bounded batch 하나와 Iceberg gold table 하나다. continuous streaming,
+  cluster Spark, full Spark medallion rewrite, production Airflow는 증명하지 않는다.

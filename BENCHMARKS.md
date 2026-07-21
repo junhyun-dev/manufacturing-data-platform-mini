@@ -65,6 +65,8 @@ rewrite.
 | Catalog | Mongo `datasets` / `dataset_versions` (Phase 1) + run/lineage docs | implemented |
 | Orchestration | Airflow DAGs as local wrappers around the lakehouse CLI and Spark/Iceberg skeleton CLI | partial (local `dags test` runtime verified; Spark/Iceberg wrapper also verified through development `standalone` scheduler/LocalExecutor; production deployment not claimed) |
 | Spark / Iceberg | single gold Iceberg table, `business_date` partition overwrite, snapshot evidence, Airflow-triggered local skeleton | partial (not a full Spark medallion pipeline) |
+| Kafka ingest / event source | bounded K1 raw landing (immutable JSONL + manifest, landing-before-commit recovery, replay, quarantine) and K1.5 landing→batch bridge | partial (one local broker / one partition; not continuous streaming) |
+| Spark engine swap on a batch slice | S7: Spark re-expresses `transform_silver`/`transform_gold` from the K1.5 canonical CSV with verified Python parity, quality-gated `overwritePartitions()` publish, shuffle-plan evidence | partial (one slice; not a full medallion rewrite, not cluster Spark) |
 
 ### Labrador Labs-style (AI training-data QA / governance / LLM preprocessing) — OPTIONAL
 
@@ -136,6 +138,32 @@ Real platforms have these; this slice does not. Listing them is the scope discip
 
 ---
 
+## 6. Industrial platform references — pressure → local decision
+
+Researched 2026-07-21 from official product documentation, to decide what an *industrial*
+data platform must handle that this project does not yet address. The point is the **service
+pressure**, not the vendor feature list: each row ends in a decision for this repo.
+
+| Reference (direct source) | Service pressure it solves | Its core contract | Decision here |
+|---|---|---|---|
+| **AWS IoT SiteWise Edge gateway** — [docs](https://docs.aws.amazon.com/iot-sitewise/latest/userguide/gateways.html) | Plant network drops, but collection must not stop | "Offline operation — continues collecting and processing data during internet outages, syncing with the cloud when connectivity is restored" | **COPY the contract** (disconnect → local durable → sync on reconnect) as a *proposed* scenario. **AVOID** the runtime (Greengrass/Siemens Edge) and real OPC-UA/MQTT connections. |
+| **Azure IoT Operations data flows** — [docs](https://learn.microsoft.com/en-us/azure/iot-operations/connect-to-cloud/overview-dataflow) | A destination or network is unavailable mid-delivery | "If delivery can't complete, the data flow doesn't acknowledge the source message"; broker keeps it queued and retries; disk-backed buffer | **COPY THE SAFETY ORDERING** — K1 makes an analogous decision: do not advance the consumer offset before the landing is durable. This does **not** claim equivalent implementations or delivery guarantees. Unit conversion already exists in the EAV mapping; reference-data enrichment does not. |
+| **Cognite Data Fusion — contextualization** — [docs](https://docs.cognite.com/cdf/integration/concepts/contextualization) | The same physical thing has different IDs in every source system | Map resources across source systems so "each unique entity shares the same identifier … even if it has different IDs in the source systems", then relate them as in the real world | **KEEP AS A PROPOSED PROBLEM** — EAV currently harmonizes columns and units, but it does not resolve multiple source IDs to one canonical asset. **AVOID** ML matching, 3D/P&ID, and asset-hierarchy productization. |
+| **HighByte Unified Namespace** — [page](https://www.highbyte.com/intelligence-hub/unified-namespace) *(vendor claim)* | Disconnected systems create data silos | A "consolidated, abstracted structure" serving consistent industrial data — **vendor positioning, not an independent standard** | **AVOID adopting** a UNS at this scale. Keep only the transferable lesson: consistent naming/identity for assets and topics. |
+
+The references form two lanes rather than one shared pattern: AWS and Azure support
+**continuity across delivery failures**, while Cognite and HighByte motivate
+**cross-source identity and naming**. This repo already has a related durability ordering in K1
+and schema/unit harmonization in EAV. It has not implemented an edge buffer or cross-source
+asset identity. See `ROADMAP.md` Phase 3 and
+`learn/system-design/scenarios/05-industrial-telemetry-recovery.md`.
+
+Not implemented, and not claimed, from this lane: OPC UA / MQTT / ROS 2 / DDS integration,
+edge gateway hardware or product-grade offline buffer, asset hierarchy, digital twin,
+anomaly detection, predictive maintenance, closed-loop control.
+
+---
+
 ## CORE vs OPTIONAL · NOW vs BACKLOG (current freeze)
 
 **CORE** = medallion · EAV mini · quality · catalog/lineage · local Spark/Iceberg · bounded Kafka K1.
@@ -143,16 +171,17 @@ Real platforms have these; this slice does not. Listing them is the scope discip
 
 **NOW (implemented):** Slice 1 medallion + hardening · EAV mini · operator evidence ·
 local Airflow wrappers · local Spark/Iceberg single-gold-table publish · bounded Kafka K1
-(immutable raw JSONL + landing-before-commit recovery/replay/quarantine).
+(immutable raw JSONL + landing-before-commit recovery/replay/quarantine) · K1.5 landing→batch
+bridge · S7 Spark machine-event batch (Python parity + quality-gated Iceberg publish).
 
-**BACKLOG — core (frozen):** full Spark engine/medallion rewrite · Kafka K1.5 batch adapter
-decision · continuous streaming pressure decision · Airflow task split · runtime Mongo
-verification (Docker) · graceful null quarantine (manufacturing slice) · full OpenLineage/Marquez.
+**BACKLOG — core (frozen):** full Spark engine/medallion rewrite · continuous streaming
+pressure decision · Airflow task split · runtime Mongo verification (Docker) · graceful null
+quarantine (manufacturing slice) · full OpenLineage/Marquez.
 
 **BACKLOG — optional (do NOT implement until an interview requires it):** AI Dataset QA
 slice · RAG/vectorDB/LLM-preprocessing.
 
 ---
 
-*References are public docs/OSS as of 2026-06. This is a personal learning project; not
+*References are public docs/OSS as of 2026-07-21. This is a personal learning project; not
 affiliated with any company. Data is fully synthetic.*

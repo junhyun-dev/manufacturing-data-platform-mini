@@ -29,7 +29,10 @@ v0 is the MongoDB catalog gate:
 - `GET /datasets`
 - `GET /datasets/{id}`
 
-`/extract` is v0.5. Spark, Kafka, Iceberg/Delta, ROS2/MCAP, Jetson, auth, lineage graph, and worker queues are intentionally out of v0.
+At the original v0 boundary, `/extract` was v0.5 and Spark, Kafka, Iceberg/Delta,
+ROS2/MCAP, Jetson, auth, lineage graph, and worker queues were intentionally excluded.
+Later sections record the bounded local Kafka, Spark/Iceberg, and Airflow slices that were
+subsequently implemented; ROS2/MCAP, Jetson, production auth, and distributed operation remain backlog.
 
 ## Phase 2 Scope
 
@@ -100,6 +103,24 @@ In prior **professional** work I **operated and improved** an EAV-based structur
 
 Optional slices would reuse the same spine; they are deliberately deferred so the core thesis stays sharp.
 
+## S7 Spark machine-event batch
+
+S7 takes the canonical CSV and `source_hash` produced by K1.5 and re-expresses one
+date's Python silver/gold transformations with Spark DataFrame operations. It is an engine
+swap for one bounded slice, not a new processing platform or a full medallion rewrite.
+
+```text
+K1.5 canonical CSV + source_hash
+-> Spark silver/gold with Python parity
+-> existing quality suite
+-> Iceberg business_date partition overwrite only after quality passes
+```
+
+Reproduce it with `./scripts/verify_spark_machine_event_batch.sh`. The verified boundary is
+local batch execution against one Iceberg gold table, including same-source no-op, corrected-source
+replacement, other-date preservation, and shuffle-plan evidence. It does not prove cluster Spark,
+throughput improvement, Structured Streaming, or distributed Spark-native quality evaluation.
+
 ## Design Decisions
 
 1. **`dataset` vs `dataset_version` are separate.**  
@@ -111,7 +132,10 @@ Optional slices would reuse the same spine; they are deliberately deferred so th
 3. **Hashes are the reproducibility primitive.**  
    `source_hash` says whether the input file is the same. `schema_hash` catches schema drift when columns or inferred types change.
 
-The design borrows patterns from service-oriented projects such as honcho for API/config/Compose shape, and from OpenMetadata/DataHub/DVC/OpenLineage for catalog and manifest ideas, but only the v0 primitives are implemented.
+The design borrows patterns from service-oriented projects such as honcho for API/config/Compose shape,
+and from OpenMetadata/DataHub/DVC/OpenLineage for catalog and manifest ideas. The initial v0 primitives
+remain the foundation; the bounded Phase 2, Kafka, Spark/Iceberg, and Airflow extensions listed above
+were added later with separate evidence and claim boundaries.
 
 ## Run Locally
 

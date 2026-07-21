@@ -106,9 +106,19 @@ v0 종료 = catalog loop가 구현되고 test로 덮인 상태. Docker 가능한
 - [x] **K1.5 landing -> batch bridge** — provenance를 보존하는 결정적 CSV로 기존 quality/gold/Iceberg 경로를 재사용하고 같은 입력은 skip.
 - [ ] **Spark Structured Streaming** — window/watermark/latency pressure가 생길 때까지 Backlog.
 
+### Spark machine-event batch — S7 (구현 및 local runtime 검증 완료)
+목표: landing된 한 `business_date`의 기존 Python silver/gold를 full medallion rewrite나 streaming 없이 Spark로 다시 표현한다.
+- [x] **Adapter 입력 계약** — K1.5 canonical CSV + `source_hash`를 재사용하고, Spark가 raw JSONL을 다시 해석하지 않는다.
+- [x] **Engine parity** — Spark DataFrame built-in이 `transform_silver`/`transform_gold`의 grain과 합계를 동일하게 재현(`802.675` 같은 boundary에서 Python `round`와 일치하는 `format_number` 기반 반올림, coordinate 순서 natural-key dedup 포함).
+- [x] **Spark quality gate** — 기존 quality suite를 Spark 결과에 적용하고, 실패 시 Iceberg write와 success pointer를 모두 막는다.
+- [x] **Partition overwrite + idempotency** — `overwritePartitions()`, 같은 source는 skip(새 snapshot 없음), 정정 source는 새 snapshot 1개, 다른 날짜 partition은 보존.
+- [x] **Shuffle-plan evidence** — gold `groupBy`의 executed plan과 `Exchange` 관찰을 학습 evidence로 기록(성능 claim 아님).
+- [x] **얇은 Airflow wrapper** — single-task DAG가 검증된 CLI 하나만 호출하고 `max_active_runs=1`, DAG body에 transform 로직 없음.
+- [ ] **Cluster/분산 Spark, 성능·throughput claim** — 의도적으로 미구현.
+
 ## 범위: CORE vs OPTIONAL
 
-- **CORE** (thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · local Spark/Iceberg · bounded Kafka K1/K1.5.
+- **CORE** (thesis): medallion pipeline · EAV mini · quality checks · catalog/lineage · local Spark/Iceberg · bounded Kafka K1/K1.5 · S7 Spark machine-event batch.
 - **OPTIONAL** (특정 면접이 실제로 관련될 때만 — 예: 래브라도랩스류): AI Dataset QA · RAG/vectorDB/LLM-preprocessing.
 
 ### BACKLOG (freeze — 앞으로 당겨오지 말 것)
@@ -126,10 +136,34 @@ OPTIONAL-backlog (면접이 요구하기 전까지 구현하지 말 것):
 
 optional slice들은 동일한 `ingest → quality → catalog/lineage` spine을 재사용한다. 이 프로젝트는 SK/CJ/카카오뱅크류에는 Lakehouse/Data Mart/modeling/quality로, (optional slice를 통해) 래브라도랩스류에는 AI 학습데이터 quality/governance로 설명된다.
 
-## Phase 3 — domain / streaming
+## Phase 3 — 산업 시나리오 (scenario-led)
+
+Phase 3은 기술 목록이 아니라 **운영자 시나리오와 실패 압력**으로 정리한다. 구현된 사실은 위 Phase 2 절에 그대로 두고, 여기서는 증명된 것 / 제안된 것 / 의도적으로 먼 것만 나눈다.
+
+### 구현된 foundation (위에서 이미 증명됨)
+
+- [x] **bounded Kafka raw landing(K1)과 landing -> batch bridge(K1.5)** — `### Kafka raw ingestion — K1` 참조.
+- [x] **Spark machine-event batch(S7)** — Python parity와 quality-gated Iceberg publish. `### Spark machine-event batch — S7` 참조.
+
+### 제안된 다음 시나리오 (미구현)
+
+운영자 시나리오에서 도출하고 공식 산업 플랫폼 문서와 대조했다(`BENCHMARKS.ko.md` 산업 lane 참조). 각 항목은 bounded slice로 설계·검증되기 전까지 `Proposed`다.
+
+- [ ] **edge/cloud 단절 후 재연결 replay** — 다음 bounded slice 권고. 기존 "durable landing 전 commit 금지" 계약을 단절 경계로 확장한다. 시나리오: [`learn/system-design/scenarios/05-industrial-telemetry-recovery.md`](learn/system-design/scenarios/05-industrial-telemetry-recovery.md).
+- [ ] **sensor/tag/단위/schema 교체** — EAV mapping config와 schema-drift check 재사용.
+- [ ] **의심스러운 품질 지표를 source/telemetry까지 역추적** — operator evidence report 확장.
+- [ ] **late/out-of-order telemetry와 sequence gap** — 실제 late-data/window 압력이 명명될 때만.
+- [ ] **asset/시계열/문서 contextualization** — 이 프로젝트 규모로 축소한 cross-source identity 해소.
+
+### Backlog / Unknown (먼 범위 — 당겨오지 말 것)
 
 - [ ] 모사 **ROS2 bag / MCAP-ish** ingest.
-- [ ] **Kafka** streaming ingest 경로.
+- [ ] 실제 PLC/센서/로봇 source, OPC UA / MQTT / ROS 2 / DDS 연동.
+- [ ] product 수준의 edge gateway 또는 단절 durable buffer.
+- [ ] continuous/event-time streaming, watermark, Flink 또는 Spark Structured Streaming.
+- [ ] asset hierarchy / Unified Namespace / digital twin.
+- [ ] anomaly 모델, 예지보전, closed-loop 제어.
+- [ ] production / HA / cluster 운영.
 
 ---
 *원칙: 각 phase는 설명 가능한 산출물을 낸다. 현재 phase의 Done 기준이 체크되기 전에는 다음 phase를 시작하지 않는다.*

@@ -164,6 +164,8 @@ decision        = 특정 선택의 tradeoff
   - event identity, partition ordering, offset commit, failure/replay 질문에서 local K1 구현으로 내려간 시나리오다.
 - [`scenarios/04-spark-machine-event-batch.md`](scenarios/04-spark-machine-event-batch.md)
   - landing된 한 business_date를 Spark batch로 backfill할 때 기존 gold 계약을 그대로 유지하는 S7 시나리오다.
+- [`scenarios/05-industrial-telemetry-recovery.md`](scenarios/05-industrial-telemetry-recovery.md)
+  - edge/cloud 단절 후 재연결 replay. **Proposed** 상태의 다음 slice 후보이며 아직 구현 evidence가 없다.
 
 ## Large Slice Supporting Docs
 

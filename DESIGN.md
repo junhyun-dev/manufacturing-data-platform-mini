@@ -1,14 +1,17 @@
-# DESIGN — manufacturing-data-platform-mini (v0)
+# DESIGN — manufacturing-data-platform-mini
 
 > "제대로 참고해서 만든" 설계. **결정 + 왜**를 남긴다(= 면접에서 보여줄 핵심).
 > 참고(사례집): **honcho**(서비스 골격), **OpenMetadata/DataHub**(카탈로그 데이터 모델), **DVC·OpenLineage**(버전·lineage).
-> ★ 원칙: 사례집은 *결정/패턴*만 참고하고 **scope에 맞게 덜어낸다.** 무거운 것(그래프 lineage·거버넌스·이벤트 스트림·브랜칭)은 v0에 안 넣음 = 과설계 회피.
+> ★ 원칙: 사례집은 *결정/패턴*만 참고하고 **scope에 맞게 덜어낸다.** 아래 v0 절은
+> 초기 경계를 기록하며, 뒤의 Phase 2/Kafka/Spark 절은 이후 구현된 bounded extension이다.
 > This document records implementation decisions and tradeoffs for the public learning project.
 
 ---
 
 ## 0. 목적 (왜 만드나)
-로보티즈 지원자격의 **NoSQL/MongoDB + 메타데이터 카탈로그** 갭을 *만들어서* 닫고, 자소서 주장("MongoDB 카탈로그·version manifest·추출 API mini 구현")을 **면접에서 보여줄 최소 작동 버전**으로 뒷받침.
+합성 제조 데이터를 믿고 쓸 수 있는 지표로 바꾸고, 그 숫자가 어느 입력·실행·품질
+판정에서 나왔는지 설명하고 재현할 수 있게 하는 local 데이터 플랫폼을 만든다.
+초기 동기는 **NoSQL/MongoDB + metadata catalog** 역량 gap을 작은 실행 증거로 닫는 것이었다.
 
 ### Current strategy: deep design + small executable slice
 
@@ -92,14 +95,14 @@ JD/public benchmark -> real-service scenario -> state changes -> required metada
 - "메타데이터 카탈로그를 OpenMetadata식 base 모델로 단순화해 구현" / "재현성을 source_hash·schema_hash manifest로(DVC·OpenLineage 사상)" → 로보티즈·캐치잇 거버넌스 질문 정조준.
 - source-tracker(lineage 진단)와 OpenLineage(lineage 표준)를 연결해 말할 수 있음.
 
-## 6. 다음 (구현 = Codex)
+## 6. Historical v0 implementation plan
 1. docker-compose(Mongo) + FastAPI 골격
 2. ingest → `datasets`·`dataset_versions` 등록 (source_hash·schema_hash·row_count·null_counts)
 3. `GET /datasets` · `GET /datasets/{id}`
 4. README에 이 DESIGN 요약 + "honcho/OpenMetadata 참고, v0로 덜어냄" 명시.
 5. (v0.5, 시간 남으면) `GET /datasets/{id}/extract`
 
-## 8. Phase 2 Lakehouse Slice
+## 7. Phase 2 Lakehouse Slice
 
 Phase 2 keeps Phase 1's Mongo catalog intact and adds a lakehouse-style pipeline as a separate module:
 
@@ -128,7 +131,7 @@ A review found four places where the docs claimed more than the code did. These 
 
 **결정 ⑦: idempotency 정책 = skip-on-reuse** — `dataset_id + business_date + source_hash` 에 이미 successful run 이 있으면 **재처리하지 않고 기존 run 을 반환**(`status="skipped"`, `reuse_count` 증가). 왜: retry/backfill 이 같은 날짜+입력에 대해 안전한 no-op 이 되어야 함. (Phase 1 catalog 의 source_hash dedup 과 같은 사고를 lakehouse 층에 적용.) mongo 는 `lakehouse_runs` 조회, json backend 는 `_state/` 포인터 파일로 동일하게 동작.
 
-> 정직 가드: `transform_silver` 의 numeric cast 는 strict — 파싱 불가 숫자는 graceful quality `fail` 이 아니라 transform 시점에 fail-fast 한다. graceful quarantine 은 **backlog**. runtime Mongo는 미검증이며, Airflow는 local `dags test` wrapper까지만 검증됐다.
+> 정직 가드: `transform_silver` 의 numeric cast 는 strict — 파싱 불가 숫자는 graceful quality `fail` 이 아니라 transform 시점에 fail-fast 한다. graceful quarantine 은 **backlog**. runtime Mongo는 미검증이다. Airflow는 local `dags test`와 일부 wrapper의 development `standalone`/LocalExecutor까지만 검증됐으며 production 운영 증거가 아니다.
 
 Airflow reference patterns extracted from private code, without copying code or names:
 - DAGs are thin orchestration files that assemble configured tasks and pass a shared config object.
@@ -172,7 +175,7 @@ This lets the same implementation translate into different job languages:
 - SK/CJ/KakaoBank-style explanation: lakehouse, data mart, ETL/ELT, Spark/Iceberg, data quality, lineage.
 - Labrador Labs-style explanation: AI training dataset quality, QA automation, governance, LLM preprocessing readiness, RAG/vectorDB-adjacent metadata discipline.
 
-## 9. Kafka K1 Bounded Raw Ingestion
+## 8. Kafka K1 Bounded Raw Ingestion
 
 Kafka K1 is a separate source path, not a replacement for the CSV pipeline and not
 a continuous streaming service.
@@ -205,7 +208,42 @@ and quarantine are verified. Continuous operation, multi-partition rebalance,
 multi-broker HA, end-to-end exactly-once, Spark Structured Streaming, and direct
 Iceberg streaming writes are not implemented.
 
-## 7. ★ Done 기준 (이게 있어야 "작게 만들기"가 끝남 — v0 안 늘어나게)
+## 9. K1.5 landing-to-batch and S7 Spark engine swap
+
+K1.5 connects the bounded Kafka landing to the existing batch spine without introducing a
+direct streaming sink:
+
+```text
+accepted JSONL + manifest
+-> deterministic canonical CSV + provenance
+-> existing quality / gold / Iceberg path
+```
+
+The adapter owns the input contract and computes the CSV `source_hash`; the existing pipeline
+uses that same hash for rerun idempotency. Spark does not reinterpret raw Kafka JSONL.
+
+S7 then replaces the Python transform engine for one date while preserving its contracts:
+
+```text
+K1.5 canonical CSV + source_hash
+-> Spark silver/gold with Python parity
+-> existing quality suite
+-> quality-passed overwritePartitions() publish
+```
+
+Design boundaries:
+
+- `source_hash`, `run_id`, and Iceberg `snapshot_id` remain distinct identities.
+- Quality failure does not write Iceberg or advance the successful-run pointer.
+- Same-source rerun is a no-op while a correction replaces only the target date partition.
+- Scope is one local bounded batch and one Iceberg gold table, not continuous streaming,
+  cluster Spark, a full Spark medallion rewrite, or production Airflow.
+
+## 10. Historical v0 Done Criteria
+
+The checklist below records the original Phase 1 completion gate. Current implementation status
+is tracked in `ROADMAP.md` and `VERIFICATION_LOG.md`, not by these historical checkboxes.
+
 - [ ] `docker compose up`으로 Mongo 실행
 - [ ] 샘플 CSV ingest 성공
 - [ ] `datasets`·`dataset_versions`에 document 생성
