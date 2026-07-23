@@ -97,6 +97,7 @@ In prior **professional** work I **operated and improved** an EAV-based structur
   - Kafka K1.5 landing -> batch bridge — deterministic provenance-preserving CSV -> existing quality/gold/Iceberg path (done)
   - Spark machine-event batch (S7) — Spark re-expresses silver/gold from the K1.5 canonical CSV with verified Python parity, quality-gated `overwritePartitions()` publish, and shuffle-plan evidence (done)
   - Edge/cloud recovery (S8) — a synthetic, local, bounded simulation: an immutable sealed edge spool buffered while no broker runs, replayed through the existing K1 landing, with the batch/gold path blocked until the sealed sequence range is fully recovered (done)
+  - Recovery-gated publish (S9) — composes the S8 recovery gate with the S7 Spark/Iceberg publish without reimplementing either: one sealed session reaches the local Iceberg gold table only after the shared readiness gate passes and the sealed event set exactly equals the batch input set (done)
   - Full medallion Spark rewrite (backlog)
 - **Optional** (only pursued if a specific interview, e.g. Labrador-style, makes it relevant):
   - AI Dataset QA slice
@@ -121,6 +122,40 @@ Reproduce it with `./scripts/verify_spark_machine_event_batch.sh`. The verified 
 local batch execution against one Iceberg gold table, including same-source no-op, corrected-source
 replacement, other-date preservation, and shuffle-plan evidence. It does not prove cluster Spark,
 throughput improvement, Structured Streaming, or distributed Spark-native quality evaluation.
+
+## S9 Recovery-gated publish
+
+S9 joins two already-verified contracts without reimplementing either one: the S8 recovery gate
+decides whether a sealed edge session is fully recovered, and S7 owns every Spark and Iceberg
+operation. The only new logic is the shared gate and one equality check.
+
+```text
+sealed edge session
+-> shared require_recovery_ready() gate (before any Spark import or session)
+-> existing deterministic K1.5 adapter / source_hash
+-> sealed event_id set == selected event_id set
+-> existing Spark silver/gold + quality gate
+-> existing Iceberg business_date overwrite + snapshot evidence
+```
+
+Two refusals matter, and they are different. Incomplete recovery is blocked because sealed events
+are still missing from the accepted set. An event-set mismatch is blocked even when recovery *is*
+complete: the adapter selects every accepted event for that date, so one extra same-date event
+means the batch about to be published is no longer the sealed session. The error names the
+direction with `extra_event_ids` / `missing_event_ids`.
+
+On a retry with the same source, S7 returns `skipped`: **no new snapshot and no partition
+overwrite**. That is not a whole-pipeline no-op — Spark still starts and quality still runs before
+the skip decision. S7 also mints a fresh `run_id` on that skipped attempt and does not expose the
+`run_id` that originally committed the snapshot, so the evidence records
+`spark_attempt_run_id` for the current attempt alongside
+`snapshot_relation: reused_from_prior_attempt` and a null `producer_attempt_run_id`, rather than
+letting a new id sit beside a reused snapshot as if it had produced it.
+
+Reproduce it with `PYTHON_BIN=python ./scripts/verify_recovered_telemetry_publish.sh`. The
+verified boundary is one session, machine, date, topic partition, and local Iceberg gold table,
+plus a thin Airflow `dags test` wrapper. It does not prove a streaming sink, cluster Spark,
+concurrent Iceberg writers, distributed atomicity after the gate, or production Airflow operation.
 
 ## Design Decisions
 

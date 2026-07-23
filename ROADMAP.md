@@ -169,6 +169,7 @@ Phase 3 is organized by **operator scenario and failure pressure**, not by a tec
 - [x] **Bounded Kafka raw landing (K1) and landing-to-batch bridge (K1.5)** — see `### Kafka raw ingestion — K1`.
 - [x] **Spark machine-event batch (S7)** with Python parity and quality-gated Iceberg publish — see `### Spark machine-event batch — S7`.
 - [x] **Edge/cloud disconnection and recovery (S8)** — immutable sealed edge spool, replay through the existing local Kafka/K1 landing, downstream batch blocked until the sealed sequence range is fully recovered. Synthetic, local, bounded, single machine/session/partition simulation. Slice: [`learn/system-design/slices/08-edge-cloud-recovery.ko.md`](learn/system-design/slices/08-edge-cloud-recovery.ko.md).
+- [x] **Recovery-gated Spark/Iceberg publish (S9)** — composes the S8 recovery gate and the S7 publish contract without reimplementing either. A sealed session reaches the Iceberg gold table only after a shared readiness gate passes and the sealed event set exactly equals the batch input set; a partially recovered session leaves no Spark or Iceberg state, and a same-source retry creates no new snapshot and no partition overwrite. Synthetic, local, bounded, one session/machine/date/partition, verified through a local Airflow `dags test` wrapper. Slice: [`learn/system-design/slices/09-recovery-gated-spark-iceberg.ko.md`](learn/system-design/slices/09-recovery-gated-spark-iceberg.ko.md).
 
 ### Proposed next scenarios (not implemented)
 

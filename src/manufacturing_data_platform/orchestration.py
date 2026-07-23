@@ -94,6 +94,50 @@ def build_spark_machine_event_batch_cli_command(
     return " ".join(shlex.quote(part) for part in parts)
 
 
+def build_recovered_telemetry_publish_cli_command(
+    *,
+    spool_root: str,
+    edge_source_id: str,
+    boot_session_id: str,
+    landing_dir: str,
+    business_date: str,
+    adapter_output_dir: str,
+    warehouse: str,
+    output_dir: str,
+    table: str = "local.db.gold_daily_metrics",
+) -> str:
+    """Build the Airflow BashOperator command for the S9 recovery-gated publish.
+
+    The DAG assembles this one validated command only; the recovery gate, adapter,
+    transform, quality, and Iceberg logic all stay inside the package module.
+    """
+    parts = [
+        "PYTHONPATH=src",
+        "python",
+        "-m",
+        "manufacturing_data_platform.pipeline.recovered_telemetry_publish",
+        "--spool-root",
+        spool_root,
+        "--edge-source-id",
+        edge_source_id,
+        "--boot-session-id",
+        boot_session_id,
+        "--landing-dir",
+        landing_dir,
+        "--business-date",
+        business_date,
+        "--adapter-output-dir",
+        adapter_output_dir,
+        "--warehouse",
+        warehouse,
+        "--output-dir",
+        output_dir,
+        "--table",
+        table,
+    ]
+    return " ".join(shlex.quote(part) for part in parts)
+
+
 def build_gold_iceberg_publish_cli_command(
     *,
     lakehouse_output_dir: str,

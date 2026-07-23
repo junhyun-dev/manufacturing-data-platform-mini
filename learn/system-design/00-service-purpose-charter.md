@@ -102,6 +102,7 @@ row가 처리 중 유실되지 않았는가?
 | 이 숫자는 어디서 왔는가? | run record + lineage parent links |
 | 새 source format은 어떻게 온보딩하는가? | JSON mapping config -> EAV -> gold |
 | event를 잃지 않고 batch 경로로 넘기는가? | durable Kafka landing -> deterministic one-date adapter -> existing batch spine |
+| 단절 구간이 전부 복구된 뒤에만 결과를 발행하는가? | 봉인 세션 readiness gate + 봉인 event 집합 == batch 입력 집합 검사를 Spark 시작 전에 통과해야 발행 |
 | 같은 날짜의 정정 결과를 어떻게 교체하는가? | Iceberg `business_date` partition overwrite + snapshot evidence |
 | scheduler가 business logic을 다시 구현하는가? | Airflow는 검증된 CLI만 호출하고 pipeline이 idempotency를 소유 |
 
@@ -122,6 +123,13 @@ local Airflow `dags test` + standalone/LocalExecutor runtime verification
 local Airflow two-task JSON lakehouse -> Iceberg publish DAG
 local Kafka K1 bounded raw landing with landing-before-offset-commit recovery
 Kafka K1.5 deterministic one-date adapter into the existing batch/quality/Iceberg path
+Spark machine-event batch (S7): one date's silver/gold re-expressed in Spark with verified Python
+  parity, published to the Iceberg gold partition only after the existing quality suite passes
+edge/cloud recovery (S8): a bounded synthetic simulation of one disconnected session - immutable
+  sealed spool, replay through the existing K1 landing, downstream batch blocked until the sealed
+  sequence range is fully recovered
+recovery-gated publish (S9): one sealed edge session is published to the local Iceberg gold table
+  only after the shared readiness gate and exact session-input equality pass
 ```
 
 Backlog / design-only:
@@ -168,6 +176,8 @@ Service success means:
 3. warning/failure boundaries are visible instead of hidden in the transform code
 4. same-input reruns are safe no-ops
 5. a bounded Kafka redelivery/replay can be explained without duplicating the accepted batch result
+6. a partially recovered session cannot publish a trusted table snapshot, and the refusal names
+   the missing sequences or the extra/missing event ids
 ```
 
 ## 10. Interview / Blog Thesis

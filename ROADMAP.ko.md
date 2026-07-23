@@ -145,6 +145,7 @@ Phase 3은 기술 목록이 아니라 **운영자 시나리오와 실패 압력*
 - [x] **bounded Kafka raw landing(K1)과 landing -> batch bridge(K1.5)** — `### Kafka raw ingestion — K1` 참조.
 - [x] **Spark machine-event batch(S7)** — Python parity와 quality-gated Iceberg publish. `### Spark machine-event batch — S7` 참조.
 - [x] **edge/cloud 단절 복구(S8)** — immutable sealed edge spool, 기존 local Kafka/K1 landing으로 replay, 봉인 구간이 완전히 복구되기 전에는 downstream batch 차단. synthetic·local·bounded·단일 machine/session/partition 시뮬레이션. slice: [`learn/system-design/slices/08-edge-cloud-recovery.ko.md`](learn/system-design/slices/08-edge-cloud-recovery.ko.md).
+- [x] **복구 완결 gate를 통과한 Spark/Iceberg 발행(S9)** — S8 복구 gate와 S7 발행 계약을 어느 쪽도 재구현하지 않고 조합. 공유 readiness gate 통과 + 봉인 event 집합 == batch 입력 집합일 때만 Iceberg gold table에 발행하고, 부분 복구 상태는 Spark/Iceberg state를 전혀 남기지 않으며, 같은 source 재실행은 새 snapshot·partition overwrite를 만들지 않는다. synthetic·local·bounded, session/machine/date/partition 각 1개, local Airflow `dags test` wrapper까지 검증. slice: [`learn/system-design/slices/09-recovery-gated-spark-iceberg.ko.md`](learn/system-design/slices/09-recovery-gated-spark-iceberg.ko.md).
 
 ### 제안된 다음 시나리오 (미구현)
 

@@ -222,3 +222,51 @@ broker 없음 -> immutable 로컬 spool에 1..N append(fsync + atomic rename)
 경계: local Linux filesystem 위의 synthetic·local·bounded·단일 machine/session/partition
 시뮬레이션이다. edge gateway, OPC UA/MQTT/ROS 2/DDS, power-loss durability, concurrent writer,
 production 운영은 아니다. 상세는 `learn/reference-decisions/edge-buffer-and-recovery-progress.md`.
+
+## 11. S9 복구 완결 gate를 통과한 Spark/Iceberg 발행
+
+S9는 엔진이나 파이프라인을 추가하지 않는다. 이미 검증된 두 계약(S8 복구 gate, S7 Spark/Iceberg
+발행)을 **어느 쪽도 재구현하지 않고** 조합한다.
+
+```text
+봉인된 edge 세션
+-> 공유 require_recovery_ready() gate (Spark import·SparkSession 생성 이전)
+-> 기존 K1.5 결정적 adapter와 source_hash
+-> 봉인 event_id 집합 == 선택된 event_id 집합
+-> 기존 Spark silver/gold + 기존 quality gate
+-> 기존 Iceberg business_date overwrite + snapshot evidence
+```
+
+코드보다 먼저 고정한 계약:
+
+- **gate는 하나다.** S8에서 `require_recovery_ready(...)`를 추출해 S8 승격 경로와 S9 발행 경로가
+  같은 함수를 호출한다. 복사한 gate는 언젠가 갈라진다. S8의 외부 동작(예외 타입·메시지·차단
+  시점)은 바뀌지 않았다.
+- **gate는 Spark가 존재하기 전에 돈다.** 미완결 세션은 warehouse도 adapter 산출물도 만들지
+  않으므로 부분 복구가 Spark/Iceberg state를 남길 수 없다.
+- **membership만으로는 부족하다.** S8 완결성은 `봉인 ⊆ accepted`를 증명한다. 그런데 adapter는 그
+  `business_date`의 accepted event를 **전부** 고르므로, 같은 날짜에 event가 하나만 더 있어도
+  발행되는 batch는 봉인 세션이 아니다. S9는 집합 동등성(개수 + 원소)을 추가로 요구하고
+  `extra_event_ids` / `missing_event_ids`로 방향을 보고한다.
+- **S7은 호출할 뿐 다시 쓰지 않는다.** S9에는 transform·quality·`overwritePartitions()` 코드가
+  없다. S7 callable을 부르고 evidence를 기록한다.
+- **lazy import.** `edge_recovery`는 module level에서 pyspark/pymongo를 import하지 않아 Kafka
+  runbook 인터프리터가 gate를 평가할 수 있고, S9는 gate 통과 후에만 adapter/Spark를 import한다.
+- **각 identity space를 자기 field에 기록한다**: edge sequence · `event_id` ·
+  `(topic, partition, offset)` · `source_hash` · attempt `run_id`/`snapshot_id`. 이건 각 field가
+  무엇을 뜻하는지 고정하는 schema/semantics 계약이지, "다섯 값이 절대 같아지지 않는다"는 런타임
+  증명이 아니다. 실제로 관측된 반례는 edge sequence `[1,2,3]` vs Kafka offset `[0,1,4]` 하나다.
+- **attempt는 snapshot을 만든 run이 아니다.** S7은 매 호출마다 새 `run_id`를 발급하고(skip할 때도),
+  그 snapshot을 commit한 attempt의 run_id는 노출하지 않는다. 그래서 evidence는 이번 시도의
+  `spark_attempt_run_id`와 `snapshot_relation`(`created_by_current_attempt` /
+  `reused_from_prior_attempt`)을 따로 적고, skip일 때 `producer_attempt_run_id`를 `null`로 남긴다.
+  이렇게 안 하면 새 run_id와 재사용된 snapshot이 나란히 놓여 거짓 인과로 읽힌다.
+- **재실행 불변식은 이렇게 말해야 정확하다.** 같은 불변 세션·landing이면 `skipped`이고
+  `source_hash`·`gold_snapshot_id`가 같으며 **새 snapshot도 partition overwrite도 없다.**
+  전체 파이프라인 no-op은 아니다 — S7은 skip 판정 전에 Spark를 띄우고 silver/gold를 계산하고
+  quality를 돌린다. 불변인 것은 발행된 테이블 상태와 입력 identity이지 연산 비용이 아니다.
+
+경계: synthetic·local·bounded, session/machine/`business_date`/topic partition 각 1개, local
+Iceberg gold table 1개, Airflow는 `dags test` 수준까지만이다. streaming sink, cluster Spark,
+concurrent Iceberg writer, gate 통과 후 Spark↔Iceberg 분산 원자성, production Airflow 운영은
+아니다. 상세는 `learn/reference-decisions/recovery-gated-publish-boundary.md`.

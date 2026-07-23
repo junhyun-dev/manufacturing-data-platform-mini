@@ -149,6 +149,8 @@ decision        = 특정 선택의 tradeoff
   - K1.5 canonical landing을 Spark로 재표현해 engine parity·quality gate·Iceberg publish를 검증한 S7 지도.
 - [`slices/08-edge-cloud-recovery.ko.md`](slices/08-edge-cloud-recovery.ko.md)
   - 단절 구간을 봉인해 모으고 완결된 뒤에만 batch를 허용하는 S8 지도.
+- [`slices/09-recovery-gated-spark-iceberg.ko.md`](slices/09-recovery-gated-spark-iceberg.ko.md)
+  - S8 복구 gate와 S7 Spark/Iceberg 발행을 재구현 없이 잇고, 봉인 세션과 batch 입력의 집합 동등성까지 요구하는 S9 지도.
 
 ## Scenario Walkthroughs
 
@@ -203,3 +205,4 @@ scenario
 - [`../reference-decisions/kafka-landing-to-batch-adapter.md`](../reference-decisions/kafka-landing-to-batch-adapter.md)
 - [`../reference-decisions/spark-engine-swap-contract.md`](../reference-decisions/spark-engine-swap-contract.md)
 - [`../reference-decisions/edge-buffer-and-recovery-progress.md`](../reference-decisions/edge-buffer-and-recovery-progress.md)
+- [`../reference-decisions/recovery-gated-publish-boundary.md`](../reference-decisions/recovery-gated-publish-boundary.md)

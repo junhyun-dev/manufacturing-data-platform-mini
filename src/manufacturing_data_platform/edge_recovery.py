@@ -488,21 +488,24 @@ def compute_recovery_coverage(
     }
 
 
-def promote_recovered_session(
+def require_recovery_ready(
     *,
     spool_root: str | Path,
     edge_source_id: str,
     boot_session_id: str,
     landing_dir: str | Path,
     business_date: str,
-    adapter_output_dir: str | Path,
-    lakehouse_output_dir: str | Path,
-    evidence_file: str | Path | None = None,
-) -> dict[str, Any]:
-    """Run the existing K1.5 bridge only when the sealed range is fully recovered.
+) -> tuple[SealedSession, dict[str, Any]]:
+    """The single readiness gate shared by every downstream consumer of a sealed session.
 
-    A blocked promotion raises before ``run_bridge`` is called, so no adapter or lakehouse
-    output is created. K1.5 transform/quality logic is delegated, never copied.
+    Revalidates the seal, enforces the requested ``business_date`` against the sealed session
+    date, and computes central coverage. Raises before any caller creates downstream output:
+
+    * ``EdgeSealError`` / ``EdgeSessionScopeError`` — seal or session-scope violation
+    * ``RecoveryIncompleteError`` — the sealed range is not fully accepted centrally
+
+    S8 promotion (K1.5 batch) and S9 publish (Spark/Iceberg) both call this, so the recovery
+    contract cannot drift between them.
     """
     session = load_sealed_session(
         spool_root=spool_root,
@@ -525,6 +528,32 @@ def promote_recovered_session(
             f"recovery incomplete: missing edge sequences {coverage['missing_sequences']} "
             f"of 1..{coverage['expected_last_sequence']}; downstream promotion is blocked"
         )
+    return session, coverage
+
+
+def promote_recovered_session(
+    *,
+    spool_root: str | Path,
+    edge_source_id: str,
+    boot_session_id: str,
+    landing_dir: str | Path,
+    business_date: str,
+    adapter_output_dir: str | Path,
+    lakehouse_output_dir: str | Path,
+    evidence_file: str | Path | None = None,
+) -> dict[str, Any]:
+    """Run the existing K1.5 bridge only when the sealed range is fully recovered.
+
+    A blocked promotion raises before ``run_bridge`` is called, so no adapter or lakehouse
+    output is created. K1.5 transform/quality logic is delegated, never copied.
+    """
+    _session, coverage = require_recovery_ready(
+        spool_root=spool_root,
+        edge_source_id=edge_source_id,
+        boot_session_id=boot_session_id,
+        landing_dir=landing_dir,
+        business_date=business_date,
+    )
 
     # Imported lazily: the shared Kafka runbook venv intentionally lacks the batch
     # pipeline's dependencies, and the spool/coverage path must stay importable there.

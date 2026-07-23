@@ -1664,3 +1664,323 @@ Accepted design judgments:
 
 Residual boundaries remain unchanged: no power-loss/SIGKILL guarantee, NFS/object-store guarantee,
 concurrent-writer guarantee, or atomic transaction spanning landing commit and spool seal.
+
+## 2026-07-23 — S9 recovery-gated Spark/Iceberg publish (returned-unreviewed)
+
+Delegated implementation of
+`learn/reference-evidence/implementation-inputs/2026-07-23-s9-recovery-gated-publish/CLAUDE_IMPLEMENTATION_PACKAGE.md`.
+S9 composes the verified S8 recovery gate and the verified S7 publish contract; neither is
+reimplemented. Status is `returned-unreviewed / Codex review required` — not approved.
+
+Interpreters used (counts are per interpreter and are NOT summed):
+
+```text
+.venv/bin/python            3.12.3, no pyspark, no airflow  (base suite)
+system python               3.12.3, pyspark available       (Spark-visible suite, runbooks)
+/tmp/manufacturing-mini-airflow-venv/bin/python  3.10.12, airflow 3.3.0 + pyspark  (Airflow only)
+```
+
+`.venv/bin/pytest` still carries the stale `robot-data-platform-mini` shebang, so every `.venv`
+run below used `.venv/bin/python -m pytest`.
+
+Commands and results:
+
+```text
+PYTHONPATH=src .venv/bin/python -m pytest -q tests/test_edge_recovery.py \
+  tests/test_recovered_telemetry_publish.py tests/test_orchestration.py
+  40 passed, 2 skipped in 1.74s
+  (the 2 skips are the S9 Spark integration tests: pyspark absent in .venv)
+
+PYTHONPATH=src .venv/bin/python -m pytest -q
+  121 passed, 17 skipped in 3.42s
+
+PYTHONPATH=src python -m pytest -q tests/test_recovered_telemetry_publish.py \
+  tests/test_spark_machine_event_batch.py
+  28 passed in 33.07s   (system python; the 2 S9 Spark tests run here)
+
+PYTHON_BIN=python ./scripts/verify_recovered_telemetry_publish.sh
+  passed; evidence: /tmp/manufacturing-mini-s9-verification/s9_verification.json
+
+./scripts/verify_edge_recovery.sh          passed  (S8 regression)
+./scripts/verify_kafka_k1.sh               passed  (K1 regression)
+./scripts/verify_kafka_k1_5.sh             passed  (K1.5 regression)
+PYTHON_BIN=python ./scripts/verify_spark_machine_event_batch.sh
+                                           passed  (S7 regression)
+
+python -m py_compile dags/manufacturing_recovered_telemetry_publish.py   valid
+git diff --check                                                        clean
+no Kafka broker process remained after the runbook
+```
+
+Runtime state evidence from the S9 runbook (three phases, one sealed session, machine `mc-101`,
+`business_date=2026-06-29`, 3 sealed events):
+
+```text
+phase 1 (no broker running)
+  broker_absent_during_spool: true
+  sealed_event_count: 3, expected_last_sequence: 3
+
+phase 2 (real local Kafka replay)
+  partial replay  : accepted 2, missing edge sequences [3], offsets [0, 1]
+  S9 publish call : blocked by RecoveryIncompleteError
+                    no_warehouse_created: true, no_adapter_created: true
+  complete replay : accepted 3, missing [], offsets [2, 3, 4]
+
+phase 3 (recovery-gated publish, then retry)
+  first  -> status=published, quality 7/7 pass, gold rows 1
+            source_hash   e08a1cfbbbc93b9299aab774e132ec860c4be4dddd4aaa302a61f42c73993d7e
+            snapshot_id   3887281284647789193
+  retry  -> status=skipped, same source_hash, same snapshot_id
+  edge event ids (3) == adapter selected event ids (3)
+  9/9 publish-phase checks pass
+```
+
+Identity chain persisted in the S9 evidence document (five separate spaces):
+
+```text
+edge sequence      [1, 2, 3]
+event_id           evt-20260629-000001 / -000002 / -000003
+Kafka offsets      [0, 1, 4]          <- deliberately not contiguous with edge sequence
+source_hash        e08a1cfbbbc93b92...
+spark run_id       2026-06-29-20260723T035242Z-a53450c2
+iceberg snapshot   3887281284647789193
+```
+
+The offsets `[0, 1, 4]` against edge sequence `[1, 2, 3]` are direct runtime evidence that
+completeness cannot be decided by offset continuity — the same result S8 observed.
+
+Airflow (isolated pinned environment, Airflow 3.3.0 / Python 3.10.12,
+`AIRFLOW__CORE__DAGS_FOLDER=$PWD/dags`, fresh SQLite metadata DB via `airflow db migrate`):
+
+```text
+DagBag suite: PYTHONPATH=src <airflow-venv>/bin/python -m pytest -q tests/test_airflow_dags.py
+  6 passed in 1.89s
+
+airflow dags test manufacturing_recovered_telemetry_publish 2026-06-29 -c '{...}'
+  using the completed sealed session from the runbook and a separate clean warehouse
+  (/tmp/manufacturing-mini-s9-airflow)
+  DagRun state=success; BashOperator command exited with return code 0
+  recovery_complete=true; sealed 3 == adapter selected 3
+  status=published, quality_passed=true, snapshot_count=1
+  gold_snapshot_id 9093910960272427618
+```
+
+This is a DagBag/`dags test` wiring proof only. It is NOT scheduler, executor, worker, HA, or
+production Airflow evidence. The snapshot id differs from the runbook's because the DAG run wrote
+to its own clean warehouse — a different table instance, not a second commit to the same one.
+
+Observed inherited S7 behaviour, recorded rather than changed (S7 is a forbidden file):
+
+```text
+a skipped rerun returns a NEWLY MINTED spark run_id while source_hash and gold_snapshot_id
+stay identical.
+```
+
+This is consistent with execution identity being separate from table-commit identity, but it means
+"the whole identity chain is stable across reruns" is false and is not claimed anywhere. What is
+invariant across reruns is `source_hash` and `gold_snapshot_id`. The S9 runbook therefore writes
+each run's evidence to its own file and compares each run against its own persisted document.
+
+Claim boundary:
+
+- Allowed: a synthetic, local, bounded recovery-gated batch path binding one sealed edge session
+  and its real local Kafka landing evidence to the existing deterministic adapter, Spark quality
+  gate, and one Iceberg gold-table snapshot; incomplete recovery and same-date event-set mismatch
+  block publication; same immutable input retry is a no-op **[corrected in the 2026-07-23 revision
+  entry below: the accurate claim is "creates no new Iceberg snapshot and performs no partition
+  overwrite" — S7 still runs Spark and quality before skipping]**; the integrated CLI is callable
+  through a thin local Airflow `dags test` wrapper.
+- Not allowed: production industrial IoT or autonomous-factory platform, continuous or large-scale
+  streaming, a direct Kafka-to-Iceberg streaming sink, a full Spark/Iceberg medallion platform,
+  production or cluster Spark, any performance claim, production/HA/distributed Airflow operation,
+  multi-partition/rebalance/concurrent-writer correctness, end-to-end exactly-once or distributed
+  atomicity, or real edge hardware/protocol integration.
+
+Status: `returned-unreviewed / Codex review required`. The S9 ADR and slice 09 are intentionally
+NOT promoted to `accepted-closed`.
+
+## 2026-07-23 — S9 revision after Codex review R1-R5 (returned-unreviewed)
+
+Codex reviewed the first S9 return, accepted the composition contract and the runtime state
+transition, and requested five changes. All five are applied on the same candidate diff. Status is
+again `returned-unreviewed / Codex review required` — not approved.
+
+What changed, and why it was a real problem:
+
+```text
+R1 attempt vs producer
+   A skipped retry paired a freshly minted spark run_id with the reused snapshot inside
+   identity_chain, which reads as "this run created that snapshot". It did not.
+   Evidence now carries spark.attempt_run_id, identity_chain.spark_attempt_run_id,
+   iceberg.snapshot_relation (created_by_current_attempt | reused_from_prior_attempt),
+   iceberg.snapshot_created_by_current_attempt, and iceberg.producer_attempt_run_id, which is
+   null on a skip because S7 does not expose the producing run.
+
+R2 false-pass identity check
+   identity_spaces_distinct was `edge_sequence != kafka_offsets OR source_hash != str(snapshot_id)`.
+   The right-hand predicate is effectively always true, so the check would have passed even if the
+   intended counterexample disappeared. Replaced with edge_sequence_not_kafka_offsets, which
+   asserts only the fact actually observed. Identity-space separation is documented as a
+   schema/semantics contract, not as a runtime value-inequality proof.
+
+R3 no-op and failure-output wording
+   S7 still starts Spark, transforms, and evaluates quality before deciding to skip, so
+   "retry is a no-op" was too broad. Everywhere S9 claims it, the wording is now
+   "same source retry creates no new Iceberg snapshot and performs no partition overwrite".
+   The ADR failure table no longer says every refusal leaves "산출물 없음": gate/date refusal
+   leaves nothing, a set mismatch may leave untrusted adapter staging, and a quality failure may
+   leave S7 failure evidence while no snapshot or success state advances.
+
+R4 verification-script cleanup
+   The publish-phase docstring said "project .venv"; the verified command actually uses the
+   Spark-capable interpreter selected by PYTHON_BIN (system python — .venv has no pyspark).
+   The final document no longer duplicates the cross-process scratch state: phase keys are
+   flattened (spool/broker/publish instead of phase_spool/...) and phase_state.json is removed
+   once s9_verification.json is written.
+
+R5 stale index backfill
+   charter Now/implemented now lists S7 and S8 before S9; slices/README.ko.md now lists 08 and 09;
+   01-system-traceability-map.ko.md now has the missing S8 section.
+```
+
+Rerun (per interpreter, never summed):
+
+```text
+focused (.venv)         41 passed, 2 skipped
+base suite (.venv)      122 passed, 17 skipped
+Spark (system python)   29 passed in 38.34s
+S9 runbook              passed — 13/13 publish-phase checks
+S8 / K1 / K1.5 / S7 regressions   all passed
+git diff --check        clean
+no Kafka broker process remained
+```
+
+New runbook checks proving R1 and R2 at runtime:
+
+```text
+retry_creates_no_new_snapshot                    pass  (snapshot_count unchanged)
+attempt_run_ids_differ                           pass  (...093032Z-e6d89e47 vs ...093044Z-e4beadc3)
+first_snapshot_created_by_current_attempt        pass  (relation=created_by_current_attempt)
+retry_snapshot_not_created_by_current_attempt    pass  (relation=reused_from_prior_attempt,
+                                                        producer_attempt_run_id=null)
+edge_sequence_not_kafka_offsets                  pass  ([1,2,3] != [0,1,4])
+identity_chain_persisted                         pass  (per attempt, against its own file)
+```
+
+State transition re-observed on this run: partial replay blocked with `no_warehouse_created` and
+`no_adapter_created`; complete replay published with quality 7/7 and
+`gold_snapshot_id=8860719031591076067`; retry skipped with the same `source_hash` and snapshot.
+
+Airflow: the pinned `/tmp/manufacturing-mini-airflow-venv` had disappeared from this machine
+(Codex reported the same). It was rebuilt from the existing pinned requirements with **no pin
+change** — `python3 -m venv` (Python 3.10.12, matching the pinned `constraints-3.10.txt`), then
+`requirements-airflow.txt`, then `requirements.txt -r requirements-spark.txt`. Result:
+
+```text
+Airflow 3.3.0 / Python 3.10.12 / pyspark 3.5.8
+DagBag suite: 6 passed
+airflow dags test manufacturing_recovered_telemetry_publish 2026-06-29 -c '{...}'
+  DagRun state=success, BashOperator return code 0
+  recovery_complete=true, sealed 3 == adapter selected 3
+  status=published, quality_passed=true, snapshot_count=1
+  gold_snapshot_id 1091721367780693312
+  snapshot_relation=created_by_current_attempt
+  producer_attempt_run_id == attempt_run_id (2026-06-29-20260723T093526Z-bf97a3c8)
+```
+
+Still a DagBag/`dags test` wiring proof only — not scheduler, executor, worker, HA, or production
+Airflow evidence. The snapshot id differs from the runbook's because the DAG run uses its own clean
+warehouse: a different table instance, not a second commit to the same table.
+
+Corrected count from the previous entry: the candidate adds **seven** new files (S9 module, S9
+tests, two scripts, DAG, two design docs), excluding the pre-existing package directory.
+
+Status: `returned-unreviewed / Codex review required`. The S9 ADR and slice 09 remain NOT promoted
+to `accepted-closed`.
+
+## 2026-07-23 — S9 final evidence-state fix (§14 no_snapshot) (returned-unreviewed)
+
+Codex reproduced the previous counts (41/2, 122/17, 29) and accepted the R1 published/skipped
+distinction, then found one remaining false evidence statement in an untested branch.
+
+The defect:
+
+```text
+build_evidence derived created_here = (status == "published") and treated everything else as
+"reused_from_prior_attempt". For an S7 quality_failed result that produced:
+
+  status=quality_failed  gold_snapshot_id=null  snapshot_relation=reused_from_prior_attempt
+
+No snapshot was created and none was reused - nothing was committed at all. The CLI exit code was
+already correct; the evidence sentence was not.
+```
+
+The fix makes the status-to-relation mapping exhaustive, with no default branch:
+
+```text
+published      -> created_by_current_attempt   created=true   producer=current attempt  snapshot=id
+skipped        -> reused_from_prior_attempt    created=false  producer=null             snapshot=id
+quality_failed -> no_snapshot                  created=false  producer=null             snapshot=null
+unknown status -> UnexpectedSparkStatusError (rejected, never silently classified as reuse)
+```
+
+`snapshot_relation` is now also carried in `identity_chain`, and the chain note tells the reader to
+read the relation before pairing `spark_attempt_run_id` with `iceberg_snapshot_id`.
+
+Tests added:
+
+```text
+test_quality_failure_evidence_says_no_snapshot_not_reuse
+  full quality_failed evidence shape through the real gate/adapter path, and asserts the persisted
+  document equals the returned one for this status too
+
+test_build_evidence_maps_every_status_and_rejects_unknown_ones
+  direct build_evidence test over all three statuses, plus an unknown status that must raise
+```
+
+Rerun (§14 scope; per interpreter, never summed):
+
+```text
+focused (.venv)        43 passed, 2 skipped
+full base (.venv)      124 passed, 17 skipped
+Spark (system python)  31 passed in 33.89s
+git diff --check       clean
+```
+
+Per §14 the Kafka/Spark runbook and the Airflow `dags test` were **not** repeated: this change
+touches only the evidence relation for a non-published branch, and no runtime or DAG code changed.
+The previously recorded runbook and Airflow results therefore still stand as the runtime evidence
+for the published/skipped path.
+
+Status: `returned-unreviewed / Codex review required`. Not approved; the S9 ADR and slice 09 remain
+NOT promoted to `accepted-closed`.
+
+## 2026-07-23 — S9 Codex acceptance
+
+Codex independently reviewed the final candidate diff and the exhaustive snapshot-relation
+mapping, then reran the required test sets:
+
+```text
+focused base (.venv)   43 passed, 2 skipped
+full base (.venv)      124 passed, 17 skipped
+Spark-visible S7/S9    31 passed
+git diff --check       clean
+```
+
+Accepted invariants:
+
+- partial recovery and date mismatch stop before adapter/Spark/Iceberg state;
+- a complete recovery must also pass exact sealed-event-set equality before Spark starts;
+- quality-passed input can publish one local Iceberg `business_date` partition;
+- same-source retry creates no new snapshot and performs no partition overwrite, while still
+  recording its fresh attempt id;
+- `published`, `skipped`, and `quality_failed` map respectively to
+  `created_by_current_attempt`, `reused_from_prior_attempt`, and `no_snapshot`;
+- unknown S7 status fails loudly instead of producing a false evidence statement.
+
+The Kafka/Spark runbook and local Airflow `dags test` were not repeated after the final
+`quality_failed` evidence-only fix. The previously recorded runtime results remain the evidence
+for the unchanged published/skipped path.
+
+Status: `accepted-closed`. S9 is approved for commit. No S10 or portfolio-release change is part
+of this acceptance.

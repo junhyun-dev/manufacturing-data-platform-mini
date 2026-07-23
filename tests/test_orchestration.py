@@ -4,6 +4,7 @@ from manufacturing_data_platform.orchestration import (
     build_gold_iceberg_publish_cli_command,
     build_lakehouse_cli_command,
     build_spark_iceberg_cli_command,
+    build_recovered_telemetry_publish_cli_command,
     build_spark_machine_event_batch_cli_command,
 )
 
@@ -109,6 +110,50 @@ def test_spark_machine_event_batch_command_supports_jinja_runtime_parameters():
     assert "business_date" in command
     assert "adapter_output_dir" in command
     assert "warehouse" in command
+
+
+def test_recovered_telemetry_publish_command_uses_s9_entrypoint():
+    command = build_recovered_telemetry_publish_cli_command(
+        spool_root="/tmp/s8/spool",
+        edge_source_id="edge-plant-a",
+        boot_session_id="boot-0001",
+        landing_dir="/tmp/s8/raw",
+        business_date="2026-06-29",
+        adapter_output_dir="/tmp/s9/adapter",
+        warehouse="/tmp/s9/warehouse",
+        output_dir="/tmp/s9/evidence",
+    )
+
+    assert command.startswith(
+        "PYTHONPATH=src python -m manufacturing_data_platform.pipeline.recovered_telemetry_publish"
+    )
+    assert "--spool-root /tmp/s8/spool" in command
+    assert "--edge-source-id edge-plant-a" in command
+    assert "--boot-session-id boot-0001" in command
+    assert "--landing-dir /tmp/s8/raw" in command
+    assert "--business-date 2026-06-29" in command
+    assert "--adapter-output-dir /tmp/s9/adapter" in command
+    assert "--warehouse /tmp/s9/warehouse" in command
+    assert "--output-dir /tmp/s9/evidence" in command
+    assert "--table local.db.gold_daily_metrics" in command
+
+
+def test_recovered_telemetry_publish_command_supports_jinja_runtime_parameters():
+    command = build_recovered_telemetry_publish_cli_command(
+        spool_root='{{ dag_run.conf.get("spool_root", "/tmp/spool") }}',
+        edge_source_id='{{ dag_run.conf.get("edge_source_id", "edge-plant-a") }}',
+        boot_session_id='{{ dag_run.conf.get("boot_session_id", "boot-0001") }}',
+        landing_dir='{{ dag_run.conf.get("landing_dir", "/tmp/raw") }}',
+        business_date='{{ dag_run.conf.get("business_date", ds) }}',
+        adapter_output_dir='{{ dag_run.conf.get("adapter_output_dir", "/tmp/adapter") }}',
+        warehouse='{{ dag_run.conf.get("warehouse", "/tmp/warehouse") }}',
+        output_dir='{{ dag_run.conf.get("output_dir", "/tmp/evidence") }}',
+    )
+
+    assert "dag_run.conf.get" in command
+    for key in ("spool_root", "edge_source_id", "boot_session_id", "landing_dir",
+                "business_date", "adapter_output_dir", "warehouse", "output_dir"):
+        assert key in command
 
 
 def test_gold_iceberg_publish_command_uses_publish_entrypoint():

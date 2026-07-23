@@ -350,6 +350,49 @@ broker 없음 -> 로컬 spool에 1..N append(fsync + atomic rename) -> seal(expe
 게이트웨이·하드웨어, OPC UA/MQTT/ROS 2/DDS, continuous service, power-loss durability,
 concurrent writer, production 운영은 증명하지 않는다.
 
+## S9 복구 완결 gate를 통과한 세션만 발행
+
+S9는 이미 검증된 두 계약(S8 복구 판정, S7 Spark/Iceberg 발행)을 **어느 쪽도 재구현하지 않고**
+잇는다. 새로 쓴 것은 공유 gate와 집합 동등성 검사 두 가지뿐이다.
+
+```text
+봉인 세션 -> 공유 require_recovery_ready() gate (Spark import·세션 생성 이전)
+-> 기존 K1.5 결정적 adapter / source_hash
+-> 봉인 event_id 집합 == 선택된 event_id 집합
+-> 기존 Spark silver/gold + quality gate
+-> 기존 Iceberg business_date overwrite + snapshot evidence
+```
+
+재현 명령:
+
+```bash
+PYTHON_BIN=python ./scripts/verify_recovered_telemetry_publish.sh
+```
+
+차단 사유는 두 가지이고 서로 다르다.
+
+- **미완결 복구**: 봉인된 event가 아직 accepted set에 없다. S8 판정 그대로다.
+- **입력 집합 불일치**: 복구가 완결됐어도 차단한다. adapter는 그 날짜의 accepted event를 **전부**
+  고르므로, 같은 날짜에 세션 밖 event가 하나라도 있으면 발행될 batch는 봉인 세션이 아니다.
+  `extra_event_ids` / `missing_event_ids`로 어느 방향으로 어긋났는지 보고한다.
+
+고정한 계약:
+
+- **gate는 하나다.** S8에서 추출한 `require_recovery_ready(...)`를 승격과 발행이 함께 쓴다. 복사하지 않는다.
+- **gate는 Spark 앞에 있다.** 미완결이면 warehouse/adapter 산출물이 아예 생기지 않는다.
+- **Spark/Iceberg 로직은 S7 것을 호출만 한다.** transform·quality·overwrite 코드를 새로 쓰지 않았다.
+- **재실행 불변식**: 같은 입력이면 `skipped`. **새 Iceberg snapshot을 만들지 않고 partition
+  overwrite도 하지 않는다** — 전체 파이프라인 no-op은 아니다. S7은 skip으로 판정하기 전에 이미
+  Spark를 띄우고 quality를 돌린다. 불변인 것은 발행된 테이블 상태와 `source_hash`다.
+- **attempt와 producer를 구분한다**: evidence는 `spark_attempt_run_id`(이번 시도)와
+  `snapshot_relation`(`created_by_current_attempt` / `reused_from_prior_attempt`)을 따로 적는다.
+  skip일 때 `producer_attempt_run_id`는 `null`이다 — S7이 그 값을 노출하지 않으니 추측하지 않는다.
+  이렇게 하지 않으면 새 run_id와 기존 snapshot이 나란히 놓여 "이 run이 만들었다"로 읽힌다.
+
+이것도 **synthetic·local·bounded**(session/machine/date/topic partition 각 1개, local Iceberg gold
+table 1개)다. streaming sink, cluster Spark, concurrent Iceberg writer, gate 통과 후 분산 원자성,
+production Airflow 운영은 증명하지 않는다.
+
 ## 정직한 한계
 
 - Spark/Iceberg는 단일 gold table 범위다. S7에서 한 slice의 silver/gold를 Spark로 재표현하고 quality 통과분만 publish하는 것까지 검증했으나, full Spark medallion rewrite와 cluster/분산 실행은 여전히 backlog다.

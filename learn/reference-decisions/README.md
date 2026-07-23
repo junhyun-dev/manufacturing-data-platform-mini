@@ -69,3 +69,7 @@ status는 decision의 lifecycle만 말한다. 최신 테스트 수와 실행 결
    - 단절 구간을 로컬에 모을 때 무엇을 durable progress로 볼 것인가? (immutable 파일 vs mutable cursor)
    - "아직 안 옴"과 "유실"을 어떻게 구분하는가? (expected_last_sequence 봉인)
    - 왜 완결성을 Kafka offset 연속성으로 판정하면 안 되는가?
+10. [`recovery-gated-publish-boundary.md`](recovery-gated-publish-boundary.md) (S9)
+    - 복구 완결 gate를 왜 복사하지 않고 S8에서 추출해 공유하는가?
+    - 왜 membership(봉인 ⊆ accepted)만으로는 발행을 허용할 수 없고 집합 동등성까지 요구하는가?
+    - gate는 왜 Spark import·세션 생성 이전에 있어야 하는가?

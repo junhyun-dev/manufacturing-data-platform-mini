@@ -185,6 +185,33 @@ parameter로 실행할지 조정한다.
 | Evidence | [`scenarios/04-spark-machine-event-batch.md`](scenarios/04-spark-machine-event-batch.md), [`slices/07-spark-machine-event-batch.ko.md`](slices/07-spark-machine-event-batch.ko.md), [`../../src/manufacturing_data_platform/pipeline/spark_machine_event_batch.py`](../../src/manufacturing_data_platform/pipeline/spark_machine_event_batch.py), [`../../tests/test_spark_machine_event_batch.py`](../../tests/test_spark_machine_event_batch.py) |
 | 경계 | cluster/분산 Spark, 성능·throughput, Structured Streaming, exactly-once, concurrent writer는 아님 |
 
+### S8. 단절 구간을 봉인해 모으고 완결된 뒤에만 downstream을 허용한다
+
+| 단계 | 연결 |
+|---|---|
+| 문제 상황 | 현장과 중앙 사이 링크가 끊기면 수집은 멈출 수 없고, 복구 후에는 "무엇이 빠졌는지" 말할 수 있어야 함 |
+| 가져온 질문 | edge 순서는 무엇으로 식별하나? durable progress는 무엇인가? "아직 안 옴"과 "유실"을 어떻게 구분하나? 완결성을 offset 연속성으로 판정해도 되나? |
+| Question Bank | [`question-bank/02-quality-rerun-failure.ko.md`](question-bank/02-quality-rerun-failure.ko.md), [`question-bank/08-kafka-streaming-ingestion.ko.md`](question-bank/08-kafka-streaming-ingestion.ko.md), [`question-bank/06-cross-area-connection-questions.ko.md`](question-bank/06-cross-area-connection-questions.ko.md) |
+| 계약/결정 | [`../reference-decisions/edge-buffer-and-recovery-progress.md`](../reference-decisions/edge-buffer-and-recovery-progress.md), [`source-contracts/03-edge-recovery-envelope.md`](source-contracts/03-edge-recovery-envelope.md): `(edge_source_id, boot_session_id, sequence_no)` edge 순서, immutable 파일 자체가 progress, `expected_last_sequence` 봉인, `event_id` 집합으로 완결성 판정 |
+| 구현 기능 | fsync + atomic rename durable append, seal, 기존 K1 landing으로 replay, 미완결 시 `run_bridge` 호출 전 차단, 반복 replay에도 accepted/`source_hash`/gold 불변 |
+| Evidence | [`scenarios/05-industrial-telemetry-recovery.md`](scenarios/05-industrial-telemetry-recovery.md), [`slices/08-edge-cloud-recovery.ko.md`](slices/08-edge-cloud-recovery.ko.md), [`../../src/manufacturing_data_platform/edge_recovery.py`](../../src/manufacturing_data_platform/edge_recovery.py), [`../../tests/test_edge_recovery.py`](../../tests/test_edge_recovery.py), [`../../scripts/verify_edge_recovery.sh`](../../scripts/verify_edge_recovery.sh) |
+| 경계 | 실제 edge gateway/OT 프로토콜, power-loss durability, concurrent writer, multi machine/session/partition, continuous service는 아님 |
+
+### S9. 복구가 완결된 세션만 Spark/Iceberg로 발행한다
+
+S8(단절 세션 봉인·복구 판정)과 S7(Spark 발행)은 각각 검증됐지만 한 실행 경로로 이어진 적이 없었다.
+S9는 둘을 **재구현하지 않고 조합**한다.
+
+| 단계 | 연결 |
+|---|---|
+| 문제 상황 | 복구가 덜 된 세션으로 batch를 돌리면 trusted snapshot이 먼저 전진해 무음 손실이 됨. 반대로 완결 판정만 믿으면 같은 날짜의 세션 밖 event가 섞인 batch도 "완결"로 발행됨 |
+| 가져온 질문 | 완결 gate를 누가 소유하는가? gate는 Spark 시작 전인가 후인가? membership(봉인 ⊆ accepted)으로 충분한가? 재실행에서 무엇이 불변이고 무엇이 새로 발급되는가? |
+| Question Bank | quality/current-state, rerun, cross-area connection, orchestration 경계 질문 |
+| 계약/결정 | [`../reference-decisions/recovery-gated-publish-boundary.md`](../reference-decisions/recovery-gated-publish-boundary.md): S8에서 추출한 공유 `require_recovery_ready`, Spark import 이전 gate, 봉인 event 집합 == adapter 선택 집합, S7 callable 호출만 |
+| 구현 기능 | sealed session -> 공유 readiness gate -> 기존 결정적 adapter -> 집합 동등성 검사 -> 기존 Spark quality gate/Iceberg overwrite -> 각 identity space를 자기 field에 담고 attempt와 snapshot 생성 주체를 구분한 evidence, 얇은 Airflow wrapper |
+| Evidence | [`slices/09-recovery-gated-spark-iceberg.ko.md`](slices/09-recovery-gated-spark-iceberg.ko.md), [`slices/08-edge-cloud-recovery.ko.md`](slices/08-edge-cloud-recovery.ko.md), [`../../src/manufacturing_data_platform/pipeline/recovered_telemetry_publish.py`](../../src/manufacturing_data_platform/pipeline/recovered_telemetry_publish.py), [`../../tests/test_recovered_telemetry_publish.py`](../../tests/test_recovered_telemetry_publish.py), [`../../scripts/verify_recovered_telemetry_publish.sh`](../../scripts/verify_recovered_telemetry_publish.sh) |
+| 경계 | streaming sink, cluster Spark, multi session/partition, concurrent Iceberg writer, gate 통과 후 분산 원자성, production Airflow 운영은 아님 |
+
 ## 4. 시나리오가 Question Bank를 가져오는 방식
 
 | 시나리오 | 주로 가져오는 영역 | 이번에 일부러 가져오지 않는 영역 |
@@ -197,6 +224,8 @@ parameter로 실행할지 조정한다.
 | S5 Kafka landing | event identity, offset/replay, durability, quarantine | multi-partition rebalance, Schema Registry, continuous streaming |
 | S6 batch bridge | cross-system identity, current-state guard, deterministic rerun | direct streaming sink, window/watermark |
 | S7 Spark batch | engine parity, storage/spark consistency, quality gate, snapshot identity | cluster/분산 Spark, 성능/throughput, streaming |
+| S8 edge 복구 | durable progress, 완결성 판정, identity 분리, 장애/재전송 | 실제 edge 하드웨어, power-loss durability, continuous service |
+| S9 recovery-gated publish | 복구 완결 gate 소유권, 입력 집합 동등성, current-state guard, rerun 불변식 | streaming sink, multi session/partition, concurrent writer, 분산 원자성 |
 
 이 표의 목적은 질문을 줄이는 것이 아니라, 질문을 넓게 본 뒤 **현재 contract를 바꾸는 질문만
 Core로 선택했는지** 확인하는 것이다.

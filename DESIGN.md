@@ -281,3 +281,56 @@ Boundary: synthetic, local, bounded, single machine/session/partition simulation
 filesystem. Not an edge gateway, not OPC UA/MQTT/ROS 2/DDS, not power-loss durability, not
 concurrent writers, not production operation. See
 `learn/reference-decisions/edge-buffer-and-recovery-progress.md`.
+
+## 12. S9 Recovery-Gated Spark/Iceberg Publish
+
+S9 does not add an engine or a pipeline. It composes two already-verified contracts — the S8
+recovery gate and the S7 Spark/Iceberg publish — without reimplementing either one.
+
+```text
+sealed edge session
+-> shared require_recovery_ready() gate, before any Spark import or SparkSession
+-> existing deterministic K1.5 adapter and source_hash
+-> sealed event_id set == selected event_id set
+-> existing Spark silver/gold + existing quality gate
+-> existing Iceberg business_date overwrite + snapshot evidence
+```
+
+Contracts fixed before code:
+
+- **One gate, not two.** `require_recovery_ready(...)` was extracted from S8 and is now called by
+  both the S8 promotion path and the S9 publish path. A copied gate is a gate that eventually
+  diverges. S8's external behaviour (exception types, messages, refusal point) is unchanged.
+- **The gate runs before Spark exists.** An incomplete session creates no warehouse and no adapter
+  output, so a partial recovery cannot leave Spark or Iceberg state behind.
+- **Membership is not enough.** S8 completeness proves `sealed ⊆ accepted`. The adapter selects
+  *every* accepted event for that `business_date`, so one extra same-date event would publish a
+  batch that is no longer the sealed session. S9 additionally requires set equality (count and
+  membership) and reports the direction as `extra_event_ids` / `missing_event_ids`.
+- **S7 is called, never re-expressed.** No transform, quality, or `overwritePartitions()` code
+  exists in S9; the module only invokes the S7 callable and records evidence.
+- **Lazy imports.** `edge_recovery` imports no pyspark or pymongo at module level, so the Kafka
+  runbook interpreter can evaluate the gate; S9 imports the adapter and Spark only after the gate
+  passes.
+- **Each identity space gets its own field** in the persisted evidence: edge sequence, `event_id`,
+  `(topic, partition, offset)`, `source_hash`, and attempt `run_id` / `snapshot_id`. This is a
+  schema and semantics contract — it fixes what each field means. It is not a runtime proof that
+  the five values can never coincide, and no such generic check is claimed. The one runtime
+  counterexample actually observed is edge sequence `[1, 2, 3]` against Kafka offsets `[0, 1, 4]`.
+- **An attempt is not the run that created the snapshot.** S7 mints a fresh `run_id` on every
+  invocation, including one it then skips, and it does not expose the `run_id` of the attempt that
+  committed the snapshot. Evidence therefore records `spark_attempt_run_id` for the current
+  attempt plus `snapshot_relation` (`created_by_current_attempt` / `reused_from_prior_attempt`),
+  and leaves `producer_attempt_run_id` null on a skip rather than guessing it. Without this, a new
+  run id sitting beside a reused snapshot reads as a `run -> snapshot` causal claim that is false.
+- **Rerun invariants, stated precisely.** The same immutable session and landing produce `skipped`
+  with the same `source_hash` and the same `gold_snapshot_id`, and **create no new snapshot and
+  perform no partition overwrite**. That is not a whole-pipeline no-op: S7 still starts Spark,
+  computes silver/gold, and evaluates quality before deciding to skip. What is invariant is the
+  published table state and the input identity — not the compute cost, and not the attempt id.
+
+Boundary: synthetic, local, bounded; one session, machine, `business_date`, topic partition, and
+one local Iceberg gold table; Airflow verified only at `dags test` level. Not a streaming sink, not
+cluster Spark, not concurrent Iceberg writers, not distributed atomicity between Spark and Iceberg
+after the gate, not production Airflow operation. See
+`learn/reference-decisions/recovery-gated-publish-boundary.md`.

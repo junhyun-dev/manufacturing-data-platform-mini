@@ -88,3 +88,9 @@ Current slices:
 7. [`07-spark-machine-event-batch.ko.md`](07-spark-machine-event-batch.ko.md)
    - K1.5 canonical landing을 Spark DataFrame으로 재표현해 기존 silver/gold 계약과의 engine parity를 검증한 slice.
    - quality를 통과한 결과만 Iceberg partition에 publish하고, 실행 엔진만 Spark로 바꿨음을 보여준다.
+8. [`08-edge-cloud-recovery.ko.md`](08-edge-cloud-recovery.ko.md)
+   - 단절 구간을 immutable spool에 모아 봉인하고, 봉인 구간이 전부 중앙에 반영된 뒤에만 batch를 허용한 failure/recovery slice.
+   - 완결성을 Kafka offset 연속성이 아니라 `event_id` 집합으로 판정한다.
+9. [`09-recovery-gated-spark-iceberg.ko.md`](09-recovery-gated-spark-iceberg.ko.md)
+   - S8 복구 gate와 S7 Spark/Iceberg 발행을 어느 쪽도 재구현하지 않고 이은 composition slice.
+   - membership만으로는 부족하다는 점(같은 날짜의 세션 밖 event)을 집합 동등성 검사로 막는다.
